@@ -416,7 +416,7 @@ async function copyRepo(src, dest) {
 
 async function personalize(homeDir, answers) {
   const claudeMd = path.join(homeDir, '.claude', 'CLAUDE.md');
-  const michaelMd = path.join(homeDir, 'agents', 'soul', 'MICHAEL.md');
+  const soulDir  = path.join(homeDir, 'agents', 'soul');
   const replacements = {
     '{{USER_NAME}}': answers.about.name,
     '{{USER_PRIORITY_FILTER}}': 'Define your own priority filter as you work with Michael.',
@@ -424,7 +424,18 @@ async function personalize(homeDir, answers) {
       ? `- **Context:** ${answers.about.context}`
       : '',
   };
-  for (const file of [claudeMd, michaelMd]) {
+  // Collect every soul file shipped in the repo, not just MICHAEL.md — NESHAMA
+  // and AHI-FOUNDATION carry the same {{USER_NAME}} marker and are loaded by
+  // claude-invoke on every turn. Missing the substitution there would leave
+  // literal "{{USER_NAME}}" tokens in the runtime prompt.
+  const targets = [claudeMd];
+  try {
+    const soulFiles = await fsp.readdir(soulDir);
+    for (const f of soulFiles) {
+      if (f.endsWith('.md')) targets.push(path.join(soulDir, f));
+    }
+  } catch { /* soul dir may not exist on a partial install — best-effort */ }
+  for (const file of targets) {
     if (!fs.existsSync(file)) continue;
     let text = await fsp.readFile(file, 'utf-8');
     for (const [k, v] of Object.entries(replacements)) {
@@ -533,14 +544,31 @@ async function writeEnv(homeDir, answers) {
 
 async function writeUsersConfig(homeDir, answers) {
   const cfgPath = path.join(homeDir, 'gateway', 'config', 'users.json');
-  const token = crypto.randomBytes(32).toString('hex');
+  // Preserve the existing primary user's token across re-runs — rotating it
+  // every install would invalidate any saved dashboard sessions or external
+  // clients keyed off the token. Only mint a new token on a fresh install.
+  let existingPrimary = null;
+  if (fs.existsSync(cfgPath)) {
+    try {
+      const parsed = JSON.parse(await fsp.readFile(cfgPath, 'utf-8'));
+      if (Array.isArray(parsed) && parsed.length > 0 && typeof parsed[0].token === 'string') {
+        existingPrimary = parsed[0];
+      }
+    } catch { /* malformed file — fall through and overwrite */ }
+  }
+  const token = existingPrimary?.token || crypto.randomBytes(32).toString('hex');
   const tgId = parseInt(answers.telegram.userId || '0', 10);
+  // Wizard answers OVERWRITE telegram id only when a new value was supplied
+  // (mirrors the .env merge policy); otherwise keep what was there.
+  const telegramChatId = Number.isFinite(tgId) && tgId > 0
+    ? tgId
+    : (existingPrimary?.telegramChatId ?? null);
   const users = [
     {
       token,
-      name: answers.about.name || 'Primary',
-      telegramChatId: Number.isFinite(tgId) && tgId > 0 ? tgId : null,
-      agents: ['michael'],
+      name: answers.about.name || existingPrimary?.name || 'Primary',
+      telegramChatId,
+      agents: existingPrimary?.agents || ['michael'],
       admin: true,
     },
   ];
