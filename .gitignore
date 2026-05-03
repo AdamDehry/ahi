@@ -1,0 +1,30 @@
+# Dependencies
+node_modules/
+gateway/node_modules/
+gateway/dist/
+
+# Real environment files (never commit secrets)
+.env
+.env.local
+gateway/.env
+gateway/config/users.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs and runtime state (per-install, never committed)
+state/
+*.log
+
+# Session transcripts
+infra/sessions/*.jsonl
+infra/sessions/messages/
+
+# IDE
+.vscode/
+.idea/
+
+# Temp / scratch
+*.tmp
+*.bak

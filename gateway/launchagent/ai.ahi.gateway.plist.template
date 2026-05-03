@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>ai.ahi.gateway</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>__NODE_BIN__</string>
+        <string>__AHI_HOME__/gateway/dist/index.js</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>__AHI_HOME__/gateway</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>AHI_HOME</key>
+        <string>__AHI_HOME__</string>
+        <key>HOME</key>
+        <string>/Users/__USER__</string>
+        <key>PATH</key>
+        <string>/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin</string>
+    </dict>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>KeepAlive</key>
+    <true/>
+
+    <key>StandardOutPath</key>
+    <string>__AHI_HOME__/state/logs/gateway.out.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>__AHI_HOME__/state/logs/gateway.err.log</string>
+
+    <key>ThrottleInterval</key>
+    <integer>10</integer>
+</dict>
+</plist>

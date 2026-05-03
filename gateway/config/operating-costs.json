@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "updated": "TEMPLATE",
+  "notes": "Track monthly operating spend. AI Automation entries are pre-seeded as common defaults; edit costs in this file or via the Costs tab in the dashboard. Personal-bucket entries are UI-editable.",
+  "entries": [
+    {
+      "id": "claude-max",
+      "service": "Claude Max Plan",
+      "bucket": "ai_automation",
+      "category": "AI / LLM",
+      "used_for": "Claude Code interface — primary environment for AHI agent operation",
+      "cost_type": "fixed",
+      "monthly_cost_fixed": 200,
+      "monthly_cost_estimate": null,
+      "billing_url": "https://console.anthropic.com",
+      "notes": null,
+      "active": true
+    },
+    {
+      "id": "openai-api",
+      "service": "OpenAI API",
+      "bucket": "ai_automation",
+      "category": "AI / LLM",
+      "used_for": "TTS/STT for bot voice input and output",
+      "cost_type": "usage",
+      "monthly_cost_fixed": null,
+      "monthly_cost_estimate": 0,
+      "billing_url": "https://platform.openai.com",
+      "notes": null,
+      "active": true
+    },
+    {
+      "id": "google-gemini-api",
+      "service": "Google Gemini API",
+      "bucket": "ai_automation",
+      "category": "AI / LLM",
+      "used_for": "Gemini 2.5 Flash TTS for agent voices",
+      "cost_type": "usage",
+      "monthly_cost_fixed": null,
+      "monthly_cost_estimate": 0,
+      "billing_url": "https://aistudio.google.com",
+      "notes": null,
+      "active": true
+    }
+  ]
+}

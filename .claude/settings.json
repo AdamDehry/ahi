@@ -1,0 +1,37 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(**)",
+      "Edit($AHI_HOME/**)",
+      "Write($AHI_HOME/**)",
+      "Bash(node *)",
+      "Bash(npm *)",
+      "Bash(npx *)",
+      "Bash(ls *)",
+      "Bash(mkdir *)",
+      "Bash(cp *)",
+      "Bash(mv *)",
+      "Bash(git *)",
+      "Bash(pwd)",
+      "Bash(which *)",
+      "Bash(wc *)",
+      "Bash(du *)",
+      "Bash(find *)",
+      "Bash(chmod *)",
+      "Bash(touch *)"
+    ],
+    "deny": []
+  },
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$AHI_HOME/gateway/hooks/ahi-retrieval.sh"
+          }
+        ]
+      }
+    ]
+  }
+}

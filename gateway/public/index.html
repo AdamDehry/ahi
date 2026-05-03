@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="theme-color" content="#0c0e14" />
+  <link rel="manifest" href="/ui/manifest.json" />
+  <link rel="icon" href="/ui/icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="/ui/icon.svg" />
+  <title>AHI Dashboard</title>
+  <link rel="stylesheet" href="/ui/style.css?v=19" />
+</head>
+<body>
+
+  <!-- ═══ Login ═══ -->
+  <div id="login-page">
+    <div class="login-box">
+      <div class="login-brand">AHI Gateway</div>
+      <h1>Dashboard</h1>
+      <p class="subtitle">Enter your access token</p>
+      <input type="password" id="token-input" placeholder="Token" autocomplete="off" />
+      <button id="login-btn">Sign In</button>
+      <div class="login-error" id="login-error"></div>
+    </div>
+  </div>
+
+  <!-- ═══ Dashboard ═══ -->
+  <div id="dashboard">
+    <header>
+      <div class="header-left">
+        <h1>AHI Dashboard</h1>
+        <span class="version">v0.3</span>
+      </div>
+      <div class="header-right">
+        <div class="bot-indicators">
+          <div class="bot-ind michael"><div class="dot"></div><span>Michael</span></div>
+          <div class="bot-ind eliyahu"><div class="dot"></div><span>Eliyahu</span></div>
+          <div class="bot-ind miriam"><div class="dot"></div><span>Miriam</span></div>
+          <div class="bot-ind tzali"><div class="dot"></div><span>Tzali</span></div>
+          <div class="bot-ind avi"><div class="dot"></div><span>Avi</span></div>
+        </div>
+        <button class="header-icon-btn" id="theme-btn" title="Toggle theme">&#x263E;</button>
+        <button class="header-icon-btn" id="refresh-btn" title="Refresh">&#x21bb;</button>
+        <button class="header-icon-btn logout" id="logout-btn" title="Logout">&#x2715;</button>
+      </div>
+    </header>
+
+    <nav class="tab-bar">
+      <button class="tab-btn active" data-tab="feed">Feed</button>
+      <button class="tab-btn" data-tab="mc">Mission Control</button>
+      <button class="tab-btn" data-tab="clipboard">Clipboard</button>
+      <button class="tab-btn" data-tab="files">Files</button>
+      <button class="tab-btn" data-tab="costs">Costs</button>
+      <button class="tab-btn" data-tab="settings">Settings</button>
+    </nav>
+
+    <div class="tab-content">
+
+      <!-- ═══ Feed ═══ -->
+      <div class="tab-page active" id="tab-feed">
+        <div class="feed-filter">
+          <button class="filter-btn active" data-bot="all">All</button>
+          <button class="filter-btn" data-bot="michael">Michael</button>
+          <button class="filter-btn" data-bot="eliyahu">Eliyahu</button>
+          <button class="filter-btn" data-bot="miriam">Miriam</button>
+          <button class="filter-btn" data-bot="tzali">Tzali</button>
+          <button class="filter-btn" data-bot="avi">Avi</button>
+        </div>
+        <div class="feed-scroll" id="feed-list">
+          <div class="feed-empty" id="feed-empty">
+            Waiting for messages...<br/>
+            <span style="font-size:0.75rem; margin-top:0.5rem; display:block;">
+              Send a message to any bot on Telegram and it will appear here in real-time.
+            </span>
+          </div>
+        </div>
+        <div class="quick-send">
+          <div class="send-row">
+            <span class="send-target" id="send-target">Michael</span>
+            <input type="text" id="send-input" placeholder="Send a message..." />
+            <button class="btn btn-primary" id="send-btn">Send</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ Clipboard ═══ -->
+      <div class="tab-page" id="tab-clipboard">
+        <div class="section-title">Save a clip</div>
+        <div class="clip-input-area">
+          <textarea id="clip-input" placeholder="Paste or type text to save..."></textarea>
+          <button class="btn btn-primary" id="clip-save-btn">Save</button>
+        </div>
+        <div class="section-title">Saved Clips</div>
+        <div class="clips-grid" id="clips-grid"></div>
+      </div>
+
+      <!-- ═══ Files ═══ -->
+      <div class="tab-page" id="tab-files">
+        <div class="section-title">Upload</div>
+        <div class="drop-zone" id="drop-zone">
+          <span class="drop-icon">+</span>
+          Drop files here or click to upload
+          <input type="file" id="file-input" hidden />
+        </div>
+        <div class="section-title">Uploaded Files</div>
+        <div class="files-list" id="files-list"></div>
+      </div>
+
+      <!-- ═══ Mission Control ═══ -->
+      <div class="tab-page" id="tab-mc">
+        <div class="mc-grid" id="mc-grid"></div>
+        <div class="mc-expanded" id="mc-expanded" aria-hidden="true">
+          <div class="mc-expanded-card">
+            <div class="mc-expanded-head">
+              <button class="mc-close" id="mc-close" title="Close">
+                <span class="mc-close-glyph">&#xf00d;</span>
+              </button>
+              <div class="mc-expanded-title">
+                <span class="mc-expanded-label" id="mc-expanded-label"></span>
+                <span class="mc-expanded-file" id="mc-expanded-file"></span>
+              </div>
+              <div class="mc-expanded-actions">
+                <span class="mc-saved-indicator" id="mc-saved">Saved</span>
+                <button class="btn btn-ghost" id="mc-edit-btn">Edit</button>
+                <button class="btn btn-primary" id="mc-save-btn" style="display:none;">Save Edits</button>
+                <button class="btn btn-ghost" id="mc-cancel-btn" style="display:none;">Cancel</button>
+              </div>
+            </div>
+            <div class="mc-expanded-body">
+              <div class="mc-render" id="mc-render"></div>
+              <textarea class="mc-editor" id="mc-editor" spellcheck="false" style="display:none;"></textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ Costs ═══ -->
+      <div class="tab-page" id="tab-costs">
+        <div class="costs-header">
+          <div class="costs-filter">
+            <button class="cost-pill active" data-bucket="ai_automation">AI Automation</button>
+                        <button class="cost-pill" data-bucket="personal">Personal</button>
+            <button class="cost-pill" data-bucket="all">All</button>
+          </div>
+          <button class="btn btn-primary" id="cost-add-btn">+ Add Subscription</button>
+        </div>
+        <div class="costs-body" id="costs-body"></div>
+        <div class="costs-footer" id="costs-footer"></div>
+      </div>
+
+      <!-- Cost CRUD modal -->
+      <div class="cost-modal" id="cost-modal" aria-hidden="true">
+        <div class="cost-modal-backdrop" id="cost-modal-backdrop"></div>
+        <div class="cost-modal-card">
+          <div class="cost-modal-head">
+            <span id="cost-modal-title">Add Subscription</span>
+            <button class="cost-modal-close" id="cost-modal-close" title="Close">&#x2715;</button>
+          </div>
+          <div class="cost-modal-body">
+            <label class="cost-field">
+              <span>Bucket *</span>
+              <select id="cost-f-bucket">
+                <option value="ai_automation">AI Automation</option>
+                                <option value="personal">Personal</option>
+              </select>
+            </label>
+            <label class="cost-field">
+              <span>Service *</span>
+              <input type="text" id="cost-f-service" placeholder="e.g. Spotify" />
+            </label>
+            <label class="cost-field">
+              <span>Category *</span>
+              <input type="text" id="cost-f-category" placeholder="e.g. Entertainment" list="cost-categories" />
+              <datalist id="cost-categories">
+                <option value="AI / Productivity"></option>
+                <option value="Entertainment"></option>
+                <option value="Productivity"></option>
+                <option value="Design"></option>
+                <option value="Education / Torah"></option>
+                <option value="Finance"></option>
+                <option value="Crypto / Finance"></option>
+                <option value="Shopping / Media"></option>
+                <option value="Utilities"></option>
+                <option value="Career"></option>
+                <option value="Health"></option>
+                <option value="Other"></option>
+              </datalist>
+            </label>
+            <div class="cost-field-row">
+              <label class="cost-field">
+                <span>Cost Type</span>
+                <select id="cost-f-cost-type">
+                  <option value="subscription">Subscription</option>
+                  <option value="fixed">Fixed</option>
+                  <option value="usage">Usage</option>
+                  <option value="free">Free</option>
+                </select>
+              </label>
+              <label class="cost-field">
+                <span>Monthly Cost ($)</span>
+                <input type="number" id="cost-f-cost" step="0.01" min="0" placeholder="e.g. 9.99" />
+              </label>
+            </div>
+            <label class="cost-field">
+              <span>Billing URL</span>
+              <input type="url" id="cost-f-billing" placeholder="https://..." />
+            </label>
+            <label class="cost-field">
+              <span>Notes</span>
+              <input type="text" id="cost-f-notes" placeholder="Optional" />
+            </label>
+            <label class="cost-field cost-field-checkbox">
+              <input type="checkbox" id="cost-f-active" checked />
+              <span>Active (count in totals)</span>
+            </label>
+          </div>
+          <div class="cost-modal-foot">
+            <button class="btn btn-ghost" id="cost-modal-cancel">Cancel</button>
+            <button class="btn btn-danger" id="cost-modal-delete" style="display:none;">Delete</button>
+            <button class="btn btn-primary" id="cost-modal-save">Save</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ Settings ═══ -->
+      <div class="tab-page" id="tab-settings">
+        <div class="section-title">Bot Configuration</div>
+        <div class="settings-grid" id="settings-grid"></div>
+        <div class="gateway-info" id="gateway-info"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+  <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.0/dist/purify.min.js"></script>
+  <script src="/ui/app.js?v=19"></script>
+</body>
+</html>
