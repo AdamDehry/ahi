@@ -476,6 +476,7 @@ export function createBot(botCfg: BotConfig, gatewayCfg: GatewayConfig): BotInst
       eliyahu: "Shalom! Eliyahu is here. Shall we learn something together?",
       miriam: "Shalom! Miriam is here. How can I help you today?",
       tzali: "Shalom! Tzali is online. What are we building?",
+      avi: "Shalom! Avi is online. What needs to take form?",
     };
     await ctx.reply(greetings[name] || `${name} is online.`);
   });

@@ -3,7 +3,7 @@
     "token": "REPLACE_WITH_crypto.randomBytes(32).toString('hex')",
     "name": "Primary",
     "telegramChatId": 0,
-    "agents": ["michael", "tzali", "eliyahu", "miriam", "avi"],
+    "agents": ["michael", "tzali", "avi"],
     "admin": true
   }
 ]

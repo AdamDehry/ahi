@@ -74,7 +74,7 @@ export function loadConfig(): GatewayConfig {
     };
   }
 
-  // Michael — always present
+  // Michael — coordinator / strategist
   const michael = makeBotConfig("michael", "MICHAEL_BOT_TOKEN", "sonnet", "cedar");
   if (michael) bots.push(michael);
 
@@ -86,16 +86,16 @@ export function loadConfig(): GatewayConfig {
   const miriam = makeBotConfig("miriam", "MIRIAM_BOT_TOKEN", "haiku", "nova");
   if (miriam) bots.push(miriam);
 
-  // Tzali
+  // Tzali — builder / engineer
   const tzali = makeBotConfig("tzali", "TZALI_BOT_TOKEN", "opus", "cedar");
   if (tzali) bots.push(tzali);
 
-  // Avi
+  // Avi — designer / visual conscience
   const avi = makeBotConfig("avi", "AVI_BOT_TOKEN", "opus", "fable");
   if (avi) bots.push(avi);
 
   if (bots.length === 0) {
-    throw new Error("No bot tokens configured. Set at least MICHAEL_BOT_TOKEN in .env");
+    throw new Error("No bot tokens configured. Set at least one *_BOT_TOKEN in .env");
   }
 
   // Build Telegram user-ID → friendly identifier map from env.
