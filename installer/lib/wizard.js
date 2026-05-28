@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * AHI Michael — interactive install wizard.
+ * AHI Suite — interactive install wizard.
  *
  * Cross-platform (macOS / Linux / Windows). No external dependencies — uses
  * only Node built-ins so it can run before `npm install` does anything.
@@ -8,9 +8,10 @@
  * Flow (matches handoff §"install.sh — The Wizard"):
  *   1. About you (name + optional context)
  *   2. Claude Code reminder
- *   3. Telegram (optional)
- *   4. Voice provider selection
- *   5. Install — copy/template files, write .env (chmod 600), npm ci,
+ *   3. Agent selection
+ *   4. Telegram (optional)
+ *   5. Voice provider selection
+ *   6. Install — copy/template files, write .env (chmod 600), npm ci,
  *      register LaunchAgent (mac) / scheduled task (Windows), start gateway
  *
  * Non-interactive mode: set AHI_NONINTERACTIVE=1 plus the answer env vars
@@ -37,6 +38,12 @@ const IS_MAC    = PLATFORM === 'darwin';
 const IS_WIN    = PLATFORM === 'win32';
 const NONINTER  = process.env.AHI_NONINTERACTIVE === '1';
 const DEFAULT_HOME = path.join(os.homedir(), 'ahi');
+const AGENTS = [
+  { key: 'michael', label: 'Michael', role: 'coordinator / strategist', tokenEnv: 'MICHAEL_BOT_TOKEN' },
+  { key: 'tzali', label: 'Tzali', role: 'builder / engineer', tokenEnv: 'TZALI_BOT_TOKEN' },
+  { key: 'avi', label: 'Avi', role: 'designer / visual conscience', tokenEnv: 'AVI_BOT_TOKEN' },
+];
+const DEFAULT_AGENTS = AGENTS.map((a) => a.key);
 
 const COLOR = {
   reset:  '\x1b[0m',
@@ -201,7 +208,7 @@ function detectExisting(homeDir) {
 
 // ─── Step 1 — About you ──────────────────────────────────────────────────
 async function stepAboutYou() {
-  header('Step 1/5 — About you');
+  header('Step 1/6 — About you');
   log('');
   const name    = (await ask('What is your name?', process.env.AHI_USER_NAME || '')) || 'Friend';
   const ctx     = await ask('What do you do? (optional, press Enter to skip)',
@@ -211,7 +218,7 @@ async function stepAboutYou() {
 
 // ─── Step 2 — Claude Code reminder ───────────────────────────────────────
 async function stepClaudeReminder() {
-  header('Step 2/5 — Claude Code');
+  header('Step 2/6 — Claude Code');
   log('');
   log('  Make sure Claude Code is installed and you are signed in with a');
   log('  Max subscription. Install from https://claude.ai/download');
@@ -219,33 +226,74 @@ async function stepClaudeReminder() {
   if (!NONINTER) await ask('Press Enter when ready', '');
 }
 
-// ─── Step 3 — Telegram ──────────────────────────────────────────────────
-async function stepTelegram() {
-  header('Step 3/5 — Telegram (optional)');
-  log('');
-  log('  Telegram lets you message Michael from your phone.');
-  log('  Create a bot by messaging @BotFather on Telegram (takes 30 seconds).');
-  log('');
-  // Non-interactive: honour MICHAEL_BOT_TOKEN if provided.
-  if (NONINTER) {
-    const token = process.env.MICHAEL_BOT_TOKEN || '';
-    const userId = process.env.USER_TELEGRAM_ID || '';
-    return { enabled: !!token, token, userId };
+// ─── Step 3 — Agent selection ───────────────────────────────────────────
+function parseAgentSelection(raw) {
+  const normalized = (raw || '').trim().toLowerCase();
+  if (!normalized || normalized === 'all') return [...DEFAULT_AGENTS];
+  const selected = [];
+  for (const part of normalized.split(',')) {
+    const v = part.trim();
+    if (!v) continue;
+    const byIndex = /^\d+$/.test(v) ? AGENTS[parseInt(v, 10) - 1] : null;
+    const byKey = AGENTS.find((a) => a.key === v || a.label.toLowerCase() === v);
+    const agent = byIndex || byKey;
+    if (!agent) continue;
+    if (!selected.includes(agent.key)) selected.push(agent.key);
   }
-  const useTg = await confirm('Connect Michael to Telegram?', false);
-  if (!useTg) return { enabled: false, token: '', userId: '' };
-  log('');
-  const token = await askSecret('Paste your Telegram bot token (from BotFather):');
-  log('  Find your numeric Telegram user id by messaging @userinfobot.');
-  const userId = await ask('Your numeric Telegram user id:', process.env.USER_TELEGRAM_ID || '');
-  return { enabled: true, token, userId };
+  return selected.length > 0 ? selected : [...DEFAULT_AGENTS];
 }
 
-// ─── Step 4 — Voice ─────────────────────────────────────────────────────
-async function stepVoice() {
-  header('Step 4/5 — Voice (optional)');
+async function stepAgents() {
+  header('Step 3/6 — Agents');
   log('');
-  log('  Voice lets Michael respond out loud. Choose a provider:');
+  log('  Choose which AHI agents to enable for this install.');
+  for (let i = 0; i < AGENTS.length; i++) {
+    const a = AGENTS[i];
+    log(`    [${i + 1}] ${a.label} — ${a.role}`);
+  }
+  log('');
+  if (NONINTER) {
+    const raw = process.env.AHI_AGENTS || process.env.AHI_ENABLED_AGENTS || '';
+    if (raw) return parseAgentSelection(raw);
+    const withTokens = AGENTS.filter((a) => process.env[a.tokenEnv]).map((a) => a.key);
+    return withTokens.length > 0 ? withTokens : [...DEFAULT_AGENTS];
+  }
+  const answer = await ask('Enable agents (comma-separated names/numbers, or "all")', 'all');
+  return parseAgentSelection(answer);
+}
+
+// ─── Step 4 — Telegram ──────────────────────────────────────────────────
+async function stepTelegram(agents) {
+  header('Step 4/6 — Telegram (optional)');
+  log('');
+  log('  Telegram lets you message your AHI agents from your phone.');
+  log('  Each enabled agent uses its own Telegram bot token from @BotFather.');
+  log('');
+  const selected = AGENTS.filter((a) => agents.includes(a.key));
+  const tokens = {};
+  for (const a of selected) tokens[a.key] = '';
+  // Non-interactive: honour provided per-agent token env vars.
+  if (NONINTER) {
+    for (const a of selected) tokens[a.key] = process.env[a.tokenEnv] || '';
+    const userId = process.env.USER_TELEGRAM_ID || '';
+    return { enabled: Object.values(tokens).some(Boolean), tokens, userId };
+  }
+  const useTg = await confirm('Connect selected agents to Telegram?', false);
+  if (!useTg) return { enabled: false, tokens, userId: '' };
+  log('');
+  for (const a of selected) {
+    tokens[a.key] = await askSecret(`Paste ${a.label}'s Telegram bot token (from BotFather):`);
+  }
+  log('  Find your numeric Telegram user id by messaging @userinfobot.');
+  const userId = await ask('Your numeric Telegram user id:', process.env.USER_TELEGRAM_ID || '');
+  return { enabled: true, tokens, userId };
+}
+
+// ─── Step 5 — Voice ─────────────────────────────────────────────────────
+async function stepVoice() {
+  header('Step 5/6 — Voice (optional)');
+  log('');
+  log('  Voice lets your AHI agents respond out loud. Choose a provider:');
   log('    [1] OpenAI');
   log('    [2] Gemini');
   log('    [3] Both');
@@ -275,9 +323,9 @@ async function stepVoice() {
   return out;
 }
 
-// ─── Step 5 — Install ────────────────────────────────────────────────────
+// ─── Step 6 — Install ────────────────────────────────────────────────────
 async function stepInstall(answers) {
-  header('Step 5/5 — Installing');
+  header('Step 6/6 — Installing');
   log('');
 
   const homeDir = refuseDangerousHome(process.env.AHI_HOME || DEFAULT_HOME);
@@ -309,11 +357,11 @@ async function stepInstall(answers) {
 
   // Copy repo contents into homeDir (skip node_modules, dist, .git, .env files).
   await copyRepo(REPO_DIR, homeDir);
-  ok('Copied AHI Michael source files');
+  ok('Copied AHI Suite source files');
 
-  // Personalize CLAUDE.md and MICHAEL.md.
+  // Personalize CLAUDE.md and shipped soul files.
   await personalize(homeDir, answers);
-  ok('Personalized CLAUDE.md and MICHAEL.md');
+  ok('Personalized CLAUDE.md and soul files');
 
   // Generate gateway/.env from template + answers, chmod 600.
   await writeEnv(homeDir, answers);
@@ -370,8 +418,10 @@ async function stepInstall(answers) {
   log('');
   log(color('green', color('bold', 'Setup complete.')));
   log('');
-  log('Open Claude Code, start a new session in this directory, and type:');
+  log('Open Claude Code, start a new session in this directory, and address the agent you need:');
   log(color('bold', `  Hi Michael, who are you?`));
+  if (answers.agents.includes('tzali')) log(color('bold', `  Tzali, inspect this repo.`));
+  if (answers.agents.includes('avi')) log(color('bold', `  Avi, review this interface.`));
   log('');
   log(`Your AHI install lives at: ${homeDir}`);
 }
@@ -489,8 +539,11 @@ async function writeEnv(homeDir, answers) {
   merged.AHI_USER_NAME = answers.about.name;
   // Only overwrite secrets when we have a fresh value from this run.
   if (answers.telegram.enabled) {
-    if (answers.telegram.token)  merged.MICHAEL_BOT_TOKEN = answers.telegram.token;
-    if (answers.telegram.userId) merged.USER_TELEGRAM_ID  = answers.telegram.userId;
+    for (const a of AGENTS) {
+      const token = answers.telegram.tokens?.[a.key];
+      if (token) merged[a.tokenEnv] = token;
+    }
+    if (answers.telegram.userId) merged.USER_TELEGRAM_ID = answers.telegram.userId;
   }
   if (answers.voice.openai) {
     merged.OPENAI_API_KEY = answers.voice.openai;
@@ -504,7 +557,7 @@ async function writeEnv(homeDir, answers) {
   if (!merged.GATEWAY_MODE) merged.GATEWAY_MODE = 'polling';
 
   const header = [
-    '# Generated/updated by the AHI Michael install wizard.',
+    '# Generated/updated by the AHI Suite install wizard.',
     '# Edit by hand at any time. Restart the gateway after changes.',
     '# Re-running the wizard preserves keys you set here unless you supplied',
     '# a fresh value during the new run.',
@@ -514,7 +567,7 @@ async function writeEnv(homeDir, answers) {
   const orderedKeys = [
     'AHI_HOME', 'AHI_USER_NAME',
     'USER_TELEGRAM_ID', 'EXTRA_TELEGRAM_IDS',
-    'MICHAEL_BOT_TOKEN', 'TZALI_BOT_TOKEN', 'ELIYAHU_BOT_TOKEN', 'MIRIAM_BOT_TOKEN', 'AVI_BOT_TOKEN',
+    'MICHAEL_BOT_TOKEN', 'TZALI_BOT_TOKEN', 'AVI_BOT_TOKEN',
     'ANTHROPIC_API_KEY', 'OPENAI_API_KEY', 'GEMINI_API_KEY', 'GOOGLE_TTS_API_KEY',
     'MICHAEL_TTS_PROVIDER',
     'GATEWAY_PORT', 'GATEWAY_MODE',
@@ -563,12 +616,15 @@ async function writeUsersConfig(homeDir, answers) {
   const telegramChatId = Number.isFinite(tgId) && tgId > 0
     ? tgId
     : (existingPrimary?.telegramChatId ?? null);
+  const chosenAgents = Array.isArray(answers.agents) && answers.agents.length > 0
+    ? answers.agents
+    : (existingPrimary?.agents || ['michael']);
   const users = [
     {
       token,
       name: answers.about.name || existingPrimary?.name || 'Primary',
       telegramChatId,
-      agents: existingPrimary?.agents || ['michael'],
+      agents: chosenAgents,
       admin: true,
     },
   ];
@@ -613,16 +669,18 @@ async function registerLaunchAgent(homeDir) {
 (async function main() {
   log('');
   log(color('bold', '┌─────────────────────────────────────┐'));
-  log(color('bold', '│   AHI Michael — Setup Wizard        │'));
+  log(color('bold', '│   AHI Suite — Setup Wizard          │'));
   log(color('bold', '└─────────────────────────────────────┘'));
   try {
     const answers = {
       about: await stepAboutYou(),
-      telegram: { enabled: false, token: '', userId: '' },
+      agents: [],
+      telegram: { enabled: false, tokens: {}, userId: '' },
       voice: { openai: '', gemini: '' },
     };
     await stepClaudeReminder();
-    answers.telegram = await stepTelegram();
+    answers.agents = await stepAgents();
+    answers.telegram = await stepTelegram(answers.agents);
     answers.voice = await stepVoice();
     await stepInstall(answers);
     if (rl) rl.close();
@@ -640,8 +698,13 @@ async function registerLaunchAgent(homeDir) {
  *   AHI_HOME              — install destination (default ~/ahi)
  *   AHI_USER_NAME         — Step 1 name (default "Friend")
  *   AHI_USER_CONTEXT      — Step 1 free-form context (default empty)
- *   USER_TELEGRAM_ID      — Step 3 numeric Telegram id (optional)
- *   AHI_VOICE_CHOICE      — Step 4 choice "1"|"2"|"3"|"4" (default "4")
+ *   AHI_AGENTS            — comma-separated enabled agents; default uses
+ *                           provided bot tokens, then all agents
+ *   USER_TELEGRAM_ID      — Step 4 numeric Telegram id (optional)
+ *   MICHAEL_BOT_TOKEN     — optional Telegram token for Michael
+ *   TZALI_BOT_TOKEN       — optional Telegram token for Tzali
+ *   AVI_BOT_TOKEN         — optional Telegram token for Avi
+ *   AHI_VOICE_CHOICE      — Step 5 choice "1"|"2"|"3"|"4" (default "4")
  * In non-interactive mode all secret prompts return empty (no stdin
  * available), so Telegram/voice keys must be set via .env afterward.
  */
