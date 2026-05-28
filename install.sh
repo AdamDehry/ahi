@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# AHI Michael — macOS / Linux installer bootstrap.
+# AHI Suite — macOS / Linux installer bootstrap.
 #
 # Thin shim that verifies prerequisites and hands off to the cross-platform
 # Node wizard at installer/lib/wizard.js. All real install work lives there
@@ -24,15 +24,15 @@ reset() { printf '\033[0m'; }
 
 say() { printf '%s%s%s\n' "$(color "$1")" "$2" "$(reset)"; }
 
-say bold "AHI Michael Installer"
-echo "----------------------"
+say bold "AHI Suite Installer"
+echo "-------------------"
 echo
 
 # ─── Prereq: Node 20+ ─────────────────────────────────────────────────────
 if ! command -v node >/dev/null 2>&1; then
   say red "Node.js is not installed."
   echo
-  echo "AHI Michael needs Node.js 20 or newer."
+  echo "AHI needs Node.js 20 or newer."
   echo
   echo "Install Node.js from one of:"
   echo "  • Official installer:   https://nodejs.org/en/download"
@@ -52,7 +52,7 @@ fi
 NODE_VERSION="${NODE_VERSION_RAW#v}"
 NODE_MAJOR="${NODE_VERSION%%.*}"
 if [ "$NODE_MAJOR" -lt 20 ] 2>/dev/null; then
-  say red "Node.js $NODE_VERSION is too old. AHI Michael needs 20+."
+  say red "Node.js $NODE_VERSION is too old. AHI needs 20+."
   echo "Update Node and re-run this installer."
   exit 1
 fi

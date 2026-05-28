@@ -1,4 +1,4 @@
-# AHI Michael — Windows installer bootstrap.
+# AHI Suite — Windows installer bootstrap.
 #
 # Thin shim that verifies prerequisites and hands off to the cross-platform
 # Node wizard at installer\lib\wizard.js.
@@ -13,8 +13,8 @@ function Write-Color {
     Write-Host $Text -ForegroundColor $Color
 }
 
-Write-Color White "AHI Michael Installer"
-Write-Host "----------------------"
+Write-Color White "AHI Suite Installer"
+Write-Host "-------------------"
 Write-Host ""
 
 # ─── Prereq: Node 20+ ────────────────────────────────────────────────────
@@ -22,7 +22,7 @@ $node = Get-Command node -ErrorAction SilentlyContinue
 if (-not $node) {
     Write-Color Red "Node.js is not installed."
     Write-Host ""
-    Write-Host "AHI Michael needs Node.js 20 or newer."
+    Write-Host "AHI needs Node.js 20 or newer."
     Write-Host ""
     Write-Host "Install Node.js from one of:"
     Write-Host "  - Official installer:  https://nodejs.org/en/download"
@@ -41,7 +41,7 @@ if ($nodeRaw -notmatch '^v(\d+)\.(\d+)\.(\d+)') {
 $nodeMajor = [int]$Matches[1]
 $nodeVersion = $nodeRaw.TrimStart('v')
 if ($nodeMajor -lt 20) {
-    Write-Color Red "Node.js $nodeVersion is too old. AHI Michael needs 20+."
+    Write-Color Red "Node.js $nodeVersion is too old. AHI needs 20+."
     Write-Host "Update Node and re-run this installer."
     exit 1
 }

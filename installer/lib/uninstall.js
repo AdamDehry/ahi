@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 /**
- * AHI Michael — uninstaller.
+ * AHI Suite — uninstaller.
  *
  *   - Unloads the LaunchAgent (macOS) and removes the plist.
- *   - Backs up gateway/.env to ~/ahi-michael.env.bak-<timestamp>.
+ *   - Backs up gateway/.env to ~/ahi.env.bak-<timestamp>.
  *   - Removes the install directory (default ~/ahi, or AHI_HOME if set).
  *
  * Refuses to delete dangerous paths (`/`, `~`, `$HOME`, etc.).
@@ -58,7 +58,7 @@ function requireInstallMarkers(target) {
   const missing = markers.filter((m) => !fs.existsSync(m));
   if (missing.length > 0) {
     throw new Error(
-      `${target} does not look like an AHI Michael install (missing markers: ` +
+      `${target} does not look like an AHI install (missing markers: ` +
       `${missing.map((m) => path.relative(target, m)).join(', ')}). ` +
       `Set AHI_FORCE_UNINSTALL=1 to override.`
     );
@@ -81,7 +81,7 @@ function ask(prompt) {
     }
     requireInstallMarkers(target);
     if (process.env.AHI_NONINTERACTIVE !== '1') {
-      const ans = await ask(`Remove AHI Michael install at ${target}? Type YES to confirm: `);
+      const ans = await ask(`Remove AHI install at ${target}? Type YES to confirm: `);
       if (ans !== 'YES') {
         console.log('Aborted.');
         process.exit(1);
@@ -118,7 +118,7 @@ function ask(prompt) {
     // Back up .env if present.
     const envPath = path.join(target, 'gateway', '.env');
     if (fs.existsSync(envPath)) {
-      const backup = path.join(os.homedir(), `ahi-michael.env.bak-${Date.now()}`);
+      const backup = path.join(os.homedir(), `ahi.env.bak-${Date.now()}`);
       await fsp.copyFile(envPath, backup);
       console.log(`  backed up gateway/.env -> ${backup}`);
     }
@@ -126,7 +126,7 @@ function ask(prompt) {
     // Remove install dir.
     await fsp.rm(target, { recursive: true, force: true });
     console.log(`  removed ${target}`);
-    console.log('AHI Michael uninstalled.');
+    console.log('AHI uninstalled.');
   } catch (err) {
     console.error(err.message || err);
     process.exit(1);

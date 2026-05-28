@@ -1,7 +1,11 @@
 {
-  "name": "@michael/gateway",
+  "name": "@ahi/gateway",
   "version": "0.1.0",
-  "description": "Michael AI Gateway — Telegram/voice bridge to Claude Code",
+  "description": "AHI Suite gateway — Telegram/voice bridge to Claude Code",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AdamDehry/ahi.git"
+  },
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/index.ts",
