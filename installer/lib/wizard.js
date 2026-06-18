@@ -206,6 +206,40 @@ function detectExisting(homeDir) {
   return markers.filter((m) => fs.existsSync(m));
 }
 
+// ─── Prerequisites ────────────────────────────────────────────────────────
+function have(cmd) {
+  const res = IS_WIN
+    ? spawnSync('where.exe', [cmd], { stdio: 'pipe' })
+    : spawnSync('/bin/sh', ['-lc', 'command -v "$1" >/dev/null 2>&1', 'sh', cmd], { stdio: 'pipe' });
+  return res.status === 0;
+}
+
+function version(cmd, args) {
+  const res = spawnSync(cmd, args, { stdio: 'pipe', encoding: 'utf-8' });
+  return res.status === 0 ? (res.stdout || res.stderr || '').trim() : '';
+}
+
+async function stepPrerequisites() {
+  header('Step 0/6 — Prerequisites');
+  const missing = [];
+  if (!have('git')) missing.push(['git', IS_WIN ? 'winget install Git.Git' : (IS_MAC ? 'xcode-select --install  # or: brew install git' : 'sudo apt install git  # or your distro package manager')]);
+  if (!have('node')) missing.push(['node', IS_WIN ? 'winget install OpenJS.NodeJS.LTS' : (IS_MAC ? 'brew install node  # or install from https://nodejs.org' : 'install Node.js 20+ from https://nodejs.org or your distro')]);
+  if (!have('npm')) missing.push(['npm', 'npm ships with Node.js; reinstall Node.js 20+']);
+  if (!have('claude')) missing.push(['Claude Code CLI', 'Install Claude Code from https://claude.ai/download and sign in']);
+  if (!have('ffmpeg')) warn('ffmpeg not found. Core AHI works, but video/youtube skills will ask you to install it later.');
+  if (missing.length) {
+    for (const [name, guide] of missing) {
+      fail(`${name} missing`);
+      log(`    Install: ${guide}`);
+    }
+    throw new Error('Install the missing prerequisites above, then re-run the installer.');
+  }
+  ok(`git ${version('git', ['--version']) || 'found'}`);
+  ok(`node ${version('node', ['-v']) || 'found'}`);
+  ok(`npm ${version(IS_WIN ? 'npm.cmd' : 'npm', ['-v']) || 'found'}`);
+  ok('Claude Code CLI found');
+}
+
 // ─── Step 1 — About you ──────────────────────────────────────────────────
 async function stepAboutYou() {
   header('Step 1/6 — About you');
@@ -353,6 +387,9 @@ async function stepInstall(answers) {
   await fsp.mkdir(path.join(homeDir, 'state'), { recursive: true });
   await fsp.mkdir(path.join(homeDir, 'state', 'logs'), { recursive: true });
   await fsp.mkdir(path.join(homeDir, 'state', 'primary'), { recursive: true });
+  await fsp.mkdir(path.join(homeDir, 'state', 'primary', 'sessions'), { recursive: true });
+  await fsp.mkdir(path.join(homeDir, 'state', 'primary', 'sessions', 'transcripts'), { recursive: true });
+  await fsp.mkdir(path.join(homeDir, 'state', 'primary', 'sessions', 'logs'), { recursive: true });
   ok('Created directory tree at ' + homeDir);
 
   // Copy repo contents into homeDir (skip node_modules, dist, .git, .env files).
@@ -406,13 +443,16 @@ async function stepInstall(answers) {
   const registerService = !NONINTER || process.env.AHI_REGISTER_LAUNCHAGENT === '1';
   if (IS_MAC && registerService) {
     await registerLaunchAgent(homeDir);
+    await registerBrainLaunchAgent(homeDir);
   } else if (IS_MAC) {
     info('Skipped LaunchAgent registration (non-interactive mode). ' +
          'To register manually: launchctl load -w ~/Library/LaunchAgents/ai.ahi.gateway.plist');
   } else if (IS_WIN) {
-    info('Windows: see README for scheduling the gateway with Task Scheduler.');
+    await registerWindowsBrainTask(homeDir);
+    info('Windows: gateway can be started with: cd ' + path.join(homeDir, 'gateway') + ' && npm start');
   } else {
-    info('Linux: see README for systemd unit setup.');
+    await registerLinuxBrainTimer(homeDir);
+    info('Linux: gateway can be started with: cd ' + path.join(homeDir, 'gateway') + ' && npm start');
   }
 
   log('');
@@ -424,6 +464,7 @@ async function stepInstall(answers) {
   if (answers.agents.includes('avi')) log(color('bold', `  Avi, review this interface.`));
   log('');
   log(`Your AHI install lives at: ${homeDir}`);
+  log('Brain auto-build is on. New Claude Code sessions will be indexed after each turn.');
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────
@@ -537,6 +578,11 @@ async function writeEnv(homeDir, answers) {
   // Always update the canonical install location and user name.
   merged.AHI_HOME = homeDir;
   merged.AHI_USER_NAME = answers.about.name;
+  if (answers.about.context) merged.AHI_USER_CONTEXT = answers.about.context;
+  if (answers.about.role) merged.AHI_USER_ROLE = answers.about.role;
+  if (answers.about.priority) merged.AHI_PRIORITY_FILTER = answers.about.priority;
+  merged.AHI_BRAIN_AUTO_BUILD = merged.AHI_BRAIN_AUTO_BUILD || 'true';
+  merged.AHI_RETRIEVAL_HOOK = merged.AHI_RETRIEVAL_HOOK || 'true';
   // Only overwrite secrets when we have a fresh value from this run.
   if (answers.telegram.enabled) {
     for (const a of AGENTS) {
@@ -565,12 +611,12 @@ async function writeEnv(homeDir, answers) {
   ].join('\n');
   // Stable ordering for diffability.
   const orderedKeys = [
-    'AHI_HOME', 'AHI_USER_NAME',
+    'AHI_HOME', 'AHI_USER_NAME', 'AHI_USER_CONTEXT', 'AHI_USER_ROLE', 'AHI_PRIORITY_FILTER',
     'USER_TELEGRAM_ID', 'EXTRA_TELEGRAM_IDS',
     'MICHAEL_BOT_TOKEN', 'TZALI_BOT_TOKEN', 'AVI_BOT_TOKEN',
     'ANTHROPIC_API_KEY', 'OPENAI_API_KEY', 'GEMINI_API_KEY', 'GOOGLE_TTS_API_KEY',
     'MICHAEL_TTS_PROVIDER',
-    'GATEWAY_PORT', 'GATEWAY_MODE',
+    'GATEWAY_PORT', 'GATEWAY_MODE', 'AHI_BRAIN_AUTO_BUILD', 'AHI_RETRIEVAL_HOOK',
   ];
   const seen = new Set();
   const body = [];
@@ -593,6 +639,12 @@ async function writeEnv(homeDir, answers) {
          'Verify only your user account can read gateway\\.env.');
   }
   await fsp.rename(tmp, envPath);
+}
+
+async function initializeBrain(homeDir) {
+  const idx = path.join(homeDir, 'state', 'primary', 'sessions', 'index.json');
+  await fsp.mkdir(path.dirname(idx), { recursive: true });
+  if (!fs.existsSync(idx)) await fsp.writeFile(idx, '[]\n');
 }
 
 async function writeUsersConfig(homeDir, answers) {
@@ -635,6 +687,78 @@ async function writeUsersConfig(homeDir, answers) {
   }
 }
 
+async function registerBrainLaunchAgent(homeDir) {
+  const dest = path.join(os.homedir(), 'Library', 'LaunchAgents', 'ai.ahi.brain-build.plist');
+  const nodeBin = process.execPath;
+  const script = path.join(homeDir, 'infra', 'sessions', 'scripts', 'brain-build.mjs');
+  const logs = path.join(homeDir, 'state', 'primary', 'sessions', 'logs');
+  await fsp.mkdir(path.dirname(dest), { recursive: true });
+  await fsp.mkdir(logs, { recursive: true });
+  const plist = `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>ai.ahi.brain-build</string>
+  <key>ProgramArguments</key>
+  <array><string>${nodeBin}</string><string>${script}</string><string>--quiet</string></array>
+  <key>EnvironmentVariables</key><dict><key>AHI_HOME</key><string>${homeDir}</string></dict>
+  <key>StartInterval</key><integer>300</integer>
+  <key>RunAtLoad</key><true/>
+  <key>StandardOutPath</key><string>${path.join(logs, 'brain-build.out.log')}</string>
+  <key>StandardErrorPath</key><string>${path.join(logs, 'brain-build.err.log')}</string>
+</dict>
+</plist>
+`;
+  await fsp.writeFile(dest, plist);
+  spawnSync('launchctl', ['unload', dest], { stdio: 'pipe' });
+  const load = spawnSync('launchctl', ['load', '-w', dest], { stdio: 'pipe' });
+  if (load.status === 0) ok('Registered brain-build LaunchAgent');
+  else warn('Could not register brain-build LaunchAgent; Stop hook still handles live turns.');
+}
+
+async function registerLinuxBrainTimer(homeDir) {
+  if (!have('systemctl')) {
+    info('Linux: systemd not found; Stop hook still handles live turns. Run brain catch-up manually with infra/sessions/scripts/brain-build.mjs.');
+    return;
+  }
+  const userDir = path.join(os.homedir(), '.config', 'systemd', 'user');
+  await fsp.mkdir(userDir, { recursive: true });
+  const service = `[Unit]
+Description=AHI brain build catch-up
+
+[Service]
+Type=oneshot
+Environment=AHI_HOME=${homeDir}
+ExecStart=${process.execPath} ${path.join(homeDir, 'infra', 'sessions', 'scripts', 'brain-build.mjs')} --quiet
+`;
+  const timer = `[Unit]
+Description=Run AHI brain build catch-up every 5 minutes
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=5min
+Unit=ai-ahi-brain-build.service
+
+[Install]
+WantedBy=timers.target
+`;
+  await fsp.writeFile(path.join(userDir, 'ai-ahi-brain-build.service'), service);
+  await fsp.writeFile(path.join(userDir, 'ai-ahi-brain-build.timer'), timer);
+  spawnSync('systemctl', ['--user', 'daemon-reload'], { stdio: 'pipe' });
+  const en = spawnSync('systemctl', ['--user', 'enable', '--now', 'ai-ahi-brain-build.timer'], { stdio: 'pipe' });
+  if (en.status === 0) ok('Registered Linux user systemd timer for brain-build');
+  else info('Linux: wrote systemd user timer; enable manually with systemctl --user enable --now ai-ahi-brain-build.timer');
+}
+
+async function registerWindowsBrainTask(homeDir) {
+  const script = path.join(homeDir, 'infra', 'sessions', 'scripts', 'brain-build.mjs');
+  const taskName = 'AHI Brain Build';
+  const tr = `"${process.execPath}" "${script}" --quiet`;
+  const res = spawnSync('schtasks.exe', ['/Create', '/TN', taskName, '/SC', 'MINUTE', '/MO', '5', '/TR', tr, '/F'], { stdio: 'pipe' });
+  if (res.status === 0) ok('Registered Windows scheduled task for brain-build');
+  else info('Windows: could not register scheduled task automatically; Stop hook still handles live turns.');
+}
+
 async function registerLaunchAgent(homeDir) {
   const tplPath = path.join(homeDir, 'gateway', 'launchagent', 'ai.ahi.gateway.plist.template');
   if (!fs.existsSync(tplPath)) {
@@ -672,6 +796,7 @@ async function registerLaunchAgent(homeDir) {
   log(color('bold', '│   AHI Suite — Setup Wizard          │'));
   log(color('bold', '└─────────────────────────────────────┘'));
   try {
+    await stepPrerequisites();
     const answers = {
       about: await stepAboutYou(),
       agents: [],
@@ -698,6 +823,8 @@ async function registerLaunchAgent(homeDir) {
  *   AHI_HOME              — install destination (default ~/ahi)
  *   AHI_USER_NAME         — Step 1 name (default "Friend")
  *   AHI_USER_CONTEXT      — Step 1 free-form context (default empty)
+ *   AHI_USER_ROLE         — Step 1 optional role
+ *   AHI_PRIORITY_FILTER   — Step 1 optional priority filter
  *   AHI_AGENTS            — comma-separated enabled agents; default uses
  *                           provided bot tokens, then all agents
  *   USER_TELEGRAM_ID      — Step 4 numeric Telegram id (optional)

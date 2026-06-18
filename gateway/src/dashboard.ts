@@ -56,16 +56,16 @@ const PUBLIC_APP_DIR = resolve(import.meta.dirname, "../public/app");
 // request is served from $AHI_HOME/gateway/public/app/ — static files when they
 // exist, SPA fallback to index.html otherwise. This keeps the PWA
 // same-origin with /app/send and /ui/ws (no CORS, no cookie gymnastics).
-const PWA_HOSTS = new Set(["app.ahigate.com"]);
+const PWA_HOSTS = new Set(["app.example.com"]);
 
 // H-040 D1 — Legacy URL prereq.
 //
-// `ahi.ahigate.com` is the legacy dashboard host. After the unified
-// PWA at `app.ahigate.com` reaches parity (D1 + D2), we redirect
-// `ahi.ahigate.com/*` → `app.ahigate.com/*` so legacy bookmarks
+// `ahi.example.com` is the legacy dashboard host. After the unified
+// PWA at `app.example.com` reaches parity (D1 + D2), we redirect
+// `ahi.example.com/*` → `app.example.com/*` so legacy bookmarks
 // land on the new app. Two safeguards:
 //
-//   1. `ahi.ahigate.com/legacy/*` ALWAYS bypasses the redirect and
+//   1. `ahi.example.com/legacy/*` ALWAYS bypasses the redirect and
 //      serves the legacy dashboard (path-strip → existing /ui*
 //      handlers). the operator can verify the legacy dashboard still works
 //      via the bypass before flipping the redirect on.
@@ -76,11 +76,11 @@ const PWA_HOSTS = new Set(["app.ahigate.com"]);
 //      restart, legacy dashboard is the default again.
 //
 // This is a path-bypass design (one host, one tunnel — no DNS or
-// cloudflared changes). The alternative (legacy.ahigate.com) would
+// cloudflared changes). The alternative (legacy.example.com) would
 // be cleaner separation but require a new cloudflared route the operator
 // runs separately. Path-bypass is simpler + reversible-by-code,
 // so D1 ships path-bypass and surfaces the tradeoff for review.
-const LEGACY_HOST = "ahi.ahigate.com";
+const LEGACY_HOST = "ahi.example.com";
 const LEGACY_BYPASS_PREFIX = "/legacy";
 
 function isLegacyHost(hostHeader: string | undefined): boolean {
@@ -95,7 +95,7 @@ function legacyRedirectEnabled(): boolean {
 
 // API path prefixes that stay API even on PWA hosts. Anything that DOES
 // NOT start with one of these is treated as a PWA client route on
-// app.ahigate.com and falls through to the static/SPA handler.
+// app.example.com and falls through to the static/SPA handler.
 const API_PATH_PREFIXES = [
   "/app/",       // /app/send etc.
   "/ui/",        // dashboard API + WS
@@ -172,17 +172,17 @@ type DashEnv = { Variables: { user: UserConfig } };
 export function createDashboard(instances: BotInstance[], gatewayConfig: GatewayConfig): Hono<DashEnv> {
   const dash = new Hono<DashEnv>();
 
-  // --- Legacy host handler (ahi.ahigate.com) ──────────────────────────────
+  // --- Legacy host handler (ahi.example.com) ──────────────────────────────
   //
   // Three behaviors per H-040 D1:
   //
-  //   1. ahi.ahigate.com/legacy/PATH  →  path is stripped of the /legacy
+  //   1. ahi.example.com/legacy/PATH  →  path is stripped of the /legacy
   //      prefix and rewritten to /ui... so the legacy dashboard is
   //      reachable WITHOUT triggering the redirect, even when the flag
   //      is on. This is the "verify before flipping" affordance.
   //
-  //   2. ahi.ahigate.com/(anything-else) WITH AHI_REDIRECT_LEGACY=true →
-  //      302 to https://app.ahigate.com${path}. The query string is
+  //   2. ahi.example.com/(anything-else) WITH AHI_REDIRECT_LEGACY=true →
+  //      302 to https://app.example.com${path}. The query string is
   //      preserved.
   //
   //   3. Otherwise (flag off, default) → fall through to existing /ui*
@@ -207,7 +207,7 @@ export function createDashboard(instances: BotInstance[], gatewayConfig: Gateway
       // URL through a fresh Request and route it back through the same
       // app dispatch by re-invoking next() after replacing c.req.raw —
       // simpler path: 308 internal redirect. Browser follows once and
-      // stays on ahi.ahigate.com (host preserved). The 308 makes the
+      // stays on ahi.example.com (host preserved). The 308 makes the
       // path-rewrite visible in dev tools, which is fine for the
       // bypass affordance (operator manually visits /legacy/...).
       return c.redirect(url.toString(), 308);
@@ -216,7 +216,7 @@ export function createDashboard(instances: BotInstance[], gatewayConfig: Gateway
     // Path 2: redirect when flag is on.
     if (legacyRedirectEnabled()) {
       const url = new URL(c.req.url);
-      url.host = "app.ahigate.com";
+      url.host = "app.example.com";
       url.protocol = "https:";
       // url.port intentionally cleared — public host has no explicit port.
       url.port = "";
@@ -230,7 +230,7 @@ export function createDashboard(instances: BotInstance[], gatewayConfig: Gateway
     return next();
   });
 
-  // --- PWA host handler (app.ahigate.com) ─────────────────────────────────
+  // --- PWA host handler (app.example.com) ─────────────────────────────────
   //
   // On PWA hosts, serve the ahi-app SPA from public/app/. API routes
   // (/app/send, /ui/*, /invoke/*, /transcribe/*, /voice-upload, /health)
@@ -880,7 +880,7 @@ export function createDashboard(instances: BotInstance[], gatewayConfig: Gateway
   // Mirrors /ui/send but tags messages with source: "app" so they are
   // INCLUDED in the retrieval corpus (unlike /ui/send which tags "ui-send"
   // and gets filtered out). Use this from the PWA (ahi-app on
-  // app-dev.ahigate.com) for real user turns that should land in the
+  // app-dev.example.com) for real user turns that should land in the
   // scoring pipeline.
   //
   // Auth: DASHBOARD_TOKEN via X-AHI-Token header OR ?token= query param.

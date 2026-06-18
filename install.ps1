@@ -17,6 +17,20 @@ Write-Color White "AHI Suite Installer"
 Write-Host "-------------------"
 Write-Host ""
 
+# ─── Prereq: git ─────────────────────────────────────────────────────────
+$git = Get-Command git -ErrorAction SilentlyContinue
+if (-not $git) {
+    Write-Color Red "git is not installed."
+    Write-Host ""
+    Write-Host "Install git:"
+    Write-Host "  - winget: winget install Git.Git"
+    Write-Host "  - official installer: https://git-scm.com/download/win"
+    Write-Host ""
+    Write-Host "Then re-run this installer."
+    exit 1
+}
+Write-Color Green "Found git"
+
 # ─── Prereq: Node 20+ ────────────────────────────────────────────────────
 $node = Get-Command node -ErrorAction SilentlyContinue
 if (-not $node) {

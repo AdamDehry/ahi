@@ -102,7 +102,6 @@ export const ADDRESS_BOOK: Readonly<Record<string, AddressBucket>> = Object.free
       ["child",    "ילד"],
       ["mother",   "אמם"],
       ["brother",  "אחה"],
-      ["yacov",    "אחה"],
       ["friend",   "רעה"],
       ["feel",     "רגש"],
       ["relation", "חבר"],

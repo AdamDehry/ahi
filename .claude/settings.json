@@ -4,6 +4,8 @@
       "Read(**)",
       "Edit($AHI_HOME/**)",
       "Write($AHI_HOME/**)",
+      "mcp__browser-control__*",
+      "mcp__browser-control-cdp__*",
       "Bash(node *)",
       "Bash(npm *)",
       "Bash(npx *)",
@@ -29,6 +31,16 @@
           {
             "type": "command",
             "command": "$AHI_HOME/gateway/hooks/ahi-retrieval.sh"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$AHI_HOME/gateway/hooks/ahi-brain-record.sh"
           }
         ]
       }

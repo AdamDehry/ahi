@@ -1,4 +1,5 @@
 import { readFileSync, existsSync } from "fs";
+import { spawn } from "child_process";
 import { resolve } from "path";
 import { homedir } from "os";
 import { atomicWriteJson, multiUserPaths, warnDeprecatedPath } from "./multi-user-paths.js";
@@ -37,6 +38,22 @@ function deriveGatewayProjectDir(): string {
 
 const GATEWAY_PROJECT_DIR = deriveGatewayProjectDir();
 
+function scheduleSessionBrainBuild(sessionId: string, jsonlPath: string): void {
+  if (process.env.AHI_BRAIN_AUTO_BUILD === "false") return;
+  const ahiHome = process.env.AHI_HOME || resolve(homedir(), "ahi");
+  const script = resolve(ahiHome, "infra/sessions/scripts/process-session.mjs");
+  if (!existsSync(script)) return;
+  const args = [script, "--session-id", sessionId, "--jsonl", jsonlPath, "--quiet"];
+  const child = spawn(process.execPath, args, {
+    cwd: ahiHome,
+    detached: true,
+    stdio: "ignore",
+    env: { ...process.env, AHI_HOME: ahiHome },
+  });
+  child.unref();
+}
+
+
 export function transcriptPath(sessionId: string): string {
   return resolve(GATEWAY_PROJECT_DIR, `${sessionId}.jsonl`);
 }
@@ -62,6 +79,7 @@ export function logSession(entry: SessionLogEntry, indexPath = AHI_INDEX_PATH): 
     sessions.push(entry);
     atomicWriteJson(indexPath, sessions);
     console.log(`[session-logger] Logged: ${entry.session_id} (${entry.agent}, ${entry.telegram_user ?? "unknown"})`);
+    scheduleSessionBrainBuild(entry.session_id, entry.transcript_path);
   } catch (err) {
     console.error(`[session-logger] Failed to log session ${entry.session_id}:`, err);
   }

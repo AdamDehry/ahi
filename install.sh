@@ -28,6 +28,19 @@ say bold "AHI Suite Installer"
 echo "-------------------"
 echo
 
+# ─── Prereq: git ───────────────────────────────────────────────────────────
+if ! command -v git >/dev/null 2>&1; then
+  say red "git is not installed."
+  echo
+  echo "Install git:"
+  echo "  • macOS:  xcode-select --install   (or: brew install git)"
+  echo "  • Linux:  sudo apt install git     (or your distro package manager)"
+  echo
+  echo "Then re-run this installer."
+  exit 1
+fi
+say green "Found git"
+
 # ─── Prereq: Node 20+ ─────────────────────────────────────────────────────
 if ! command -v node >/dev/null 2>&1; then
   say red "Node.js is not installed."

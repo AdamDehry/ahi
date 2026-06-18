@@ -151,3 +151,23 @@ The installer copies files and builds the gateway, but does not register a Windo
 ## License
 
 See `LICENSE` for terms.
+
+
+## H-038 complete distribution
+
+Fresh installs are designed to be self-building:
+
+1. Run `./install.sh` on macOS/Linux or `.\install.ps1` on Windows.
+2. Answer every wizard question or press Enter to skip optional items.
+3. Open Claude Code in `$AHI_HOME`.
+4. Talk to an agent normally.
+
+The installer initializes an empty private brain under
+`$AHI_HOME/state/primary/sessions/`. No private transcript ships in this
+public repo. As the user talks, the Claude Code Stop hook records each session
+into Markdown transcripts, adds summaries/categories/Sha'ar-Shoresh coordinates
+to the index, and the UserPromptSubmit hook can retrieve matching memories on
+later turns.
+
+Optional skills under `skills/` include per-skill `SETUP.md` files when they
+require a paid account, browser profile, local CLI, or MCP connector.

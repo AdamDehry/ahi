@@ -145,7 +145,7 @@ export interface MessageEvent {
   // Provenance of this message event. "telegram" = real user/bot exchange
   // over the Telegram edge; "ui-send" = dashboard Quick Send injection (test
   // tool, forged chatId, MUST be excluded from the retrieval corpus);
-  // "app" = PWA (ahigate app on app-dev.ahigate.com) — real user turns,
+  // "app" = PWA (PWA app on app-dev.example.com) — real user turns,
   // INCLUDED in retrieval corpus.
   // Undefined on legacy records written before 2026-04-19 — treat as
   // "telegram" for backward compat.
