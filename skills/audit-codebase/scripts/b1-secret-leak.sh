@@ -52,6 +52,11 @@ trap 'rm -f "$TMP"' EXIT
       $line++;
       my $text = substr($_, 1);
       next if $file =~ /^(\.env\.example|README|docs\/)/ && $text =~ /=\s*$/;
+
+      # Avoid false positives where installer/runtime code copies a prompted or env
+      # value into config; literal committed values are still matched below.
+      next if $text =~ /\b(AUTH_SECRET|JWT_SECRET|SESSION_SECRET|SSN_ENCRYPTION_KEY|SUPABASE_SERVICE_ROLE[_]KEY|RESEND_API_KEY|MICHAEL_BOT_TOKEN|APPLICATION_INTAKE_KEY)\s*=\s*[A-Za-z_$][A-Za-z0-9_$.]*(?:\s*[;,\)]|\s*$)/;
+
       for my $p (@patterns) {
         my ($name, $re) = @$p;
         if ($text =~ /$re/) {

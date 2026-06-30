@@ -69,7 +69,7 @@ By default AHI installs at `~/ahi/`:
 ~/ahi/
   .claude/                # Claude Code project config
   agents/soul/            # Persona files: MICHAEL.md, TZALI.md, AVI.md
-  mission-control/        # HANDOFF, TODO, TODAY, ACTIVITY_FEED
+  mission-control/        # HANDOFF, TODO, TODAY, ACTIVITY_FEED, ARCHITECTURE, AGENT_REGISTRY
   infra/sessions/         # Session index built up as you work
   gateway/                # Telegram + voice gateway
   state/                  # Logs, per-user state, generated files
@@ -84,6 +84,27 @@ The `state/` directory is per-install and never committed. `gateway/.env` holds 
 - **Telegram:** message the agent-specific bot you configured.
 - **Dashboard:** open the local gateway UI and use the agent filter/send target.
 - **Mission control:** agents keep `mission-control/HANDOFF.md`, `TODAY.md`, `TODO.md`, and `ACTIVITY_FEED.md` current as you work.
+
+## MAT Multi-Runtime Mode
+
+This distribution now includes MAT, a composite operating mode that lets Michael, Avi, and Tzali work as one coordinated identity across runtimes. MAT is useful for larger work that benefits from architecture, implementation, and UX lenses together.
+
+Key files:
+
+```text
+agents/MAT-SPEC.md
+agents/MAT-COLLABORATION-PROTOCOL.md
+runtimes/mat/
+runtimes/codex/launch-as.sh
+```
+
+From a configured install, preview the Codex MAT prompt with:
+
+```bash
+$AHI_HOME/runtimes/codex/launch-as.sh mat --dry-run
+```
+
+For cross-runtime work, MAT coordinates through a `MAT-HANDOFF.md` ledger. RELAY mode is the default: one runtime finishes a checkpoint, writes the next-runtime prompt into the ledger, and stops for the operator to continue the handoff.
 
 ## Configuration
 

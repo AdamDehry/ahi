@@ -103,7 +103,6 @@ export const ADDRESS_BOOK = Object.freeze({
     keywords: [
       ["lease",   "שכר"],    // s-k-r: hire/rent
       ["rent",    "שכר"],
-      ["dealer",  "סחר"],    // s-h-r: trade/merchant
       ["trade",   "סחר"],
       ["vehicle", "רכב"],    // r-k-b: ride/vehicle
       ["car",     "רכב"],

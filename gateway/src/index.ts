@@ -94,7 +94,7 @@ const dashboard = createDashboard(instances, config);
 app.route("/", dashboard);
 
 // Voice upload relay — accepts base64-encoded audio from Tasker wake words
-// POST /voice-upload?bot=michael&chat_id=6541121975
+// POST /voice-upload?bot=michael&chat_id=<telegram_chat_id>
 app.post("/voice-upload", async (c) => {
   const botName = c.req.query("bot");
   const chatId = c.req.query("chat_id");

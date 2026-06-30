@@ -1,10 +1,10 @@
 {
   "name": "@ahi/gateway",
   "version": "0.1.0",
-  "description": "AHI Suite gateway — Telegram/voice bridge to Claude Code",
+  "description": "AHI Suite gateway \u2014 Telegram/voice bridge to Claude Code",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/AdamDehry/ahi.git"
+    "url": "git+https://github.com/<your-org>/ahi.git"
   },
   "type": "module",
   "scripts": {

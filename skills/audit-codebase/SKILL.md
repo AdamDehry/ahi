@@ -1,11 +1,11 @@
 ---
 name: audit-codebase
-description: Run a structured code/perf/security audit on a web codebase using a 3-layer review model (in-session reasoning → Codex CLI second opinion → automated GitHub App pattern detection via BugBot + Cubic). Produces a markdown audit report in the dealer-grade structure (Summary → Inventory → Detailed Findings with file:line citations → Recommendations → Out of Scope). Use when an agent or user asks to audit a repo, identify perf bottlenecks, run a security review, harden a codebase for production, or generate a pre-launch checklist. Skip for single-file reviews (use codex-consult directly) and for documentation-only repos.
+description: Run a structured code/perf/security audit on a web codebase using a 3-layer review model (in-session reasoning → Codex CLI second opinion → automated GitHub App pattern detection via BugBot + Cubic). Produces a markdown audit report in the production-grade structure (Summary → Inventory → Detailed Findings with file:line citations → Recommendations → Out of Scope). Use when an agent or user asks to audit a repo, identify perf bottlenecks, run a security review, harden a codebase for production, or generate a pre-launch checklist. Skip for single-file reviews (use codex-consult directly) and for documentation-only repos.
 ---
 
 # audit-codebase
 
-Generalized code-audit methodology adapted from Yacov Derhi's All Point Garage workflow (Eliezer + Codex + BugBot + Cubic). Stack-agnostic — covers web apps (Next.js / Node / Python / etc.). Native-mobile bridge audits live in a separate skill (deferred).
+Generalized code-audit methodology adapted from a production workflow using in-session review, Codex second opinion, and automated GitHub-app pattern scanning. Stack-agnostic — covers web apps (Next.js / Node / Python / etc.). Native-mobile bridge audits live in a separate skill (deferred).
 
 ## When to invoke
 
