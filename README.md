@@ -32,7 +32,7 @@ You can change how they talk to you; you can't change who they are.
 
 ## Download
 
-Get **AHI Setup** from the **[latest release](https://github.com/AdamDehry/ahi/releases/latest)** and pick the one file for your computer:
+Get **AHI Setup** from the **[latest release](../../releases/latest)** and pick the one file for your computer:
 
 | Your computer | The file to download |
 |---|---|
