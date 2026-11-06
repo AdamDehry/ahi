@@ -4,7 +4,7 @@ description: Consult OpenAI's Codex CLI (GPT-5 / Codex Plus) non-interactively f
 version: 1.1.1
 category: code-quality
 private: false
-last_verified: 2026-11-05
+last_verified: 2026-11-06
 verified_by: skills-audit
 ---
 

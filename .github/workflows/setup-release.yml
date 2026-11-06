@@ -49,6 +49,10 @@ jobs:
             v=$(node -p "require('../package.json').version")
             [ "v$v" = "${GITHUB_REF_NAME}" ] || { echo "tag ${GITHUB_REF_NAME} != app/package.json version $v"; exit 1; }
             [ "$v" = "$(node -p "require('../../skills/MANIFEST.json').release")" ] || { echo "skills/MANIFEST.json release != $v"; exit 1; }
+            # The installers are named from the Setup app's own version: keep it (and the web app) in step.
+            for p in onboarding web; do
+              [ "$v" = "$(node -p "require('../$p/package.json').version")" ] || { echo "app/$p/package.json version != $v"; exit 1; }
+            done
           fi
       # The AHI server and web app the installer carries, built with the same Node it bundles.
       - name: Build the AHI server

@@ -4,7 +4,7 @@ description: Call TypeSafe "Jev" (systemone) through the Vercel AI Gateway for c
 version: 1.1.0
 category: research
 private: false
-last_verified: 2026-11-05
+last_verified: 2026-11-06
 verified_by: skills-audit
 ---
 

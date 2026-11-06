@@ -14,7 +14,7 @@ description: |
 version: 0.3.0
 category: design
 private: false
-last_verified: 2026-11-05
+last_verified: 2026-11-06
 verified_by: skills-audit
 upstream: ~/.agents/skills/higgsfield-marketplace-cards
 argument-hint: "[--scope main|product-images|aplus|full-set] [prompt]"

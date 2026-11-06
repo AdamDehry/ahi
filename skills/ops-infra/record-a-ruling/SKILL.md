@@ -5,7 +5,7 @@ version: 1.2.0
 category: ops-infra
 private: false
 last_verified: 2026-11-06
-verified_by: build skills-shelf-r3
+verified_by: skills-audit
 ---
 
 # record-a-ruling

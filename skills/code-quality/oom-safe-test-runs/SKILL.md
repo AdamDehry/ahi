@@ -4,7 +4,7 @@ description: Run tests and builds on a small Linux box without the kernel OOM ki
 version: 1.1.0
 category: code-quality
 private: false
-last_verified: 2026-11-05
+last_verified: 2026-11-06
 verified_by: skills-audit
 ---
 

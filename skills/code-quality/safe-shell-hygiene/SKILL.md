@@ -4,7 +4,7 @@ description: Small shell disciplines that prevent the worst agent accidents on a
 version: 1.0.0
 category: code-quality
 private: false
-last_verified: 2026-11-05
+last_verified: 2026-11-06
 verified_by: skills-audit
 ---
 

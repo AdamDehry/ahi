@@ -4,7 +4,7 @@ description: Avi's production engine for AI video — character-consistent cinem
 version: 3.0.0
 category: video
 private: false
-last_verified: 2026-11-05
+last_verified: 2026-11-06
 verified_by: skills-audit
 requires:
   - Higgsfield account (MCP connector in chat, or the `higgsfield` CLI logged in)

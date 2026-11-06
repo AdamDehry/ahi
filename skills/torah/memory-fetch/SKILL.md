@@ -4,7 +4,7 @@ description: Lazy-load AHI memory addressed by Sha'ar (gate, 2 Hebrew letters) +
 version: 1.1.1
 category: torah
 private: false
-last_verified: 2026-11-05
+last_verified: 2026-11-06
 verified_by: skills-audit
 ---
 

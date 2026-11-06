@@ -24,7 +24,7 @@ description: |
 version: 0.3.0
 category: video
 private: false
-last_verified: 2026-11-05
+last_verified: 2026-11-06
 verified_by: skills-audit
 upstream: ~/.agents/skills/higgsfield-generate
 argument-hint: "[prompt-or-analysis-request] [--model <name>] [--image|--video <path-or-id>]"

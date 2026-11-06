@@ -4,7 +4,7 @@ description: The house pattern for any scheduled job on a Linux box — a UTC-on
 version: 1.0.0
 category: ops-infra
 private: false
-last_verified: 2026-11-05
+last_verified: 2026-11-06
 verified_by: skills-audit
 ---
 

@@ -4,7 +4,7 @@ description: The one simplify pass every build runs over its own diff before it 
 version: 1.0.0
 category: code-quality
 private: false
-last_verified: 2026-11-05
+last_verified: 2026-11-06
 verified_by: skills-audit
 ---
 

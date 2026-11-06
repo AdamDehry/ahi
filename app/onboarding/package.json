@@ -1,6 +1,6 @@
 {
   "name": "ahi-setup",
-  "version": "0.1.0",
+  "version": "0.2.3",
   "private": true,
   "description": "The guided installer for your own AHI home",
   "author": "AHI",

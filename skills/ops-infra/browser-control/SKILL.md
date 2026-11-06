@@ -4,7 +4,7 @@ description: Drive Chrome through Microsoft's official Playwright MCP server. Us
 version: 1.0.1
 category: ops-infra
 private: false
-last_verified: 2026-11-05
+last_verified: 2026-11-06
 verified_by: skills-audit
 ---
 

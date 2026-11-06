@@ -4,7 +4,7 @@ description: Run a structured code/perf/security audit on a web codebase using a
 version: 1.1.1
 category: code-quality
 private: false
-last_verified: 2026-11-05
+last_verified: 2026-11-06
 verified_by: skills-audit
 ---
 
