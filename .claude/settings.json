@@ -30,17 +30,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "$AHI_HOME/gateway/hooks/ahi-retrieval.sh"
-          }
-        ]
-      }
-    ],
-    "Stop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "$AHI_HOME/gateway/hooks/ahi-brain-record.sh"
+            "command": "node \"$CLAUDE_PROJECT_DIR/app/hooks/ahi-retrieval.mjs\"",
+            "timeout": 10
           }
         ]
       }

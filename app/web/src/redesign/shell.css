@@ -1,0 +1,195 @@
+/* ============================================================================
+   Redesign shell (slice 1). Values are the FINAL prototype's computed styles
+   (redesign/tools/measure-prototype.mjs) at 1440×900 and 390×844, both themes.
+   One continuous outer chrome (rail + top bar, --chrome-*) around one rounded
+   content canvas; the canvas is the only surface pages draw on.
+   ========================================================================== */
+.rd-app { position: fixed; inset: 0; background: var(--chrome-bg); color: var(--chrome-ink); font-family: var(--font-ui); }
+.rd-icon { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; display: block; flex-shrink: 0; }
+.rd-brand-icon { width: 20px; height: 20px; display: block; flex-shrink: 0; }
+
+/* ── Top chrome ───────────────────────────────────────────────────────── */
+.rd-top {
+  position: absolute; top: 0; left: 0; right: 0; height: var(--rd-top-h);
+  display: grid; grid-template-columns: var(--rd-rail-w) minmax(0, 1fr) auto; align-items: center;
+  color: var(--chrome-ink); z-index: 40;
+}
+.rd-app.rail-collapsed .rd-top { grid-template-columns: 170px minmax(0, 1fr) auto; }
+/* FINAL sidebar.css window-tools: 26×30 tiles, radius 7, raised on hover, dim when disabled. */
+.rd-tools { display: flex; align-items: center; gap: 6px; padding-left: 14px; }
+.rd-tool-nav { display: flex; gap: 2px; }
+.rd-tool { display: grid; place-items: center; width: 26px; height: 30px; border-radius: 7px; color: var(--chrome-muted); }
+.rd-tool .rd-icon { width: 17px; height: 17px; stroke-width: 1.5; }
+.rd-tool:hover:not(:disabled) { background: var(--chrome-raised); }
+.rd-tool:disabled { opacity: 0.3; cursor: default; }
+.rd-panel-divider { transform: translateX(-3px); transition: transform 0.18s ease; }
+.rd-tool[aria-expanded="true"] .rd-panel-divider { transform: translateX(0); }
+@media (prefers-reduced-motion: reduce) { .rd-panel-divider { transition: none; } }
+.rd-brand { justify-self: start; padding: 0 0 0 20px; font-size: 26px; font-weight: 650; letter-spacing: -1.3px; color: var(--chrome-ink); line-height: 1; }
+.rd-brand-dot { color: var(--chrome-accent); }
+.rd-actions { display: flex; align-items: center; gap: 8px; padding-right: 20px; }
+.rd-search { display: flex; align-items: center; gap: 8px; height: 30px; padding: 0 8px; border-radius: 8px; font-size: 11px; color: var(--chrome-muted); }
+.rd-search .rd-icon { width: 15px; height: 15px; }
+.rd-search kbd { margin-left: 16px; padding: 3px 5px; font: 9px var(--font-ui); border: 1px solid var(--chrome-line); border-radius: 4px; color: var(--chrome-muted); }
+.rd-icon-btn { position: relative; display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; color: var(--chrome-muted); }
+.rd-icon-btn .rd-icon { width: 19px; height: 19px; }
+.rd-icon-btn:hover, .rd-icon-btn.on { color: var(--chrome-ink); background: var(--chrome-raised); }
+.rd-theme { border: 1px solid var(--chrome-line); }
+.rd-dot { position: absolute; top: 6px; right: 7px; width: 6px; height: 6px; border-radius: 50%; background: var(--chrome-accent); }
+.rd-actions button:disabled { opacity: .55; cursor: default; }
+.rd-actions button:disabled:hover { background: none; color: var(--chrome-muted); }
+
+/* ── Rail ─────────────────────────────────────────────────────────────── */
+.rd-rail {
+  position: absolute; top: var(--rd-top-h); left: 0; bottom: 0; width: var(--rd-rail-w);
+  display: flex; flex-direction: column; padding: 22px 20px 16px; overflow-y: auto; overflow-x: hidden;
+  background: var(--chrome-bg); color: var(--chrome-ink); z-index: 30; scrollbar-width: none;
+}
+.rd-rail.collapsed { width: var(--rd-rail-w-collapsed); padding: 22px 12px 16px; }
+.rd-new-chat {
+  display: flex; align-items: center; gap: 8px; min-height: 42px; width: 100%; padding: 8px 11px; margin-bottom: 12px;
+  border: 1px solid var(--chrome-line); border-radius: 9px; background: var(--chrome-field);
+  box-shadow: 0 2px 3px rgba(0, 0, 0, .2); font-size: 11px; text-align: left; color: var(--chrome-ink);
+}
+.rd-new-chat .rd-icon { width: 15px; height: 15px; }
+.rd-key { margin-left: auto; font-size: 10px; color: var(--chrome-muted); }
+.rd-main-nav, .rd-world nav { display: grid; gap: 5px; }
+.rd-nav-item {
+  display: flex; align-items: center; gap: 12px; width: 100%; min-height: 38px; padding: 10px 12px;
+  border-radius: 8px; font-size: 13px; font-weight: 500; color: var(--chrome-muted); text-align: left;
+}
+.rd-nav-item .rd-icon, .rd-nav-item .rd-brand-icon { width: 17px; height: 17px; }
+.rd-nav-item:hover { color: var(--chrome-ink); background: color-mix(in srgb, var(--chrome-raised) 60%, transparent); }
+.rd-nav-item.active { background: var(--chrome-active); color: var(--chrome-accent); }
+.rd-nav-count { margin-left: auto; padding: 2px 5px; font-size: 10px; font-weight: 500; line-height: 1.2; color: var(--chrome-muted); background: var(--chrome-raised); border: 1px solid var(--chrome-line); border-radius: 5px; }
+.rd-world { margin-top: 22px; }
+.rd-world-toggle { display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 4px 11px 11px; font-size: 9px; font-weight: 600; letter-spacing: 1.2px; color: var(--chrome-muted); }
+.rd-world-toggle .rd-icon { width: 13px; height: 13px; transition: transform .15s; }
+.rd-world-toggle[aria-expanded="false"] .rd-icon { transform: rotate(-90deg); }
+.rd-rail-bottom { margin-top: auto; padding-top: 25px; display: grid; gap: 5px; }
+.rd-profile { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 48px; padding: 8px 10px; margin-top: 7px; border-radius: 10px; font-size: 11px; font-weight: 550; text-align: left; color: var(--chrome-ink); }
+.rd-profile:hover, .rd-profile.active { background: var(--chrome-raised); }
+.rd-profile-avatar { display: grid; place-items: center; width: 32px; height: 32px; flex: none; border-radius: 50%; background: var(--chrome-raised); font-size: 10px; font-weight: 550; letter-spacing: .02em; }
+.rd-profile-text { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rd-profile-text small { display: block; margin-top: 3px; font-size: 10px; font-weight: 400; color: var(--chrome-muted); }
+.rd-profile > .rd-icon { width: 13px; height: 13px; color: var(--chrome-muted); }
+.rd-rail.collapsed .rd-nav-label, .rd-rail.collapsed .rd-key, .rd-rail.collapsed .rd-nav-count,
+.rd-rail.collapsed .rd-profile-text, .rd-rail.collapsed .rd-profile > .rd-icon { display: none; }
+.rd-rail.collapsed .rd-nav-item, .rd-rail.collapsed .rd-new-chat { justify-content: center; padding-left: 0; padding-right: 0; }
+.rd-rail.collapsed .rd-profile { justify-content: center; padding: 8px 0; }
+
+/* ── Canvas: one rounded surface; pages own their scrolling ──────────── */
+.rd-canvas {
+  position: absolute; top: var(--rd-top-h); left: var(--rd-rail-w); right: var(--rd-canvas-gap); bottom: var(--rd-canvas-gap);
+  display: flex; flex-direction: column; min-width: 0; overflow: hidden;
+  background: var(--bg); color: var(--text-body);
+  border: 1px solid var(--line); border-radius: var(--rd-canvas-radius); isolation: isolate;
+}
+.rd-app.rail-collapsed .rd-canvas { left: var(--rd-rail-w-collapsed); }
+
+/* Existing views inside the canvas: the old desktop body and per-view sidebar keep working. */
+.rd-canvas .app-body { flex: 1; display: flex; min-height: 0; position: relative; }
+.rd-canvas .view-area { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.rd-canvas .sidebar { border-right: 1px solid var(--line); background: var(--surface-alt); }
+.rd-canvas > .attn { border-radius: var(--rd-canvas-radius) var(--rd-canvas-radius) 0 0; }
+
+/* ── Phone ────────────────────────────────────────────────────────────── */
+.rd-app.phone .rd-top { height: 58px; grid-template-columns: minmax(0, 1fr) auto; padding: 0 17px; padding-top: env(safe-area-inset-top, 0px); height: calc(58px + env(safe-area-inset-top, 0px)); }
+.rd-app.phone .rd-brand { padding: 0; font-size: 24px; }
+.rd-app.phone .rd-actions { padding-right: 0; gap: 4px; }
+.rd-app.phone .rd-icon-btn { width: 32px; height: 32px; }
+.rd-app.phone .rd-canvas {
+  top: calc(58px + env(safe-area-inset-top, 0px)); left: 5px; right: 5px; bottom: var(--rd-dock-space);
+  border-radius: 14px;
+}
+.rd-dock {
+  position: absolute; left: 0; right: 0; bottom: 0; height: var(--rd-dock-space);
+  display: flex; align-items: center; gap: 5px; padding: 6px 10px calc(6px + env(safe-area-inset-bottom, 0px));
+  background: var(--chrome-bg); z-index: 79;
+}
+.rd-dock-dest { flex: 1; min-width: 0; display: flex; justify-content: center; gap: 2px; margin-left: 38px; }
+.rd-dock-item {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px;
+  width: 62px; min-height: 52px; padding: 5px 2px; border-radius: 12px;
+  font-size: 9px; line-height: 1.2; white-space: nowrap; color: var(--chrome-muted);
+}
+.rd-dock-item .rd-icon { width: 21px; height: 21px; }
+.rd-dock-item.active { color: var(--chrome-accent); background: var(--chrome-raised); }
+.rd-dock-menu { display: grid; place-items: center; width: 44px; height: 48px; flex: none; border-radius: 12px; color: var(--chrome-muted); }
+.rd-dock-menu .rd-icon { width: 22px; height: 22px; stroke-width: 1.5; }
+.rd-dock-menu.on { color: var(--chrome-accent); background: var(--chrome-raised); }
+.rd-phone-menu { position: absolute; left: 0; right: 0; top: calc(58px + env(safe-area-inset-top, 0px)); bottom: var(--rd-dock-space); z-index: 78; background: var(--chrome-bg); }
+.rd-phone-menu .rd-rail { position: absolute; inset: 0; width: auto; padding: 16px 24px 12px; }
+.rd-phone-menu .rd-nav-item { min-height: 42px; }
+
+/* The existing phone screens live inside the canvas, not the viewport. */
+.rd-app.phone .mobile-shell { position: absolute; inset: 0; height: auto; border-radius: inherit; background: var(--bg); }
+.rd-app.phone .mobile-screen { background: var(--bg); }
+.rd-app.phone .mobile-topbar { padding-top: 0; background: var(--bg); }
+
+/* Focus, motion */
+.rd-app button:focus-visible { outline: 2px solid var(--chrome-accent); outline-offset: 2px; }
+.rd-canvas button:focus-visible { outline-color: var(--accent); }
+@media (prefers-reduced-motion: reduce) { .rd-world-toggle .rd-icon { transition: none; } }
+
+/* ── Page frame (header + tabs + body) ───────────────────────────────── */
+.rd-page { flex: 1; min-height: 0; display: flex; flex-direction: column; color: var(--text-body); }
+.rd-page-scroll { overflow-y: auto; }
+.rd-page-top { flex: none; padding: 36px 35px 18px; display: grid; gap: 22px; }
+.rd-page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; }
+.rd-eyebrow { font-size: 10px; font-weight: 700; letter-spacing: .2em; text-transform: uppercase; color: var(--text-mute); margin-bottom: 14px; }
+.rd-title { margin: 0; font-size: 40px; font-weight: 450; letter-spacing: -1.2px; line-height: 1.05; color: var(--text); font-family: var(--font-display); }
+.rd-title-dot { color: var(--accent); }
+.rd-sub { margin: 14px 0 0; font-size: 13px; color: var(--text-mute); }
+.rd-page-actions { display: flex; gap: 8px; }
+.rd-tabs { justify-self: start; display: inline-flex; gap: 4px; padding: 4px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); }
+.rd-tab { padding: 10px 15px; border-radius: 7px; font-size: 12.5px; font-weight: 500; color: var(--text-mute); }
+.rd-tab:hover { color: var(--text); }
+.rd-tab.active { background: var(--raised); color: var(--text); }
+.rd-page-body { flex: 1; min-height: 0; display: flex; border-top: 1px solid var(--line); }
+.rd-page-view { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
+.rd-page-view > .tool-page, .rd-page-view > * { min-height: 0; }
+.rd-subnav { width: 240px; flex: none; overflow-y: auto; }
+.rd-messages { border-radius: inherit; }
+.rd-app.phone .rd-page-top { padding: 22px 18px 14px; gap: 16px; }
+.rd-app.phone .rd-title { font-size: 30px; }
+.rd-app.phone .rd-tabs { max-width: 100%; overflow-x: auto; scrollbar-width: none; }
+.rd-app.phone .rd-tab { padding: 9px 11px; white-space: nowrap; }
+.rd-mini-team { margin-left: auto; display: flex; padding-left: 5px; }
+.rd-mini-team i { display: grid; place-items: center; width: 19px; height: 19px; margin-left: -5px; border-radius: 50%; border: 2px solid var(--chrome-line); background: var(--chrome-raised); font: 500 7px var(--font-ui); font-style: normal; color: var(--chrome-muted); }
+.rd-conn-dot { margin-left: auto; width: 6px; height: 6px; border-radius: 50%; background: var(--chrome-muted); }
+.rd-conn-dot.open { background: #a1c8b0; }
+.rd-rail.collapsed .rd-mini-team, .rd-rail.collapsed .rd-conn-dot { display: none; }
+
+/* One top bar. Installed on the desktop (manifest display_override
+   window-controls-overlay), the OS window controls sit inline in this bar beside back/forward,
+   collapse and the wordmark — no separate title bar above. The bar row lines up with the
+   controls (titlebar-area), the bar drags the window, and its controls stay clickable. In a
+   browser tab or a plain standalone window none of this applies. */
+@media (display-mode: window-controls-overlay) {
+  :root:root { --rd-top-h: calc(env(titlebar-area-height, 44px) + 12px); }
+  .rd-app:not(.phone) .rd-top { -webkit-app-region: drag; app-region: drag; align-items: start; }
+  .rd-app:not(.phone) .rd-top > * { align-self: start; height: env(titlebar-area-height, 44px); display: flex; align-items: center; }
+  .rd-app:not(.phone) .rd-top :is(button, a, input, [role="button"], kbd) { -webkit-app-region: no-drag; app-region: no-drag; }
+  .rd-app:not(.phone) .rd-tools { padding-left: calc(env(titlebar-area-x, 0px) + 6px); }
+  .rd-app:not(.phone) .rd-actions { padding-right: calc(100vw - env(titlebar-area-x, 0px) - env(titlebar-area-width, 100vw) + 14px); }
+  .rd-app.rail-collapsed:not(.phone) .rd-top { grid-template-columns: max-content minmax(0, 1fr) auto; }
+}
+
+/* The collapsed rail starts at Home, as FINAL's icon rail — the "Message Michael · ⌘J"
+   pill shows only on the open rail (⌘J / Ctrl J still works while collapsed). */
+.rd-rail.collapsed .rd-new-chat { display: none; }
+
+/* A slow colour sweep travels round the container's edge — one
+   painted 1px ring inside the border, masked to the edge, a full lap every 18s. Off for reduced motion
+   and on the phone (battery). */
+@property --rd-sweep { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+.rd-app:not(.phone) .rd-canvas::after {
+  content: ""; position: absolute; inset: 0; z-index: 50; pointer-events: none; border-radius: inherit; padding: 1px;
+  background: conic-gradient(from var(--rd-sweep), transparent 0deg 250deg, color-mix(in srgb, var(--accent) 70%, transparent) 300deg, color-mix(in srgb, #5fb3c7 60%, transparent) 330deg, transparent 360deg);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+  animation: rd-sweep 18s linear infinite;
+}
+@keyframes rd-sweep { to { --rd-sweep: 360deg; } }
+@media (prefers-reduced-motion: reduce) { .rd-app .rd-canvas::after { display: none; } }

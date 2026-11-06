@@ -1,0 +1,281 @@
+/* ============================================================
+   search-card.css — the inline search card. Self-contained.
+
+   PORTABILITY CONTRACT. Every color, font, radius and size below is read
+   through the --asc-* aliases in the first block, and each alias falls back
+   from the CURRENT shell's token name to the REDESIGN's ("ahi. — petrol &
+   brass", chatgpt/concept/concept.css):
+
+     current (Ink & Brass)     redesign (concept)     role
+     --text                    --ink                  strong text (query, titles)
+     --text-body               --ink                  body text
+     --text-mute               --muted                snippets
+     --text-faint              --muted                mono labels
+     --surface                 --surface              card ground
+     --surface-dim             --raised               tile skeleton, hover
+     --line                    --line                 hairlines
+     --accent-strong           --accent               link hover, kind label
+     --accent-soft             --accent-bg            hover wash
+     --font-ui / --font-mono   --font                 type
+
+   Careful: the current shell ALSO defines --ink (as the brand's near-black),
+   so --ink is only ever reached as a fallback, never read first. No hex
+   values live in this file; the new shell needs no edit to adopt it.
+   ============================================================ */
+
+.ahi-search-card {
+  --asc-strong: var(--text, var(--ink));
+  --asc-text: var(--text-body, var(--ink));
+  --asc-mute: var(--text-mute, var(--muted));
+  --asc-faint: var(--text-faint, var(--muted));
+  --asc-ground: var(--surface);
+  --asc-raised: var(--surface-dim, var(--raised));
+  --asc-line: var(--line);
+  --asc-accent: var(--accent-strong, var(--accent));
+  --asc-wash: var(--accent-soft, var(--accent-bg));
+  --asc-focus: var(--focus-halo, 0 0 0 3px var(--asc-wash));
+  --asc-font: var(--font-ui, var(--font, system-ui, sans-serif));
+  --asc-mono: var(--font-mono, ui-monospace, "SF Mono", Menlo, monospace);
+  --asc-radius: var(--radius-card, 10px);
+  --asc-radius-tile: 6px;
+  --asc-fs-body: var(--fs-ui, 14px);
+  --asc-fs-sm: var(--fs-sm, 13px);
+  --asc-fs-label: var(--fs-label, 11px);
+  --asc-gap: 4px;
+  --asc-pad: 12px;
+
+  container-type: inline-size;
+  width: 100%;
+  max-width: 560px;
+  min-width: 0;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: var(--asc-pad);
+  border: 1px solid var(--asc-line);
+  border-radius: var(--asc-radius);
+  background: var(--asc-ground);
+  color: var(--asc-text);
+  font-family: var(--asc-font);
+  font-size: var(--asc-fs-body);
+  line-height: 1.45;
+  overflow: hidden; /* the grid may never blow out the thread width */
+}
+
+/* ── Header: glyph · query · kind ──────────────────────────────────── */
+.ahi-search-card *,
+.ahi-search-card *::before,
+.ahi-search-card *::after { box-sizing: border-box; }
+.ahi-search-card .asc-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 0;
+}
+.ahi-search-card .asc-glyph {
+  flex: none;
+  margin-top: 2px;
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: var(--asc-faint);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+}
+.ahi-search-card .asc-query {
+  flex: 1;
+  min-width: 0;
+  color: var(--asc-strong);
+  font-weight: 600;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  unicode-bidi: plaintext;
+}
+.ahi-search-card .asc-kind,
+.ahi-search-card .asc-foot,
+.ahi-search-card .asc-more,
+.ahi-search-card .asc-domain,
+.ahi-search-card .asc-date {
+  font-family: var(--asc-mono);
+  font-size: var(--asc-fs-label);
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+.ahi-search-card .asc-kind { flex: none; margin-top: 3px; color: var(--asc-accent); }
+
+/* ── Pictures: 3 across on a phone, 5 across on a wide column ──────── */
+.ahi-search-card .asc-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--asc-gap);
+  border-radius: var(--asc-radius-tile);
+  overflow: hidden;
+}
+@container (min-width: 480px) {
+  .ahi-search-card .asc-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+}
+.ahi-search-card .asc-tile {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 3px;
+  background: var(--asc-raised);
+  overflow: hidden;
+  cursor: zoom-in;
+  -webkit-touch-callout: none; /* our long-press menu, not the OS one */
+  user-select: none;
+  -webkit-user-select: none;
+}
+.ahi-search-card .asc-tile.is-loading {
+  animation: asc-breathe 1.4s ease-in-out infinite;
+}
+.ahi-search-card .asc-tile img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 180ms ease, transform 180ms ease;
+}
+.ahi-search-card .asc-tile.is-loaded img { opacity: 1; }
+.ahi-search-card .asc-tile.is-broken img { display: none; }
+.ahi-search-card .asc-tile:hover img { transform: scale(1.03); }
+.ahi-search-card .asc-tile:focus-visible { outline: none; box-shadow: var(--asc-focus); z-index: 1; }
+.ahi-search-card .asc-tile-fallback {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 4px;
+  color: var(--asc-faint);
+  font-family: var(--asc-mono);
+  font-size: 9px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* Narrow card: a clean 3×3; the tenth sits behind "+1" on the ninth (the
+   viewer's filmstrip still reaches it). */
+@container (max-width: 479.98px) {
+  .ahi-search-card .asc-tile:nth-child(n + 10) { display: none; }
+  .ahi-search-card .asc-tile[data-more]::after {
+    content: attr(data-more);
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    background: color-mix(in srgb, var(--asc-ground) 55%, transparent);
+    color: var(--asc-strong);
+    font-family: var(--asc-mono);
+    font-size: var(--asc-fs-sm);
+    letter-spacing: 0.06em;
+  }
+}
+
+/* ── Web results ───────────────────────────────────────────────────── */
+.ahi-search-card .asc-web {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+.ahi-search-card .asc-web li + li { border-top: 1px solid var(--asc-line); }
+.ahi-search-card .asc-row {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  padding: 9px 6px;
+  margin-inline: -6px;
+  border-radius: var(--asc-radius-tile);
+  color: inherit;
+  text-decoration: none;
+  transition: background 150ms ease;
+}
+.ahi-search-card .asc-row:hover { background: var(--asc-wash); }
+.ahi-search-card .asc-row:focus-visible { outline: none; box-shadow: var(--asc-focus); }
+.ahi-search-card .asc-row-meta {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  color: var(--asc-faint);
+}
+.ahi-search-card .asc-favicon {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  display: grid;
+  place-items: center;
+  border-radius: 5px;
+  background: var(--asc-raised);
+  overflow: hidden;
+  font-family: var(--asc-mono);
+  font-size: 10px;
+  color: var(--asc-mute);
+}
+.ahi-search-card .asc-favicon img { width: 14px; height: 14px; object-fit: contain; }
+.ahi-search-card .asc-domain {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-transform: none;
+  letter-spacing: 0.02em;
+}
+.ahi-search-card .asc-date { flex: none; }
+.ahi-search-card .asc-date::before { content: "·"; margin-right: 7px; }
+.ahi-search-card .asc-title {
+  color: var(--asc-strong);
+  font-weight: 600;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  unicode-bidi: plaintext;
+}
+.ahi-search-card .asc-row:hover .asc-title { color: var(--asc-accent); }
+.ahi-search-card .asc-snippet {
+  color: var(--asc-mute);
+  font-size: var(--asc-fs-sm);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  unicode-bidi: plaintext;
+}
+.ahi-search-card .asc-more {
+  align-self: flex-start;
+  padding: 4px 0;
+  border: 0;
+  background: none;
+  color: var(--asc-accent);
+  cursor: pointer;
+}
+
+.ahi-search-card .asc-empty { margin: 0; color: var(--asc-mute); font-size: var(--asc-fs-sm); }
+
+/* ── Footer: who · when — saved search · month's count ─────────────── */
+.ahi-search-card .asc-foot {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 2px 12px;
+  color: var(--asc-faint);
+  min-width: 0;
+}
+.ahi-search-card .asc-foot span { white-space: nowrap; }
+
+@keyframes asc-breathe {
+  50% { opacity: 0.6; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ahi-search-card .asc-tile.is-loading { animation: none; }
+  .ahi-search-card .asc-tile img, .ahi-search-card .asc-row { transition: none; }
+}

@@ -1,0 +1,844 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   voice.css — the immersive voice layer (frames 3B–3M).
+
+   EVERY rule here is scoped under `.voice`. The layer is only mounted during
+   a call, and a call is only reachable with `voiceModeEnabled` on, so with the
+   flag off nothing in this file can match anything: the app renders exactly as
+   it did before voice mode existed. That is a hard gate, not a nicety — do not
+   add a bare element or utility selector to this file.
+
+   Hues are declared locally rather than by editing tokens.css for the same
+   reason: the app's palette must not shift because a feature that is dark
+   shipped alongside it. The voice layer's petrol is the DECK's petrol, which
+   is lighter than the app's brand petrol (that one is a login-moment colour).
+   ═══════════════════════════════════════════════════════════════════════ */
+
+.voice {
+  --v-void: #121316;
+  --v-void-2: #17191e;
+  --v-panel: #1e222a;
+  --v-bubble: #262a31;
+  --v-hairline: #363b44;
+  --v-ink: #f4f1ea;
+  --v-muted: #8a867d;
+  --v-petrol: #2e6373;
+  --v-brass: #c9a24b;
+  --v-brass-flash: #ddbc6e;
+  --v-warn: #a15a40;
+  --v-ease: cubic-bezier(0.32, 0, 0.18, 1);
+
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  /* The SURFACE covers the whole window; the CONTENT keeps the thread's
+     760px measure (3G) by padding, not by narrowing the surface. A centred
+     760px surface left the chat showing through on both sides of a desktop
+     window (10/15: desktop-call-view). The padding is 0 at phone widths,
+     so the phone layout is the same box it always was. */
+  padding-inline: max(0px, calc((100% - 760px) / 2));
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(180deg, var(--v-void) 0%, var(--v-void-2) 100%);
+  color: var(--v-ink);
+  animation: v-rise 260ms var(--v-ease);
+}
+
+@keyframes v-rise {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+
+/* ── Glow horizon ──────────────────────────────────────────────────────
+   Stacked layers crossfaded by OPACITY ONLY (3I) — animating the gradient
+   itself repaints the whole surface every frame on a phone.
+   300ms is the deck's bloom; where the sim and the deck disagree, deck wins. */
+.voice .glow {
+  position: absolute;
+  left: 50%;
+  bottom: -12%;
+  width: 130%;
+  height: 105%;
+  transform: translateX(-50%);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 300ms var(--v-ease);
+}
+
+.voice .glow-petrol {
+  background: radial-gradient(ellipse 50% 48% at 50% 100%,
+    rgba(46, 99, 115, 0.6) 0%, rgba(46, 99, 115, 0.26) 42%,
+    rgba(46, 99, 115, 0.09) 64%, transparent 82%);
+}
+.voice .glow-brass {
+  background: radial-gradient(ellipse 50% 48% at 50% 100%,
+    rgba(201, 162, 75, 0.55) 0%, rgba(201, 162, 75, 0.24) 42%,
+    rgba(201, 162, 75, 0.08) 64%, transparent 82%);
+}
+/* Pre-call is neutral BONE — hues are reserved for active states (3L). */
+.voice .glow-bone {
+  background: radial-gradient(ellipse 50% 44% at 50% 100%,
+    rgba(224, 218, 206, 0.3) 0%, rgba(224, 218, 206, 0.12) 46%, transparent 78%);
+}
+
+.voice.s-connecting .glow-bone,
+.voice.s-denied .glow-bone,
+.voice.s-failed .glow-bone { opacity: 1; animation: v-shimmer 3.6s ease-in-out infinite; }
+
+.voice.s-listening .glow-petrol,
+.voice.s-thinking  .glow-petrol { opacity: 1; animation: v-breathe 2.4s ease-in-out infinite; }
+.voice.s-speaking  .glow-brass  { opacity: 1; animation: v-breathe 2.4s ease-in-out infinite; }
+
+/* Barge-in: brass→petrol in 150ms. A REFLEX, deliberately faster than the
+   400ms turn handoff — the user talked over the agent and the screen has to
+   agree with their ears immediately (3K). */
+.voice.barge .glow-brass,
+.voice.barge .glow-petrol { transition-duration: 150ms; }
+
+@keyframes v-breathe { 0%, 100% { opacity: 0.62; } 50% { opacity: 1; } }
+@keyframes v-shimmer { 0%, 100% { opacity: 0.55; } 50% { opacity: 1; } }
+
+/* End (3E/3I): the glow collapses to a 2px petrol→brass baseline. */
+.voice .baseline {
+  position: absolute;
+  /* 8% of the column on a phone; the same inset from the column's edges
+     on a wide window, where the surface is wider than the column. */
+  left: max(8%, calc((100% - 760px) / 2 + 61px));
+  right: max(8%, calc((100% - 760px) / 2 + 61px));
+  bottom: 86px;
+  height: 2px;
+  background: linear-gradient(90deg, var(--v-petrol), var(--v-brass));
+  opacity: 0;
+  transition: opacity 100ms linear;
+}
+.voice.s-ended .glow { opacity: 0 !important; animation: none; transition-duration: 100ms; }
+.voice.s-ended .baseline { opacity: 1; }
+
+/* ── Header ────────────────────────────────────────────────────────── */
+.voice .voice-head {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 16px 18px 12px;
+  z-index: 2;
+}
+.voice .voice-head strong { font-weight: 600; }
+.voice .agent-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--v-petrol); flex: none;
+}
+.voice .agent-dot.live { box-shadow: 0 0 6px rgba(46, 99, 115, 0.8); }
+.voice .vh-label { font-size: 9px; color: var(--v-muted); }
+.voice .vh-label.working { color: var(--v-brass); }
+/* Always-on: standby is petrol like listening, a dropped link is muted and plain. */
+.voice .vh-label.standby { color: var(--v-petrol); }
+.voice .vh-label.link-down { color: var(--v-muted); opacity: 0.85; }
+.voice .agent-dot.standby { background: var(--v-petrol); opacity: 0.55; box-shadow: none; }
+.voice .agent-dot.link-down { background: var(--v-muted); box-shadow: none; }
+/* A turn in flight, quietly: brass like the agent's own state, never an alarm. */
+.voice .work-note {
+  text-align: center;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--v-brass);
+  padding: 4px 18px 6px;
+  z-index: 2;
+  font-variant-numeric: tabular-nums;
+}
+.voice .vh-timer {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--v-muted);
+  font-variant-numeric: tabular-nums;   /* the timer must not jitter */
+}
+
+/* ── Transcript ────────────────────────────────────────────────────── */
+.voice .vthread {
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px 18px;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  /* REGRESSION GUARD: the white strip behind a scrollbar is the BROWSER's
+     default track, not a background in this file. It has to be actively
+     styled away on every scroll container or it comes straight back. */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(244, 241, 234, 0.28) transparent;
+}
+.voice .vthread::-webkit-scrollbar { width: 8px; background: transparent; }
+.voice .vthread::-webkit-scrollbar-track { background: transparent; }
+.voice .vthread::-webkit-scrollbar-thumb {
+  background: rgba(244, 241, 234, 0.22);
+  border: 2px solid transparent;
+  background-clip: content-box;
+  border-radius: 999px;
+}
+
+/* Bubble sides are SEMANTIC and NEVER flip — outgoing right, incoming left,
+   in any language. Only the text INSIDE takes its script's direction, which
+   is what `unicode-bidi: plaintext` does (3J). */
+.voice .vturn-user {
+  align-self: flex-end;
+  max-width: 62%;
+  background: var(--v-bubble);
+  border: 1px solid var(--v-hairline);
+  border-radius: 14px;
+  border-bottom-right-radius: 5px;
+  padding: 9px 13px;
+  unicode-bidi: plaintext;
+}
+.voice .vturn-agent {
+  align-self: flex-start;
+  max-width: 86%;
+  unicode-bidi: plaintext;
+}
+
+/* Karaoke — EXACTLY TWO brightness levels. `.now` is a colour accent on an
+   already-bright word, never a third opacity: a third shade reads as a dark
+   wave crawling down the reply. */
+.voice .kw { opacity: 0.35; transition: opacity 180ms linear; }
+.voice .kw.spoken { opacity: 1; }
+.voice .kw.now { color: var(--v-brass-flash); }
+.voice .vturn-agent.settled .kw { opacity: 1; color: inherit; }
+/* Unspoken remainder of an interrupted turn collapses — it was never said. */
+.voice .vturn-agent.interrupted .kw:not(.spoken) { display: none; }
+/* Text follows voice (voice-streaming-bargein): a word is on screen once it is
+   SPOKEN, not when it was written. Absent, not dim, until then; it arrives
+   with a short fade so the line grows rather than jumps. */
+.voice .vturn-agent.follows .kw.unsaid,
+.voice .vturn-agent.follows .kw.held { display: none; }
+.voice .vturn-agent.follows .kw.spoken { animation: kw-in 140ms ease-out; }
+@keyframes kw-in { from { opacity: 0; } to { opacity: 1; } }
+.voice .int-tag {
+  font-size: 10px;
+  color: var(--v-muted);
+  letter-spacing: 0.12em;
+  margin-left: 7px;
+}
+
+/* A dropped reply must read as a FAILURE, never as silence. */
+.voice .vturn-agent.failed {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid rgba(161, 90, 64, 0.55);
+  border-radius: 12px;
+  padding: 8px 12px;
+  background: rgba(161, 90, 64, 0.08);
+}
+.voice .fail-msg { font-size: 13px; color: var(--v-warn); }
+
+/* Live transcript. Italic for English; Hebrew NEVER slants — oblique Hebrew
+   renders broken, so it is conveyed by muted colour alone (3J). */
+.voice .provisional {
+  min-height: 24px;
+  padding: 4px 20px 10px;
+  z-index: 1;
+  color: var(--v-muted);
+  font-style: italic;
+  font-size: 13px;
+  unicode-bidi: plaintext;
+  text-align: end;
+}
+.voice .provisional.has-hebrew { font-style: normal; }
+
+.voice .follow-pill {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 118px;
+  z-index: 3;
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  color: var(--v-brass);
+  border: 1px solid rgba(201, 162, 75, 0.55);
+  background: rgba(18, 19, 22, 0.85);
+  border-radius: 999px;
+  padding: 6px 14px;
+  cursor: pointer;
+}
+
+.voice .center-note {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 150px;
+  z-index: 3;
+  text-align: center;
+  font-size: 10px;
+  line-height: 2;
+  color: var(--v-muted);
+  letter-spacing: 0.14em;
+  white-space: pre-line;
+}
+
+/* ── Permission / failure card (3L) ────────────────────────────────────
+   Calm hairline card. Warn tone on the BORDER only — being told "no" by the
+   OS is not an error state, and a red alarm would read as one. */
+.voice .perm-card {
+  position: absolute;
+  left: 50%;
+  top: 38%;
+  transform: translate(-50%, -50%);
+  z-index: 4;
+  width: min(320px, 84%);
+  background: var(--v-panel);
+  border: 1px solid rgba(161, 90, 64, 0.55);
+  border-radius: 12px;
+  padding: 18px 20px;
+  text-align: center;
+}
+.voice .perm-title {
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  color: var(--v-warn);
+  margin-bottom: 10px;
+}
+.voice .perm-card p { font-size: 13px; color: var(--v-muted); margin-bottom: 14px; }
+.voice .perm-actions { display: flex; justify-content: center; gap: 18px; font-size: 10px; }
+.voice .perm-actions button {
+  background: none; border: 0; cursor: pointer; letter-spacing: 0.12em; font: inherit;
+}
+.voice .perm-retry { color: var(--v-brass); }
+.voice .perm-back { color: var(--v-muted); }
+
+/* ── Controls (3B) ─────────────────────────────────────────────────── */
+.voice .voice-controls {
+  display: flex;
+  justify-content: center;
+  gap: 46px;
+  padding: 12px 0 calc(26px + env(safe-area-inset-bottom));
+  z-index: 2;
+}
+.voice .ctl { display: flex; flex-direction: column; align-items: center; gap: 7px; }
+.voice .ctl-label { font-size: 8px; color: var(--v-muted); letter-spacing: 0.18em; }
+.voice .ctl-btn {
+  width: 46px; height: 46px; border-radius: 50%; cursor: pointer;
+  display: grid; place-items: center; padding: 0;
+}
+.voice .ctl-btn svg { width: 20px; height: 20px; }
+.voice .ctl-btn.mute {
+  background: transparent;
+  border: 1px solid var(--v-hairline);
+  color: var(--v-muted);
+}
+/* Muted is filled WARN, never brass — brass means "the agent is speaking",
+   and reusing it here would make a muted mic look like a live reply (3D). */
+.voice .ctl-btn.mute.on {
+  background: var(--v-warn);
+  border-color: var(--v-warn);
+  color: var(--v-ink);
+}
+.voice .ctl-btn.share {
+  background: transparent;
+  border: 1px solid var(--v-hairline);
+  color: var(--v-muted);
+}
+/* Sharing is petrol, the listening hue: Michael is taking something in.
+   Never brass (his speech) and never warn (mute). */
+.voice .ctl-btn.share.on {
+  background: var(--v-petrol);
+  border-color: var(--v-petrol);
+  color: var(--v-ink);
+}
+.voice .share-banner {
+  position: absolute;
+  top: 54px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--v-petrol);
+  background: rgba(18, 19, 22, 0.88);
+  color: var(--v-ink);
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.voice .share-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #4fb3c9;
+  box-shadow: 0 0 0 3px rgba(79, 179, 201, 0.22);
+}
+/* Record mode (screen-watch): a true red dot — the one place red
+   means "recording", as everywhere else people have seen it. */
+.voice .ctl-btn.rec {
+  background: transparent;
+  border: 1px solid var(--v-hairline);
+  color: var(--v-muted);
+}
+.voice .ctl-btn.rec.on {
+  border-color: #e5484d;
+  color: #e5484d;
+}
+.voice .share-banner.recording {
+  border-color: #e5484d;
+}
+.voice .rec-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #e5484d;
+  box-shadow: 0 0 0 3px rgba(229, 72, 77, 0.25);
+  animation: rec-pulse 1.2s ease-in-out infinite;
+}
+.voice .rec-timer {
+  font-variant-numeric: tabular-nums;
+  color: #ff6b6f;
+}
+@keyframes rec-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .voice .rec-dot {
+    animation: none;
+  }
+}
+.voice .ctl-btn.end {
+  background: var(--v-ink);
+  border: 0;
+  color: var(--v-void);
+  width: 54px;
+  height: 54px;
+}
+
+/* ── Session record card (3F) ───────────────────────────────────────── */
+.session-record-row {
+  width: 100%;
+  max-width: calc(360px + 2 * var(--sp-7));
+  margin-inline: auto;
+  padding: var(--sp-3) var(--sp-7) var(--sp-2);
+  display: flex;
+  justify-content: center;
+}
+.session-record {
+  width: min(360px, 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 9px 22px;
+  border-radius: 11px;
+  font-size: 10px;
+  line-height: 1.7;
+  color: var(--text-mute);
+  border: 1.5px solid transparent;
+  background:
+    linear-gradient(var(--bg), var(--bg)) padding-box,
+    linear-gradient(135deg, #11303a, #b6883c) border-box;
+  box-shadow: inset 0 0 22px rgba(46, 99, 115, 0.1);
+  cursor: pointer;
+}
+.session-record .sr-title { letter-spacing: 0.14em; color: var(--text-body); }
+.sr-meta { color: var(--text-mute); }
+.sr-ending { display: block; margin-top: 4px; color: #c98a5a; letter-spacing: 0; text-transform: none; }
+
+.voice-history-page {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+}
+.voice-history-head {
+  flex: none;
+  width: 100%;
+  max-width: calc(var(--thread-col-max) + 2 * var(--sp-7));
+  margin-inline: auto;
+  padding: var(--sp-4) var(--sp-7) var(--sp-3);
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) 34px;
+  align-items: center;
+  gap: var(--sp-3);
+  border-bottom: var(--hairline) solid var(--line);
+}
+.voice-history-back,
+.voice-history-close {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  color: var(--text-mute);
+  border-radius: 50%;
+}
+.voice-history-back:hover,
+.voice-history-close:hover {
+  color: var(--text-body);
+  background: var(--surface);
+}
+.voice-history-title {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  text-align: center;
+}
+.voice-history-title strong {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--fs-body);
+  font-weight: 600;
+}
+.voice-history-thread {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--sp-4) 0 var(--sp-7);
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-strong) transparent;
+}
+.voice-history-thread::-webkit-scrollbar { width: 8px; background: transparent; }
+.voice-history-thread::-webkit-scrollbar-track { background: transparent; }
+.voice-history-thread::-webkit-scrollbar-thumb {
+  background: var(--line-strong);
+  border: 2px solid transparent;
+  background-clip: content-box;
+  border-radius: 999px;
+}
+.voice-history-row {
+  width: 100%;
+  max-width: calc(var(--thread-col-max) + 2 * var(--sp-7));
+  margin-inline: auto;
+  padding: var(--sp-3) var(--sp-7) var(--sp-2);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+.voice-history-row.user { align-items: flex-end; }
+.voice-history-row.agent { align-items: flex-start; }
+.voice-history-agent-sig {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-size: var(--fs-small);
+}
+.voice-history-bubble {
+  font-size: var(--fs-body);
+  line-height: 1.6;
+  color: var(--text-body);
+  unicode-bidi: plaintext;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+}
+.voice-history-bubble.user {
+  max-width: 62%;
+  background: var(--bubble-user-bg);
+  border: var(--hairline) solid var(--line);
+  border-radius: var(--radius-bubble);
+  border-bottom-right-radius: 6px;
+  padding: var(--sp-3) var(--sp-4);
+}
+.voice-history-bubble.agent { max-width: var(--thread-max); }
+.voice-history-empty {
+  max-width: var(--thread-col-max);
+  margin: var(--sp-7) auto;
+  padding-inline: var(--sp-7);
+  color: var(--text-faint);
+  text-align: center;
+}
+@media (max-width: 767px) {
+  .voice-history-head, .voice-history-row { padding-inline: var(--sp-4); }
+  .voice-history-bubble.user { max-width: 75%; }
+}
+
+/* ═══ Reduced motion (3M) — ACCESSIBILITY, not preference ═══════════════
+   A breathing glow is a vestibular trigger. Motion stops, but the HUE STAYS:
+   the colour is what tells you whose turn it is, so dropping it would remove
+   information rather than motion. Karaoke keeps its fill and loses only the
+   flash accent. */
+@media (prefers-reduced-motion: reduce) {
+  .voice { animation: none; }
+  .voice .glow { transition: opacity 100ms linear; }
+  .voice.s-listening .glow-petrol,
+  .voice.s-thinking  .glow-petrol { animation: none; opacity: 0.45; }
+  .voice.s-speaking  .glow-brass  { animation: none; opacity: 0.42; }
+  .voice.s-connecting .glow-bone,
+  .voice.s-denied .glow-bone,
+  .voice.s-failed .glow-bone { animation: none; opacity: 0.5; }
+  .voice .kw { transition: none; }
+  .voice .vturn-agent.follows .kw.spoken { animation: none; }
+  .voice .kw.now { color: inherit; }   /* fill stays, flash goes */
+}
+
+/* ── Work lines (part five) ─────────────────────────────────────────────
+   Shown, never spoken. Muted and italic with a hairline rule, so they read
+   as notes beside the conversation, not as something Michael said. Hebrew
+   is never slanted (3J). */
+.voice .vwork {
+  margin: 6px 0 2px;
+  padding: 4px 0 2px 10px;
+  border-left: 1px solid var(--v-hairline);
+  color: var(--v-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.voice .vwork-label {
+  display: block;
+  font-size: 8px;
+  letter-spacing: 0.18em;
+  opacity: 0.75;
+  margin-bottom: 2px;
+}
+.voice .vwork-line {
+  font-style: italic;
+  overflow-wrap: anywhere;
+}
+.voice .vwork-line { unicode-bidi: plaintext; }
+.voice .vwork-line.has-hebrew { font-style: normal; }
+/* The agent's reply and its work lines stay one left-aligned unit. */
+.voice .vturn-agent-wrap {
+  align-self: flex-start;
+  max-width: 86%;
+}
+.voice .vturn-agent-wrap > .vturn-agent { max-width: 100%; }
+
+/* ── Drops (part six) ───────────────────────────────────────────────────
+   A slim composer above the control rail: attach, a text box for links and
+   notes, SEND. A drop shows in the thread as the owner's, tagged DROPPED IN. */
+.voice .drop-bar {
+  z-index: 2;
+  margin: 0 auto;
+  width: min(560px, calc(100% - 28px));
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.voice .drop-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--v-hairline);
+  border-radius: 999px;
+  padding: 4px 4px 4px 8px;
+  background: rgba(18, 19, 22, 0.7);
+}
+.voice .drop-attach {
+  width: 30px; height: 30px; border-radius: 50%;
+  display: grid; place-items: center; padding: 0;
+  background: transparent; border: 0; color: var(--v-muted); cursor: pointer;
+}
+.voice .drop-attach svg { width: 18px; height: 18px; }
+.voice .drop-text {
+  flex: 1; min-width: 0;
+  background: transparent; border: 0; outline: none;
+  color: var(--v-ink); font: inherit; font-size: 14px;
+}
+.voice .drop-text::placeholder { color: var(--v-muted); }
+.voice .drop-send {
+  border: 0; border-radius: 999px; padding: 7px 14px; cursor: pointer;
+  background: var(--v-petrol); color: var(--v-ink);
+  font-size: 9px; letter-spacing: 0.16em;
+}
+.voice .drop-send:disabled { opacity: 0.4; cursor: default; }
+.voice .drop-chip {
+  align-self: flex-start;
+  position: relative;
+}
+.voice .drop-chip img {
+  height: 56px; border-radius: 8px; border: 1px solid var(--v-hairline); display: block;
+}
+.voice .drop-chip button {
+  position: absolute; top: -6px; right: -6px;
+  width: 18px; height: 18px; border-radius: 50%; padding: 0;
+  border: 1px solid var(--v-hairline); background: var(--v-panel); color: var(--v-ink);
+  font-size: 10px; cursor: pointer;
+}
+.voice .drop-error { font-size: 9px; color: var(--v-warn); letter-spacing: 0.1em; text-align: center; }
+.voice .vturn-user.dropped { border-style: dashed; }
+.voice .drop-tag {
+  display: block; font-size: 8px; letter-spacing: 0.18em; color: var(--v-muted); margin-bottom: 4px;
+}
+.voice .drop-img {
+  display: block; max-width: 100%; max-height: 180px; border-radius: 8px; margin-bottom: 4px;
+}
+.voice .vturn-user.dropped { overflow-wrap: anywhere; }
+
+
+/* ── Always-on: asides and gated remarks ─────────────────────────────── */
+/* Heard but not for him: greyed, smaller, no bubble. It leaves with the screen. */
+.voice .vturn-aside {
+  align-self: flex-end;
+  max-width: 78%;
+  font-size: 13px;
+  color: var(--v-muted);
+  opacity: 0.7;
+  padding: 2px 6px;
+  font-style: italic;
+}
+.voice .vturn-aside .aside-tag {
+  display: block;
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  font-style: normal;
+  margin-bottom: 2px;
+}
+.voice .vturn-user.gated { opacity: 0.92; }
+
+/* ═══ Minimize + the call pill (call-minimize-pill) ═══════════════
+   `.call-pill` is the ONE selector in this file outside `.voice`, and it
+   keeps the file's gate: the pill is a face of the call screen (VoiceLayer),
+   mounted only while a call is live, and a call is only reachable with voice
+   mode on. With the flag off there is no element for it to match.
+
+   Hues are the deck's, declared again here because the pill renders OUTSIDE
+   `.voice` (the screen is unmounted while it shows). Petrol = the owner's turn,
+   brass = Michael speaking — the same reading as the glow horizon, so what
+   the pill says matches what the screen shows when it comes back. */
+
+/* The header's minimize control: a chevron pointing where the screen goes. */
+.voice .vh-min {
+  flex: none;
+  width: 30px; height: 30px;
+  margin-left: -6px;
+  display: grid; place-items: center;
+  border-radius: 50%;
+  color: var(--v-muted);
+  transition: color 160ms var(--v-ease), background-color 160ms var(--v-ease);
+}
+.voice .vh-min svg { width: 18px; height: 18px; }
+.voice .vh-min:hover { color: var(--v-ink); background: rgba(244, 241, 234, 0.08); }
+.voice .vh-min:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--v-brass); }
+.voice .vh-min-label { display: none; }
+/* Wide window (the desktop shell's breakpoint): a hairline pill that says
+   what it does, ink not muted, with the Esc hint in its tooltip. The phone
+   keeps the bare 30px chevron unchanged. */
+@media (min-width: 768px) {
+  .voice .vh-min {
+    width: auto; height: 28px;
+    margin-left: -4px;
+    margin-right: 4px;
+    padding: 0 11px 0 7px;
+    display: flex; align-items: center; gap: 5px;
+    border-radius: 999px;
+    border: 1px solid var(--v-hairline);
+    color: var(--v-ink);
+  }
+  .voice .vh-min svg { width: 16px; height: 16px; }
+  .voice .vh-min-label { display: inline; font-size: 9px; letter-spacing: 0.12em; }
+  .voice .vh-min:hover { border-color: var(--v-muted); }
+}
+
+.call-pill {
+  --cp-petrol: #2e6373;
+  --cp-brass: #c9a24b;
+  --cp-down: #8a867d;
+  --cp-hue: var(--cp-petrol);
+  --cp-ease: cubic-bezier(0.32, 0, 0.18, 1);
+  /* Clear of the composer's send button on the chat view (the `lifted`
+     rules below), near the corner everywhere else. Bottom-RIGHT on purpose:
+     the voice button that started the call lives there, so the call "folds"
+     into the corner it came from and a thumb finds it without looking. */
+  --cp-bottom: calc(20px + env(safe-area-inset-bottom));
+
+  position: fixed;
+  right: calc(16px + env(safe-area-inset-right));
+  bottom: var(--cp-bottom);
+  z-index: 60;                  /* over views and the settings overlay; under menus and modals */
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 14px 8px 9px;
+  border-radius: 999px;
+  background: rgba(18, 19, 22, 0.92);
+  color: #f4f1ea;
+  border: 1px solid rgba(244, 241, 234, 0.12);
+  box-shadow: 0 10px 28px rgba(18, 19, 22, 0.35), 0 0 0 1px rgba(18, 19, 22, 0.2);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  animation: cp-in 220ms var(--cp-ease);
+  transition: bottom 200ms var(--cp-ease), transform 160ms var(--cp-ease);
+}
+.call-pill:hover { transform: translateY(-1px); }
+.call-pill:active { transform: scale(0.98); }
+.call-pill:focus-visible { outline: none; box-shadow: 0 10px 28px rgba(18, 19, 22, 0.35), 0 0 0 2px var(--cp-brass); }
+@keyframes cp-in { from { opacity: 0; transform: translateY(8px) scale(0.96); } to { opacity: 1; transform: none; } }
+
+/* On the chat view the composer sits where the pill does: lift it clear.
+   The composer row is the only thing with that class, so the page can tell
+   by containment — no prop threading, no view enum in the pill. The call
+   sits outside both shells since 10/23, so the page is what contains it. */
+body:has(.composer-row) .call-pill {
+  --cp-bottom: calc(var(--composer-min-h, 50px) + 44px + env(safe-area-inset-bottom));
+}
+
+/* The orb: a solid core and a ring that breathes outward. Hue by state. */
+.call-pill .cp-orb { position: relative; flex: none; width: 26px; height: 26px; }
+.call-pill .cp-core {
+  position: absolute; inset: 6px;
+  border-radius: 50%;
+  background: var(--cp-hue);
+  box-shadow: 0 0 10px var(--cp-hue);
+  transition: background-color 300ms var(--cp-ease), box-shadow 300ms var(--cp-ease);
+}
+.call-pill .cp-ring {
+  position: absolute; inset: 0;
+  border-radius: 50%;
+  border: 1.5px solid var(--cp-hue);
+  opacity: 0;
+  animation: cp-pulse 2.4s ease-out infinite;
+  transition: border-color 300ms var(--cp-ease);
+}
+@keyframes cp-pulse {
+  0%   { transform: scale(0.55); opacity: 0.9; }
+  70%  { transform: scale(1.15); opacity: 0; }
+  100% { transform: scale(1.15); opacity: 0; }
+}
+
+/* The owner's turn: petrol. Michael's: brass. The flip is the deck's 300ms. */
+.call-pill.tone-petrol { --cp-hue: var(--cp-petrol); }
+.call-pill.tone-brass  { --cp-hue: var(--cp-brass); }
+/* Between turns (and while he works): a slow breathe from one to the other,
+   so the pill is never still while the call is live. */
+.call-pill.tone-alt .cp-core {
+  animation: cp-alt 4.8s ease-in-out infinite;
+}
+.call-pill.tone-alt .cp-ring { animation: cp-pulse 2.4s ease-out infinite, cp-alt-ring 4.8s ease-in-out infinite; }
+@keyframes cp-alt {
+  0%, 100% { background-color: var(--cp-petrol); box-shadow: 0 0 10px var(--cp-petrol); }
+  50%      { background-color: var(--cp-brass);  box-shadow: 0 0 10px var(--cp-brass); }
+}
+@keyframes cp-alt-ring {
+  0%, 100% { border-color: var(--cp-petrol); }
+  50%      { border-color: var(--cp-brass); }
+}
+/* The link is down: grey, and the ring slows — waiting, not live. */
+.call-pill.tone-down { --cp-hue: var(--cp-down); }
+.call-pill.tone-down .cp-core { box-shadow: none; }
+.call-pill.tone-down .cp-ring { animation-duration: 3.6s; }
+/* Ended (the pill's last 1.1 s before it leaves with the screen): still. */
+.call-pill.tone-ended { --cp-hue: var(--cp-down); }
+.call-pill.tone-ended .cp-core { box-shadow: none; }
+.call-pill.tone-ended .cp-ring { animation: none; opacity: 0; }
+
+.call-pill .cp-text {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 2px;
+  font-size: 9px; letter-spacing: 0.16em; line-height: 1;
+  white-space: nowrap;
+}
+.call-pill .cp-label { color: #8a867d; }
+.call-pill.working .cp-label { color: var(--cp-brass); }
+.call-pill.tone-down .cp-label { color: #8a867d; }
+.call-pill .cp-timer { font-size: 11px; letter-spacing: 0.08em; color: #f4f1ea; font-variant-numeric: tabular-nums; }
+
+@media (prefers-reduced-motion: reduce) {
+  .call-pill { animation: none; }
+  .call-pill .cp-ring { animation: none; opacity: 0.5; transform: scale(0.85); }
+  /* Hue stays (it is information); the breathe between turns goes. */
+  .call-pill.tone-alt .cp-core { animation: none; background: var(--cp-petrol); box-shadow: none; }
+  .call-pill.tone-alt .cp-ring { animation: none; border-color: var(--cp-petrol); }
+}

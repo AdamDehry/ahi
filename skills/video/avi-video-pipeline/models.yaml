@@ -1,0 +1,147 @@
+# avi-video-pipeline model configuration
+#
+# v3 (2026-11-05): the PRIMARY stack is Higgsfield, called live through the Higgsfield MCP (in chat) or the
+# `higgsfield` CLI. The `higgsfield:` block below documents it; models are passed by these ids. Re-check it
+# with MCP models_explore (action: list / recommend) before a project; prices move, so preflight with
+# `generate cost` / balance instead of trusting numbers here.
+#
+# The `stages:` block further down is the LEGACY fal.ai four-stage path read by scripts/generate_shot.py.
+# It needs FAL_KEY; keep it for evals and for installs that have a fal account.
+
+higgsfield:
+  verified: 2026-11-05            # live models_explore list
+  stills:
+    default: gpt_image_2_6        # MCP generate_image default; edits from a reference sheet
+    reference_work: nano_banana_pro   # also nano_banana_2; fusion and sheet edits
+    batches: soul_cinema          # location / look variations in batches
+  motion:
+    seedance_2_5:   {modes: [t2v, omni_reference, video_edit, video_extension], seconds: "4-30", res: [480p, 720p, 1080p], refs: [image, video, audio], voice_ref: true}
+    seedance_2_0:   {seconds: "4-15", res: "up to 4K (std mode needs Plus or higher)", genre_param: true, voice_ref: true}
+    cinematic_studio_video_4_0: {controls: [camera, lens, aperture, era, pacing, lighting, color_palette], omni_reference: true, note: "does its own prompt direction"}
+    cinematic_studio_3_0: {res: 4K, seconds: "4-15"}
+    kling4_0:       {seconds: "3-30", reference_to_video: true, max_element_ids: 7, voice_ref: false}
+    kling_o3_image_reference: {multi_shots: true, multi_prompt: true}
+    minimax_h3:     {res: 2K, refs: [audio], voice_ref: true}
+  dialogue:
+    native: seedance_2_5          # generate_audio true + voice-lock reference (scripts/talking_shot.py)
+    fallback_order: [voice_change, sync_so, lipsync_studio_web]   # sync_so = Sync Lipsync 3 (input_video + input_audio)
+  finishing: [dubbing, video_upscale, bytedance_video_upscale]
+
+stages:
+
+  face:
+    engine: fal-flux-dev
+    options:
+      image_size: portrait_4_3
+      num_inference_steps: 28
+      guidance_scale: 3.5
+      num_images: 1
+      enable_safety_checker: true
+
+  outfit:
+    engine: fal-flux-dev
+    options:
+      image_size: portrait_4_3
+      num_inference_steps: 28
+      guidance_scale: 3.5
+      num_images: 1
+      enable_safety_checker: true
+
+  fusion:
+    engine: fal-nano-banana-2-edit
+    options:
+      num_images: 1
+      output_format: jpeg
+
+  # Stage 3b — character sheet (OmniReference ingredient).
+  # Runs Nano Banana 2 on the master to produce a single image with multiple
+  # poses of the character. Used alongside the master in motion calls so
+  # Seedance has contextual understanding of the character across angles.
+  # Skip via --skip-character-sheet if the shot doesn't need identity lock
+  # (atmospheric B-roll) or if the character is already sheet-cached.
+  character_sheet:
+    engine: fal-nano-banana-2-edit
+    options:
+      num_images: 1
+      output_format: jpeg
+    # prompt: if omitted, uses DEFAULT_CHARACTER_SHEET_PROMPT in generate_shot.py
+    # Override via --sheet-prompt for bespoke pose sets.
+
+  motion:
+    # Default: ref2vid-tagged — works across character styles including
+    # photorealistic. Uses @Image1 anchoring in the prompt for identity.
+    #
+    # Alternative: seedance-img2vid — strongest theoretical identity lock
+    # (master = frame 1) BUT its safety filter is stricter and may block
+    # photorealistic AI-generated characters as "likeness of real person."
+    # Use img2vid for stylized characters (anime, illustration, comic-book)
+    # where the filter doesn't trip. Verified in a live run.
+    engine: seedance-ref2vid-tagged
+    options:
+      resolution: "720p"
+      aspect_ratio: "16:9"
+      duration: 10              # seconds, 4-15
+      generate_audio: true
+
+  # ---------------------------------------------------------------------------
+  # DIALOGUE SHOTS (v2, 2026-10-09) — native audio is the default.
+  # Driven by scripts/talking_shot.py through the Higgsfield CLI, not fal.ai.
+  # The model speaks the words AND draws the mouth in one pass; we keep that audio.
+  # This is the call claude.ai's Higgsfield connector makes (ugc-video workflow).
+  # See references/higgsfield-audit-2026-10.md.
+  # ---------------------------------------------------------------------------
+  talking:
+    engine: higgsfield-seedance-2.5
+    model: seedance_2_5
+    options:
+      mode: omni_reference        # t2v automatically when there are no references
+      generate_audio: true        # NEVER false for a dialogue shot
+      resolution: "720p"          # 7 credits/s. 480p or draft: 3/s. 1080p: 12/s
+      aspect_ratio: "9:16"
+      duration: 8                 # 8s @720p = 56 credits; keep each job <= 60 unless approved
+    voice_lock:
+      # One reference per character, reused on every shot. 5-12s, dialogue only,
+      # dry, one speaker. Cut it from an approved take (talking_shot.py voice-ref)
+      # or use a consented clone's sample. Models that accept it:
+      #   seedance_2_5, seedance_2_0, wan3_0, grok_video_v15, minimax_h3
+      reference: null             # per character: characters/<name>/voice-lock.wav
+    density_words_per_second: 2.8   # above this, speech gets compressed; split the line
+    max_credits_per_job: 60
+
+  # Fallback only — when a take is right but the voice must be one exact voice.
+  dialogue_fallback:
+    voice_change: higgsfield voice_change   # keeps timing, so the mouth still matches
+    lipsync: higgsfield LipSync Studio      # WEB APP ONLY, not reachable by CLI/MCP
+
+  # Sound pass for native-audio takes: scripts/mix_native.py.
+  # Native track is the main bus; add music and a continuous floor under it.
+  sound:
+    speech_rms_db: -18
+    music_rms_db: -37
+    floor_rms_db: -45
+    music_source: sonilo_music      # CLI-callable; MCP labels it game-pipeline only — confirm
+    sfx_source: mirelo_text_to_audio  # same caveat; prefer native foley first
+
+# Storage paths — change only if $HOME/ai/skills/ layout evolves.
+storage:
+  character_cache: $HOME/ai/skills/videos/characters
+  generated_root:  $HOME/ai/skills/videos/generated
+  eval_root:       $HOME/ai/skills/videos/evals
+
+# Known engines — for documentation only. The actual registry lives in
+# scripts/generate_shot.py (source of truth). Update both when adding engines.
+engines_available:
+  image:
+    - fal-flux-dev
+    - fal-flux-schnell        # cheaper fallback, lower quality
+    # Future candidates: fal-flux-pro-v1.1-ultra, fal-seedream-5.0, ...
+  fusion:
+    - fal-nano-banana-2-edit  # also used for Stage 3b (character sheet)
+    - fal-nano-banana-pro-edit  # higher quality, slower
+    # Future: fal-flux-kontext-pro
+  motion:
+    # All motion engines accept a list of reference_urls (OmniReference).
+    # Max 9 references per Seedance 2.0 fal.ai spec.
+    - seedance-ref2vid-tagged   # DEFAULT — @Image1..N anchoring, universal filter compat
+    - seedance-img2vid          # strongest identity lock for stylized chars; uses ref[0] only
+    - seedance-ref2vid          # no anchoring — atmospheric only, character drifts

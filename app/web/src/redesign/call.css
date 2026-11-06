@@ -1,0 +1,130 @@
+/* ============================================================================
+   Live call in the redesign (slice 3). The call host stays mounted above the
+   whole app (so a width change or a page change never ends a call); this
+   layer only places its full face INSIDE the canvas — rail and top bar stay
+   usable (FINAL 05 §6) — and restyles it: chevron + name + state + timer,
+   committed thoughts above, the live line, the note field, round controls
+   with sentence-case labels (Mute, Share screen, Record, End). The minimized
+   face is the "With <agent>" return chip: centred above the composer in
+   Messages (with its row reserved), bottom-right of the canvas elsewhere.
+   voice.css is not edited; its tests pin the pre-redesign source.
+   ========================================================================== */
+.voice {
+  --v-void: var(--bg); --v-void-2: var(--bg); --v-panel: var(--surface); --v-bubble: var(--raised);
+  --v-hairline: var(--line); --v-ink: var(--text); --v-muted: var(--text-mute); --v-brass: var(--accent); --v-brass-flash: var(--accent);
+  top: var(--rd-top-h); left: var(--rd-rail-w); right: var(--rd-canvas-gap); bottom: var(--rd-canvas-gap);
+  border: 1px solid var(--line); border-radius: var(--rd-canvas-radius); overflow: hidden;
+  padding-inline: max(24px, calc((100% - 862px) / 2));
+  background: var(--bg);
+  font-family: var(--font-ui); animation: none;
+}
+:root:has(.rd-app.rail-collapsed) .voice { left: var(--rd-rail-w-collapsed); }
+:root:has(.rd-app.phone) .voice { top: calc(58px + env(safe-area-inset-top, 0px)); left: 5px; right: 5px; bottom: var(--rd-dock-space); border-radius: 14px; padding-inline: 14px; }
+.voice .mono, .voice .ctl-label, .voice .vh-label, .voice .vh-timer, .voice .center-note, .voice .share-banner, .voice .follow-pill, .voice .drop-send { font-family: var(--font-ui); letter-spacing: 0; }
+
+/* Header: a small down arrow (FINAL), live dot, name, state in FINAL's words, timer */
+.voice .voice-head { padding: 26px 0 14px; gap: 10px; align-items: center; }
+.voice .vh-min { border: 0; background: none; padding: 4px 6px; gap: 4px; color: var(--text-mute); border-radius: 8px; }
+.voice .vh-min:hover { color: var(--text); background: var(--raised); }
+.voice .vh-min { width: 32px; height: 32px; padding: 0; display: grid; place-items: center; }
+.voice .vh-min svg { width: 18px; height: 18px; }
+.voice .voice-head strong { font-size: 16px; font-weight: 550; color: var(--text); }
+.voice .vh-label { font-size: 10px; color: var(--text-mute); text-transform: none; letter-spacing: .15px; display: inline-block; }
+.voice .vh-timer { margin-left: auto; font-size: 12px; color: var(--text-mute); font-variant-numeric: tabular-nums; }
+.voice .agent-dot.live { width: 6px; height: 6px; background: #5fb3c7; box-shadow: 0 0 8px #5fb3c7; }
+
+/* Banners and notes in plain words */
+.voice .share-banner { border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--text); font-size: 11.5px; text-transform: none; align-self: center; }
+.voice .center-note, .voice .work-note { color: var(--text-mute); font-size: 12px; text-transform: none; letter-spacing: .02em; }
+.voice .perm-card { background: var(--surface); border-color: var(--line); border-radius: 14px; }
+
+/* Transcript: committed thoughts above, the live words italic at the bottom */
+.voice .vturn-agent { font-size: 15px; line-height: 1.7; color: var(--text); }
+.voice .vturn-user, .voice .provisional { font-style: italic; font-size: 17px; color: var(--text); }
+
+/* Note field (drop a link, a note, an image into the call) */
+.voice .drop-bar { max-width: 862px; width: 100%; margin: 0 auto 18px; }
+.voice .drop-row { min-height: 47px; border: 1px solid var(--line); border-radius: 24px; background: color-mix(in srgb, var(--surface) 70%, transparent); padding: 0 6px 0 14px; }
+.voice .drop-text { font-size: 13px; color: var(--text); }
+.voice .drop-send { width: 32px; height: 32px; border-radius: 50%; padding: 0; font-size: 0; background: color-mix(in srgb, var(--accent) 22%, transparent); color: var(--accent); }
+.voice .drop-send::before { content: "↑"; font-size: 15px; }
+
+/* Controls — FINAL voice.css one for one: Mute · Share screen · (Record while sharing) ·
+   End · Standby; a 19px icon in a 45px bordered round, its word beneath at 9px; End inverted and larger. */
+.voice .voice-controls { display: flex; align-items: flex-start; justify-content: center; gap: 26px; padding: 21px 0 30px; }
+.voice-control { display: flex; flex-direction: column; align-items: center; gap: 9px; width: 64px; padding: 0; border: 0; background: none; color: var(--text-mute); font: inherit; font-size: 9px; letter-spacing: .2px; cursor: pointer; }
+.voice-control > svg { width: 19px; height: 19px; padding: 13px; box-sizing: content-box; border-radius: 50%; border: 1px solid var(--line); background: var(--surface); fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.voice-control:hover { color: var(--text); }
+.voice-control[aria-pressed="true"] > svg { background: var(--accent-bg); border-color: var(--accent); color: var(--accent); }
+.voice-control.voice-end { color: var(--text); }
+.voice-control.voice-end > svg { width: 22px; height: 22px; padding: 15px; background: var(--text); color: var(--bg); border-color: transparent; }
+.voice-control.rec[aria-pressed="false"] > svg { color: var(--text-mute); }
+:root:has(.rd-app.phone) .voice .voice-controls { gap: 20px; padding-top: 18px; }
+@media (max-height: 650px) { .voice .voice-controls { padding-top: 10px; gap: 18px; } .voice-control > svg { padding: 10px; } }
+
+/* Call end: no stray line across the controls — FINAL has no baseline; an ordinary End
+   closes straight away with a "saved in chat" toast (VoiceLayer). */
+.voice .baseline { display: none; }
+
+/* ── Return chip ──────────────────────────────────────────────────────── */
+.call-pill {
+  right: calc(var(--rd-canvas-gap) + 18px); bottom: calc(var(--rd-canvas-gap) + 18px);
+  min-height: 46px; padding: 6px 12px 6px 10px; gap: 10px; border-radius: 999px;
+  background: var(--surface); border: 1px solid var(--line); color: var(--text); font-family: var(--font-ui);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 14%, transparent), 0 10px 30px rgba(0, 0, 0, .3);
+}
+.call-pill .cp-text { display: grid; gap: 1px; text-align: left; font-family: var(--font-ui); letter-spacing: 0; }
+.call-pill .cp-name { font-size: 12px; font-weight: 550; color: var(--text); }
+.call-pill .cp-label, .call-pill .cp-timer { display: inline; font-size: 9px; color: var(--text-mute); text-transform: none; }
+.call-pill .cp-timer::before { content: " · "; }
+.call-pill .cp-text { grid-template-columns: auto auto; }
+.call-pill .cp-name { grid-column: 1 / -1; }
+.call-pill .cp-go { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; color: var(--text-mute); }
+/* In Messages: centred above the composer, its row reserved so history never hides under it. */
+body:has(.rd-messages .composer-row) .call-pill, body:has(.rd-app.phone .composer-row) .call-pill {
+  right: auto; left: calc(var(--rd-rail-w) + 68px + (100vw - var(--rd-rail-w) - 68px - var(--rd-canvas-gap)) / 2); translate: -50% 0;
+  bottom: calc(var(--rd-canvas-gap) + 112px);
+}
+body:has(.rd-app.rail-collapsed .rd-messages .composer-row) .call-pill { left: calc(var(--rd-rail-w-collapsed) + 68px + (100vw - var(--rd-rail-w-collapsed) - 68px - var(--rd-canvas-gap)) / 2); }
+body:has(.call-pill) .rd-messages .composer-row, body:has(.call-pill) .rd-app.phone .composer-row { padding-top: 70px; }
+body:has(.rd-app.phone .composer-row) .call-pill { left: 50%; bottom: calc(var(--rd-dock-space) + 96px); }
+body:has(.rd-app.phone) .call-pill:not(:is(body:has(.composer-row) *)) { bottom: calc(var(--rd-dock-space) + 12px); }
+@media (prefers-reduced-motion: reduce) { .call-pill .cp-ring { animation: none; } }
+
+/* The composer's call orb (FINAL composer-call-halo): no ring at rest — the teal ring and
+   its breathing halo show ONLY while that agent's call is live. */
+.rd-messages .send-slot, .rd-app.phone .send-slot { box-shadow: inset 0 1px 1px #fff5, inset 0 -2px 4px #65401e30, 0 1px 3px #0002; border: 1px solid #f5dfa850; }
+.rd-messages .send-slot.is-live, .rd-app.phone .send-slot.is-live { animation: rd-call-halo 2.4s ease-in-out infinite; box-shadow: inset 0 1px 1px #fff5, inset 0 -2px 4px #65401e30, 0 0 0 1.5px #4b786a, 0 0 0 4px color-mix(in srgb, #4b786a 30%, transparent); }
+@keyframes rd-call-halo {
+  0%, 100% { box-shadow: inset 0 1px 1px #fff5, inset 0 -2px 4px #65401e30, 0 0 0 1.5px #4b786a, 0 0 0 4px color-mix(in srgb, #4b786a 30%, transparent); }
+  50% { box-shadow: inset 0 1px 1px #fff5, inset 0 -2px 4px #65401e30, 0 0 0 1.5px #4b786a, 0 0 0 6px color-mix(in srgb, #4b786a 30%, transparent); }
+}
+@media (prefers-reduced-motion: reduce) { .rd-messages .send-slot.is-live, .rd-app.phone .send-slot.is-live { animation: none; } }
+
+/* ── Call transitions (item 6; the concept's voice.css) ──────────────────────────────────
+   Who is talking shows in the glow, stronger than before and switching cleanly: petrol while the owner speaks,
+   brass while the agent does, a calm low petrol while it only listens. One layer per voice, crossfaded by
+   opacity (never a repainted gradient), the live one breathing in height as the concept's does. */
+.voice { --rd-petrol: 64, 146, 154; --rd-brass: 207, 170, 98; }
+:root[data-theme=light] .voice { --rd-petrol: 42, 126, 136; --rd-brass: 175, 127, 49; }
+.voice .glow { bottom: -17%; height: 72%; width: 130%; transform-origin: 50% 100%; transition: opacity 420ms ease; }
+.voice .glow-petrol { background: radial-gradient(ellipse 50% 60% at 50% 100%, rgba(var(--rd-petrol), .56) 0%, rgba(var(--rd-petrol), .22) 38%, rgba(var(--rd-petrol), .06) 60%, transparent 78%); }
+.voice .glow-brass { background: radial-gradient(ellipse 50% 60% at 50% 100%, rgba(var(--rd-brass), .56) 0%, rgba(var(--rd-brass), .22) 38%, rgba(var(--rd-brass), .06) 60%, transparent 78%); }
+:root[data-theme=light] .voice .glow-petrol, :root[data-theme=light] .voice .glow-brass { filter: saturate(1.15); }
+.voice.s-listening .glow-petrol, .voice.s-thinking .glow-petrol { opacity: .5; animation: none; }
+.voice.s-listening.user-talking .glow-petrol, .voice.s-speaking .glow-brass { opacity: 1; animation: rd-voice-breathe 1.8s ease-in-out infinite alternate; }
+@keyframes rd-voice-breathe { from { transform: translateX(-50%) scale(.96, .9); } to { transform: translateX(-50%) scale(1.04, 1.1); } }
+@media (prefers-reduced-motion: reduce) { .voice .glow { animation: none !important; } }
+
+/* An ordinary End leaves without a flash: the whole face fades as it is (glow included, no ended note,
+   no snap to a bare background) in the same short beat it takes to close. A cut-off call keeps its note. */
+.voice.s-ended.quick-end { opacity: 0; transition: opacity 120ms ease; }
+.voice.s-ended.quick-end .glow { transition-duration: 120ms; }
+.voice.quick-end .center-note { visibility: hidden; }
+
+/* Minimize: the pill drops straight into its place, centred above the composer — no slide in from the
+   right corner. Centring (above) uses `translate`, so the entrance, hover and press transforms never
+   undo it, and nothing animates its position. */
+.call-pill { transition: box-shadow 160ms ease; animation: rd-pill-drop 220ms cubic-bezier(.32, 0, .18, 1); }
+@keyframes rd-pill-drop { from { opacity: 0; transform: translateY(-10px) scale(.96); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .call-pill { animation: none; } }

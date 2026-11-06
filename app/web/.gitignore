@@ -1,0 +1,8 @@
+node_modules/
+dist/
+dev-dist/
+*.local
+*.tsbuildinfo
+scripts/.fonts/
+# ElevenLabs worklets, copied from node_modules before each build (scripts/copy-eleven-worklets.mjs)
+public/eleven-worklets/

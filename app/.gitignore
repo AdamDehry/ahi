@@ -1,0 +1,36 @@
+node_modules
+dist
+# Pre-deploy dist snapshots (dist.bak-<handoff>-<timestamp>) — rollback ballast,
+# never source. Machine-local by design.
+dist.bak-*
+.env
+.env.local
+.env.bak*
+config/users.json
+config/operating-costs.json
+*.log
+logs/*
+!logs/.gitkeep
+.DS_Store
+**/.DS_Store
+
+# Syncthing conflict artifacts — never track, never compile (see scripts/check-sync-conflicts.mjs)
+*.sync-conflict-*
+*.sync-conflict-*.*
+
+# Voice/audio samples — keep existing tracked files, ignore new ones
+samples/
+
+# WhatsApp channel test scratch (test/helpers/whatsapp.ts)
+.tmp-whatsapp-tests/
+test/fixtures/whatsapp/last-run-*.json
+test/fixtures/whatsapp/claude-last-run.json
+
+# Build scratch folder
+.sandbox/
+
+# Local notes exported from voice providers: never in git.
+notes/eleven-history/
+
+# Screenshots and preview evidence stay out of git
+redesign/evidence/

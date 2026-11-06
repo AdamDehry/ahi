@@ -51,7 +51,7 @@ That's it. Everything below is detail for when you want it.
 `launch-as.sh mat` composes one system prompt from: the MAT boot header → Michael soul
 → Avi soul → Tzali soul → shared neshamah → AHI Foundation → universal NESHAMA/USER
 layers (if present) → the MAT collaboration protocol → per-soul memories → runtime
-orientation. The single-agent identities (`michael`, `tzali`, `avi`, `eliyahu`, `miriam`)
+orientation. The single-agent identities (`michael`, `tzali`, `avi`, `miriam`)
 are unchanged — `launch-as.sh tzali` still does exactly what it always did.
 
 Check what's wired up:

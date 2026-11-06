@@ -1,0 +1,60 @@
+/* Sign-in — copied from the FINAL concept (prototype/concept/onboarding.css: .onboarding-body, .setup-frame,
+   .setup-signin*, .setup-form, .setup-button, .setup-entry-switch, .setup-card, .setup-return, .setup-footer),
+   scoped to .rd-signin. Dark brand surface on every theme, as in the concept. */
+.rd-signin {
+  --bg: #101b1a; --surface: #162321; --raised: #1c2c29; --ink: #f2f0e8; --muted: #a9b5ad; --line: #34443f;
+  --accent: #d4b780; --on-accent: #17231b;
+  position: fixed; inset: 0; overflow-y: auto; background: #0c1716; color: var(--ink);
+  font-family: AHI, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 14px; line-height: 1.6; color-scheme: dark;
+}
+.rd-signin * { box-sizing: border-box; }
+.rd-signin button, .rd-signin input { font: inherit; }
+.rd-signin button { cursor: pointer; touch-action: manipulation; }
+.rd-signin button:disabled { opacity: .45; cursor: default; }
+.rd-signin :focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+.rd-signin h1, .rd-signin h3, .rd-signin p { margin: 0; }
+.rd-signin h1 { font-size: 29px; font-weight: 480; letter-spacing: -.9px; line-height: 1.2; }
+.rd-signin h3 { font-size: 14px; font-weight: 550; }
+.rd-signin .setup-frame { min-height: 100dvh; display: flex; flex-direction: column; padding: 25px 34px 18px; background: radial-gradient(ellipse at 14% 0%, #25423b66, transparent 53%); }
+.rd-signin .setup-masthead { display: flex; justify-content: space-between; align-items: center; gap: 20px; max-width: 1230px; width: 100%; margin: 0 auto; min-height: 20px; }
+.rd-signin .setup-wordmark { font-size: 29px; font-weight: 650; letter-spacing: -1.5px; color: var(--ink); text-decoration: none; background: none; border: 0; padding: 0; }
+.rd-signin .setup-wordmark i { font-style: normal; color: var(--accent); }
+.rd-signin .setup-signin { min-height: calc(100dvh - 130px); display: grid; place-items: center; width: 100%; padding: 45px 15px; }
+.rd-signin .setup-signin-inner { width: min(385px, 100%); text-align: center; }
+.rd-signin .setup-signin-inner .setup-wordmark { font-size: 68px; letter-spacing: -4px; }
+.rd-signin .setup-brand-description { font-size: 9px; letter-spacing: 2.1px; color: var(--accent); margin: 4px 0 38px; }
+.rd-signin .setup-kicker { font-size: 10px; letter-spacing: 1.7px; color: var(--accent); margin-bottom: 12px; }
+.rd-signin .setup-intro { color: var(--muted); font-size: 12px; line-height: 1.85; margin: 15px 0 28px; }
+.rd-signin .setup-entry-switch { display: flex; padding: 4px; border: 1px solid var(--line); background: #0c1716; border-radius: 12px; margin: 22px 0; }
+.rd-signin .setup-entry-switch button { flex: 1; border: 0; background: none; border-radius: 8px; padding: 8px; color: var(--muted); font-size: 12px; }
+.rd-signin .setup-entry-switch [aria-current=page] { color: var(--ink); background: var(--raised); }
+.rd-signin .setup-form { display: grid; gap: 19px; text-align: left; }
+.rd-signin .setup-form label { display: grid; gap: 8px; font-size: 12px; }
+.rd-signin .setup-input { display: block; min-height: 44px; width: 100%; min-width: 0; padding: 11px 13px; border: 1px solid var(--line); border-radius: 10px; background: #101b1a; color: var(--ink); font-size: 15px; }
+.rd-signin .setup-input::placeholder { color: #7f8c86; }
+.rd-signin .setup-button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 42px; padding: 10px 17px; border: 1px solid var(--line); border-radius: 10px; background: var(--raised); color: var(--ink); font-size: 12px; text-decoration: none; line-height: 1.5; }
+.rd-signin .setup-button.primary { background: linear-gradient(145deg, #e2c994, var(--accent)); border-color: var(--accent); color: var(--on-accent); }
+.rd-signin .setup-form > .setup-button { width: 100%; }
+.rd-signin .setup-error { font-size: 12px; line-height: 1.7; color: #edb6aa; margin: -7px 0 0; min-height: 0; }
+.rd-signin .setup-error:empty { display: none; }
+.rd-signin .setup-button-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 13px; }
+.rd-signin .setup-end { justify-content: flex-end; }
+.rd-signin .setup-center { justify-content: center; margin-top: 20px; }
+.rd-signin .setup-card { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 23px; margin-top: 17px; text-align: left; }
+.rd-signin .setup-card-gap { margin-top: 18px; }
+.rd-signin .setup-footnote { font-size: 10px; color: var(--muted); margin-top: 7px; line-height: 1.8; }
+.rd-signin .setup-return { border: 1px dashed #6b634b; border-radius: 12px; padding: 17px 19px; margin: 20px 0; text-align: left; }
+.rd-signin .setup-return h3 { color: var(--accent); }
+.rd-signin .setup-return p { font-size: 12px; color: var(--muted); margin: 7px 0 13px; line-height: 1.8; }
+.rd-signin .setup-download { width: 100%; margin-bottom: 4px; }
+.rd-signin .setup-footer { font-size: 10px; color: var(--muted); display: flex; justify-content: space-between; gap: 15px; width: 100%; max-width: 1230px; margin: 0 auto; }
+@media (max-width: 720px) {
+  .rd-signin .setup-frame { padding: 19px 18px 18px; }
+  .rd-signin .setup-signin { padding: 30px 3px; }
+  .rd-signin .setup-signin-inner .setup-wordmark { font-size: 59px; }
+  .rd-signin h1 { font-size: 27px; }
+  .rd-signin .setup-input { font-size: 16px; }
+  .rd-signin .setup-button { min-height: 44px; padding: 10px 13px; }
+  .rd-signin .setup-footer { flex-direction: column; gap: 3px; }
+}
+@media (prefers-reduced-motion: reduce) { .rd-signin * { transition: none !important; animation: none !important; } }

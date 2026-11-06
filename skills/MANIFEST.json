@@ -1,0 +1,149 @@
+{
+  "release": "0.2.0",
+  "skills": [
+    {
+      "name": "avi-studio",
+      "category": "video",
+      "version": "1.1.0",
+      "last_verified": "2026-11-05"
+    },
+    {
+      "name": "avi-video-pipeline",
+      "category": "video",
+      "version": "3.0.0",
+      "last_verified": "2026-11-05"
+    },
+    {
+      "name": "higgsfield-content-factory",
+      "category": "video",
+      "version": "1.0.0",
+      "last_verified": "2026-11-05"
+    },
+    {
+      "name": "higgsfield-generate",
+      "category": "video",
+      "version": "0.3.0",
+      "last_verified": "2026-11-05"
+    },
+    {
+      "name": "documents",
+      "category": "design",
+      "version": "1.1.0",
+      "last_verified": "2026-11-05"
+    },
+    {
+      "name": "headless-browser-on-vps",
+      "category": "design",
+      "version": "1.0.0",
+      "last_verified": "2026-11-05"
+    },
+    {
+      "name": "higgsfield-marketplace-cards",
+      "category": "design",
+      "version": "0.3.0",
+      "last_verified": "2026-11-05"
+    },
+    {
+      "name": "higgsfield-product-photoshoot",
+      "category": "design",
+      "version": "0.3.0",
+      "last_verified": "2026-11-05"
+    },
+    {
+      "name": "vision",
+      "category": "design",
+      "version": "1.1.0",
+      "last_verified": "2026-11-05"
+    },
+    {
+      "name": "audit-codebase",
+      "category": "code-quality",
+      "version": "1.1.1",
+      "last_verified": "2026-11-05"
+    },
+    {
+      "name": "codex-consult",
+      "category": "code-quality",
+      "version": "1.1.1",
+      "last_verified": "2026-11-05"
+    },
+    {
+      "name": "oom-safe-test-runs",
+      "category": "code-quality",
+      "version": "1.1.0",
+      "last_verified": "2026-11-05"
+    },
+    {
+      "name": "safe-shell-hygiene",
+      "category": "code-quality",
+      "version": "1.0.0",
+      "last_verified": "2026-11-05"
+    },
+    {
+      "name": "simplify-pass",
+      "category": "code-quality",
+      "version": "1.0.0",
+      "last_verified": "2026-11-05"
+    },
+    {
+      "name": "browser-control",
+      "category": "ops-infra",
+      "version": "1.0.1",
+      "last_verified": "2026-11-05"
+    },
+    {
+      "name": "cron-job-pattern",
+      "category": "ops-infra",
+      "version": "1.0.0",
+      "last_verified": "2026-11-05"
+    },
+    {
+      "name": "find-skills",
+      "category": "ops-infra",
+      "version": "1.0.0",
+      "last_verified": "2026-11-05"
+    },
+    {
+      "name": "organize-the-ahi-way",
+      "category": "ops-infra",
+      "version": "1.0.0",
+      "last_verified": "2026-11-05"
+    },
+    {
+      "name": "record-a-ruling",
+      "category": "ops-infra",
+      "version": "1.1.0",
+      "last_verified": "2026-11-05"
+    },
+    {
+      "name": "jev-classifier-calls",
+      "category": "research",
+      "version": "1.1.0",
+      "last_verified": "2026-11-05"
+    },
+    {
+      "name": "kohler-tax-strategy",
+      "category": "research",
+      "version": "1.1.0",
+      "last_verified": "2026-11-05"
+    },
+    {
+      "name": "vin-verify-vpic",
+      "category": "research",
+      "version": "1.1.0",
+      "last_verified": "2026-11-05"
+    },
+    {
+      "name": "youtube-lessons",
+      "category": "research",
+      "version": "1.1.0",
+      "last_verified": "2026-11-05"
+    },
+    {
+      "name": "memory-fetch",
+      "category": "torah",
+      "version": "1.1.1",
+      "last_verified": "2026-11-05"
+    }
+  ]
+}

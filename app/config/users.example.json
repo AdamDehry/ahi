@@ -1,0 +1,12 @@
+[
+  {
+    "token": "REPLACE_WITH_crypto.randomBytes(32).toString('hex')",
+    "name": "Your name",
+    "telegramChatId": null,
+    "timezone": "America/New_York",
+    "locationLabel": "New York, NY",
+    "agents": ["michael", "tzali", "avi", "miriam"],
+    "admin": true,
+    "jewishCalendar": false
+  }
+]

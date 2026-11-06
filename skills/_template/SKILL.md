@@ -1,9 +1,13 @@
 ---
 name: _template
-description: Template skill. Not a real skill — copy this directory to start a new one. Never trigger on its own.
-owner: shared
-requires: []
-tags: [meta, template]
+description: Template skill. Not a real skill — copy this directory to <category>/<your-skill-name>/ to start a new one. Never trigger on its own.
+version: 1.0.0
+category: <the shelf folder it lives on, e.g. video, design, code-quality, ops-infra, research, torah>
+private: true            # false only if it holds nothing personal, no keys, hosts or machine paths (it will be published)
+last_verified: <YYYY-MM-DD you last ran it>
+verified_by: <agent>
+sources:
+  - <file:line, URL or session each step came from>
 ---
 
 # Skill Name
@@ -38,7 +42,7 @@ Numbered, step-by-step. Write it the way you'd brief a colleague who has never d
 
 1. **Understand the ask.** Confirm the URL, the output format the user wants, and whether they want lessons extracted or just the raw transcript.
 2. **Fetch.** Use `yt-dlp` to pull audio.
-3. **Transcribe.** Run Whisper over the audio. Save transcript to `~/ai/tmp/<video-id>.txt`.
+3. **Transcribe.** Run Whisper over the audio. Save transcript to `$AHI_AI_ROOT/tmp/<video-id>.txt`.
 4. **Extract.** Use an LLM pass to pull out:
    - Core thesis (1–2 sentences)
    - Techniques demonstrated (with timestamps)

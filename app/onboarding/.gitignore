@@ -1,0 +1,10 @@
+node_modules/
+artifacts/
+.cache/
+.tmp/
+test-results/
+evidence/sandbox/
+evidence/probe-home/
+EVIDENCE/outside-writes/
+runtime/
+staged/

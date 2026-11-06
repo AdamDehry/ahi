@@ -67,7 +67,7 @@ When a task spans Codex and Claude Code, follow the MAT collaboration protocol.
 Implementation sketch only:
 
 ```sh
-VALID_AGENTS=(michael tzali eliyahu miriam avi mat)
+VALID_AGENTS=(michael tzali miriam avi mat)
 
 compose_prompt() {
   local agent="$1"

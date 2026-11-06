@@ -1,0 +1,104 @@
+/* ============================================================================
+   the owner's walkthrough 11/03, item 3 — typography one-for-one with FINAL.
+   Every value here is the prototype's COMPUTED style at 1440×900 (redesign/tools/typeaudit.mjs
+   matches the same copy in both apps and diffs size, weight, spacing, colour, opacity, card).
+   Loaded after pages.css; selectors are scoped under .rd-app so lazy page CSS can't undo them.
+   The face itself (one regular local face → medium renders regular) lives in redesign-tokens.css.
+   ========================================================================== */
+:root { --rd-well: #0c1716; }
+:root[data-theme=light] { --rd-well: #efede5; }
+
+/* Ink: FINAL body text is --ink (our --text), not the dimmer body tone. */
+.rd-app .rd-canvas, .rd-app .rd-page { color: var(--text); }
+
+/* Eyebrows: 9px, 550, 1.6px tracking (FINAL .eyebrow). */
+.rd-app .rd-eyebrow { font-size: 9px; font-weight: 550; letter-spacing: 1.6px; }
+.rd-app .rd-one .rd-eyebrow { font-size: 8px; font-weight: 600; letter-spacing: 1.1px; }
+.rd-app .rd-moving .rd-card-top .rd-eyebrow { font-size: 7px; font-weight: 400; letter-spacing: 1.2px; color: var(--positive, #a1c8b0); }
+.rd-app .rd-docs .rd-folders .rd-eyebrow { font-size: 8px; }
+
+/* Page titles and subtitles (FINAL .destination-heading and each page's own heading). */
+.rd-app .rd-title { font-size: 37px; font-weight: 500; letter-spacing: -1.3px; line-height: 1.2; }
+.rd-app .rd-page[data-page="vault"] .rd-title { font-size: 36px; font-weight: 450; letter-spacing: -1.2px; }
+.rd-app .rd-page[data-page="team"] .rd-title { font-size: 36px; font-weight: 450; letter-spacing: -1.3px; line-height: 1.4; }
+.rd-app .rd-page[data-page="connections"] .rd-title { font-size: 34px; font-weight: 450; letter-spacing: -1.2px; line-height: 1.35; }
+.rd-app .rd-page[data-page="settings"] .rd-title { font-size: 38px; font-weight: 450; letter-spacing: -1.3px; }
+@media (max-width: 1200px) { .rd-app:not(.phone) .rd-page:is([data-page="today"], [data-page="work"], [data-page="documents"], [data-page="finances"]) .rd-title { font-size: 34px; } }
+.rd-app .rd-sub { font-size: 13px; line-height: 1.8; color: var(--text-mute); }
+.rd-app .rd-page:is([data-page="vault"], [data-page="team"], [data-page="connections"], [data-page="settings"]) .rd-sub { font-size: 12px; }
+.rd-app .rd-home-hero .rd-sub { font-size: 14px; }
+
+/* Buttons and tabs (FINAL .world-button / .connection-button and the segmented tablist). */
+.rd-app .rd-canvas .rd-btn { font-size: 11px; font-weight: 400; min-height: 40px; padding: 0 15px; background: var(--surface); }
+.rd-app .rd-canvas .rd-btn.rd-btn-accent { background: var(--accent); }
+.rd-app .rd-tabs { background: var(--rd-well); }
+.rd-app .rd-page[data-page="connections"] .rd-tabs { background: var(--surface); }
+.rd-app .rd-page[data-page="connections"] .rd-find { background: var(--surface); } /* walkthrough round 3: filled like the tabs and buttons beside it */
+.rd-app .rd-page:is([data-page="team"], [data-page="connections"]) .rd-btn { font-size: 12px; }
+.rd-app .rd-tab { font-size: 12px; font-weight: 400; padding: 9px 15px; min-height: 36px; }
+
+/* Home (FINAL index): hero, starters, continue, overview cards. */
+.rd-app .rd-home-title { font-size: 47px; font-weight: 500; letter-spacing: -1.9px; }
+.rd-app .rd-picker-name { font-size: 11px; font-weight: 400; }
+.rd-app .rd-picker-role { font-size: 9px; }
+.rd-app .rd-starters button { font-size: 10px; color: var(--text-mute); }
+.rd-app .rd-continue > span { font-size: 11px; font-weight: 500; }
+.rd-app .rd-continue small { font-size: 9px; font-weight: 400; }
+.rd-app .rd-overview .rd-section-head h2 { font-size: 14px; }
+.rd-app .rd-overview .rd-section-head button { font-size: 10px; }
+.rd-app .rd-one h3 { font-size: 20px; font-weight: 500; letter-spacing: -0.6px; line-height: 1.4; }
+.rd-app .rd-one p { font-size: 12px; line-height: 1.9; color: var(--text-mute); }
+.rd-app .rd-one .rd-card-tag { font-size: 8px; }
+.rd-app .rd-card-who { font-size: 9px; }
+.rd-app .rd-link-action { font-size: 11px; font-weight: 550; }
+.rd-app .rd-moving .rd-card-top h3 { font-size: 12px; }
+.rd-app .rd-moving li button > span { font-size: 12px; font-weight: 500; }
+.rd-app .rd-moving li small { font-size: 10px; }
+.rd-app .rd-team-foot > span:not(.rd-team-stack) { font-size: 8px; }
+
+/* Section headings on Today and the cards around it. */
+.rd-app .rd-page[data-page="today"] :is(.rd-section-head h2, .rd-card-top h3, h3) { font-size: 14px; letter-spacing: -0.2px; }
+.rd-app .rd-page[data-page="today"] .rd-focus h2 { font-size: 38px; font-weight: 450; letter-spacing: -1.4px; }
+.rd-app .rd-page[data-page="today"] .rd-focus-foot .rd-quiet { font-size: 10px; }
+.rd-app .rd-page[data-page="today"] .rd-card-foot.rd-quiet { font-size: 9px; }
+
+/* Messages header. */
+.rd-app .rd-chat-name { font-size: 14px; font-weight: 550; }
+
+/* Documents and Finances. */
+.rd-app .rd-doc-access { font-size: 9px; }
+.rd-app .rd-docs .rd-folders button > span { font-size: 11px; }
+.rd-app .rd-fin-figures small { font-size: 10px; }
+
+/* Team cards (FINAL team.css). */
+.rd-app .rd-team-name { font-size: 14px; letter-spacing: -0.2px; }
+.rd-app .rd-team-role { font-size: 9px; }
+.rd-app .rd-team-purpose { font-size: 10px; color: var(--text-mute); }
+.rd-app .rd-team h3 { font-weight: 450; }
+.rd-app .rd-team p.rd-quiet { font-size: 11px; }
+
+/* Connections cards (FINAL connections.css). */
+.rd-app .rd-app-name { font-size: 14px; letter-spacing: -0.2px; }
+.rd-app .rd-app-blurb { font-size: 10px; color: var(--text-mute); }
+.rd-app .rd-app-status { font-size: 9px; }
+
+/* Settings. */
+.rd-app .rd-settings-nav button { font-size: 12px; }
+.rd-app .rs-page strong { font-weight: 500; }
+.rd-app .rs-page :is(h2, strong) { color: var(--text); }
+
+/* Vault (FINAL vault.css): eyebrow weight, primary button ink. */
+.rd-app .native-vault .eyebrow { font-weight: 550; letter-spacing: 1.6px; }
+.rd-app .native-vault .vault-button.primary { color: var(--bg); }
+
+/* On Your work "the text is better in your build — keep it". Your work
+   keeps the build's own head, tabs and buttons (pre-audit values from shell.css / pages.css). */
+.rd-app .rd-page[data-page="work"] .rd-eyebrow { font-size: 10px; font-weight: 700; letter-spacing: .2em; }
+.rd-app .rd-page[data-page="work"] .rd-title { font-size: 40px; font-weight: 450; letter-spacing: -1.2px; line-height: 1.05; }
+.rd-app .rd-page[data-page="work"] .rd-btn { font-size: 12px; font-weight: 500; min-height: 36px; padding: 0 14px; background: var(--bg); }
+.rd-app .rd-page[data-page="work"] .rd-btn.rd-btn-accent { min-height: 40px; padding: 0 16px; background: var(--accent); }
+.rd-app .rd-page[data-page="work"] .rd-tabs { background: var(--bg); }
+.rd-app .rd-page[data-page="work"] .rd-tab { font-size: 12.5px; font-weight: 500; padding: 10px 15px; min-height: 0; }
+@media (max-width: 1200px) { .rd-app:not(.phone) .rd-page[data-page="work"] .rd-title { font-size: 40px; } }
+.rd-app .rd-page[data-page="work"] { font-family: "Inter", "SF Pro Text", "Helvetica Neue", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+.rd-app .rd-page[data-page="work"] :is(button, input, textarea) { font-family: inherit; }

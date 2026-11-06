@@ -1,0 +1,208 @@
+/* Settings — FINAL prototype settings.css one for one, classes renamed settings-* → rs-* (the old
+   .settings-* rules would bleed in) and scoped under .rs-page; tokens mapped. Hand additions at the end. */
+.rs-page { max-width:1140px;margin:0 auto }
+.rs-page .rs-heading { margin:10px 0 35px }
+.rs-page .rs-heading h1 { font-size:38px;font-weight:450;letter-spacing:-1.3px;margin:12px 0 }
+.rs-page .rs-heading h1>span { color:var(--accent) }
+.rs-page .rs-heading>p,.rs-page .rs-content>header>p { color:var(--text-mute);font-size:12px;line-height:1.8 }
+.rs-page .rs-layout { display:grid;grid-template-columns:170px minmax(0,1fr);gap:45px }
+.rs-page .rs-navigation { display:flex;flex-direction:column;align-self:start;gap:5px;position:sticky;top:20px }
+.rs-page .rs-navigation>button { display:flex;align-items:center;gap:12px;text-align:left;border-radius:10px;padding:13px 14px;color:var(--text-mute);font-size:12px;white-space:nowrap }
+.rs-page .rs-navigation>button[aria-current=page] { color:var(--text);background:var(--raised) }
+.rs-page .rs-navigation svg { width:17px;height:17px;flex-shrink:0 }
+.rs-page .rs-navigation>small { font-size:9px;color:var(--text-mute);padding:22px 14px }
+.rs-page .rs-content { min-width:0 }
+.rs-page .rs-content>header { margin-bottom:24px }
+.rs-page .rs-content h2 { font-size:25px;line-height:1.35;font-weight:450;letter-spacing:-.6px;margin-bottom:9px }
+.rs-page .rs-content h3 { font-size:15px;font-weight:500;line-height:1.6 }
+.rs-page .rs-card { border:1px solid var(--line);border-radius:16px;background:var(--surface);padding:0 22px;margin:20px 0 }
+.rs-page .rs-row { display:flex;align-items:center;justify-content:space-between;gap:20px;min-height:82px;padding:19px 0;border-bottom:1px solid var(--line) }
+.rs-page .rs-row:last-child { border:0 }
+.rs-page .rs-row>div { min-width:0;flex:1 }
+.rs-page .rs-row strong { font-size:12px;font-weight:500;line-height:1.7 }
+.rs-page .rs-row p { font-size:11px;line-height:1.8;color:var(--text-mute);margin-top:5px }
+.rs-page .rs-row>.vault-button { flex-shrink:0 }
+.rs-page .rs-note { font-size:10px;color:var(--text-mute);line-height:1.9;margin:16px 0 }
+.rs-page .rs-footer { display:flex;gap:12px;justify-content:space-between;flex-wrap:wrap;color:var(--text-mute);font-size:9px;padding:22px 0;margin-top:16px }
+.rs-page .rs-theme-grid { display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px }
+.rs-page .rs-theme { border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--surface);text-align:left;padding:9px;min-width:0 }
+.rs-page .rs-theme[aria-pressed=true] { border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) }
+.rs-page .rs-theme-preview { display:flex;height:110px;border:1px solid #7d8a8430;border-radius:8px;overflow:hidden;background:#f3f1eb }
+.rs-page .rs-theme-preview>i { width:27%;background:#315955;display:block }
+.rs-page .rs-theme-preview>span { flex:1;padding:18px 12px }
+.rs-page .rs-theme-preview b,.rs-page .rs-theme-preview em { display:block;height:8px;border-radius:3px;margin-bottom:12px;background:#bfc9c0 }
+.rs-page .rs-theme-preview b { width:60%;background:#536a61 }
+.rs-page .rs-theme-preview em:last-child { width:75% }
+.rs-page .rs-theme.dark .rs-theme-preview { background:#101b1a }
+.rs-page .rs-theme.dark .rs-theme-preview>i { background:#0c1716 }
+.rs-page .rs-theme.dark .rs-theme-preview em { background:#34443f }
+.rs-page .rs-theme.dark .rs-theme-preview b { background:#a3b2a8 }
+.rs-page .rs-theme.system .rs-theme-preview { background:linear-gradient(110deg,#f3f1eb 50%,#101b1a 50%) }
+.rs-page .rs-theme>span:last-child { display:flex;align-items:center;gap:7px;font-size:11px;padding:12px 4px 5px }
+.rs-page .rs-theme strong { flex:1;font-weight:450 }
+.rs-page .rs-theme svg { width:15px;height:15px }
+.rs-page .rs-account-shortcut { display:flex;align-items:center;gap:15px;padding:20px 0 }
+.rs-page .rs-account-shortcut>div { flex:1 }
+.rs-page .rs-account-shortcut strong { display:block;font-size:12px;font-weight:500 }
+.rs-page .rs-account-shortcut small { display:block;font-size:10px;color:var(--text-mute);margin-top:6px }
+.rs-page .rs-agent-list { display:grid;gap:12px }
+.rs-page .rs-agent { padding:22px;border:1px solid var(--line);border-radius:15px;background:var(--surface) }
+.rs-page .rs-agent-name { display:flex;align-items:center;gap:12px;margin-bottom:19px }
+.rs-page .rs-agent-name .chat-avatar { width:34px;height:34px;font-size:12px }
+.rs-page .rs-agent-name h3 { font-size:13px }
+.rs-page .rs-agent-name p { font-size:10px;color:var(--text-mute);margin-top:4px }
+.rs-page .rs-agent-controls { display:grid;grid-template-columns:1fr 1fr;gap:14px }
+.rs-page .rs-select>span { display:block;font-size:10px;color:var(--text-mute);margin-bottom:8px }
+.rs-page .rs-select select { width:100%;min-width:0;padding:11px;border-radius:9px;background:var(--bg);color:var(--text);border:1px solid var(--line);font-size:12px }
+.rs-page .rs-switch { width:38px;height:23px;border:1px solid var(--line);border-radius:20px;flex-shrink:0;background:var(--raised);padding:3px;display:flex;align-items:center }
+.rs-page .rs-switch i { width:15px;height:15px;border-radius:50%;background:var(--text-mute);transition:transform .15s }
+.rs-page .rs-switch[aria-checked=true] { background:var(--accent);border-color:var(--accent) }
+.rs-page .rs-switch[aria-checked=true] i { background:var(--bg);transform:translateX(15px) }
+.rs-page .rs-switch:disabled { opacity:.35 }
+.rs-page button:focus-visible,.rs-page select:focus-visible,.rs-page input:focus-visible { outline:2px solid var(--accent);outline-offset:3px }
+.rs-page .rs-section-title { margin:32px 0 15px }
+.rs-page .rs-section-title p { color:var(--text-mute);font-size:11px;line-height:1.8;margin-top:6px }
+.rs-page .rs-source { border:1px solid var(--line);border-radius:12px;background:var(--surface);margin-bottom:10px;overflow:hidden }
+.rs-page .rs-source>header { display:flex;align-items:center;padding-right:18px;gap:14px }
+.rs-page .rs-source-open { display:flex;align-items:center;text-align:left;gap:13px;padding:18px;min-width:0;flex:1 }
+.rs-page .rs-source-icon { display:grid;place-items:center;flex-shrink:0;width:25px;color:var(--text-mute) }
+.rs-page .rs-source-icon>svg,.rs-page .rs-source-icon>img { width:21px;height:21px;object-fit:contain }
+.rs-page .rs-source-open>span:nth-child(2) { flex:1;min-width:0 }
+.rs-page .rs-source-open strong { font-size:12px;font-weight:500;display:block }
+.rs-page .rs-source-open small { font-size:10px;color:var(--text-mute);display:block;line-height:1.7;margin-top:6px }
+.rs-page .rs-event-count { font-size:9px;color:var(--text-mute);white-space:nowrap }
+.rs-page .rs-source-open>svg { width:13px;height:13px;color:var(--text-mute);flex-shrink:0;transition:transform .15s }
+.rs-page .rs-source-open[aria-expanded=true]>svg { transform:rotate(180deg) }
+.rs-page .rs-source-events { padding:0 20px 5px 55px;border-top:1px solid var(--line) }
+.rs-page .rs-source-events .rs-row { min-height:62px;padding:15px 0 }
+.rs-page .rs-source-events strong { font-size:11px;font-weight:400 }
+.rs-page .rs-agent-inline,.rs-page .rs-key-name { display:flex;align-items:center;gap:10px }
+.rs-page .rs-agent-inline .chat-avatar { width:26px;height:26px;font-size:9px }
+.rs-page .rs-key-name svg { width:21px;height:21px;color:var(--accent) }
+.rs-page .rs-quiet { display:flex;gap:15px;padding:15px 0 25px;border-bottom:1px solid var(--line) }
+.rs-page .rs-quiet label { flex:1;color:var(--text-mute);font-size:10px }
+.rs-page .rs-quiet input { display:block;width:100%;padding:11px;border:1px solid var(--line);border-radius:9px;background:var(--bg);color:var(--text);margin-top:8px;font-size:13px }
+.rs-page [hidden] { display:none!important }
+.rs-page .rs-notice { padding:15px 18px;font-size:11px;line-height:1.8;color:var(--accent);background:var(--raised);border-radius:10px }
+.rs-page .rs-security-note { display:flex;gap:17px;padding:23px;background:var(--raised);border-radius:15px }
+.rs-page .rs-security-note>svg { width:34px;height:34px;flex-shrink:0;color:var(--accent) }
+.rs-page .rs-security-note strong { font-size:13px;font-weight:500 }
+.rs-page .rs-security-note p { font-size:11px;line-height:1.8;color:var(--text-mute);margin-top:8px }
+.rs-page .rs-enrollment { display:flex;justify-content:space-between;align-items:center;gap:20px;margin:28px 0 }
+.rs-page .rs-enrollment p { font-size:11px;color:var(--text-mute);line-height:1.8;margin-top:7px;max-width:390px }
+.rs-page .rs-enrollment>.vault-button { flex-shrink:0 }
+.rs-page .rs-empty { padding:25px 0 }
+.rs-page .rs-empty p { font-size:11px;color:var(--text-mute);margin-top:9px;line-height:1.8 }
+.rs-page .rs-account-card { display:flex;align-items:center;gap:20px;padding:26px;border:1px solid var(--line);background:var(--surface);border-radius:16px }
+.rs-page .rs-account-card>.profile-avatar { height:55px;width:55px;font-size:18px }
+.rs-page .rs-account-card h3 { font-size:20px;font-weight:450 }
+.rs-page .rs-account-card p { font-size:11px;color:var(--text-mute);margin:8px 0 12px }
+.rs-page .rs-account-card>div>span { font-size:9px;color:var(--accent);background:var(--raised);border-radius:5px;padding:5px 8px }
+.rs-page .rs-signout-row { display:flex;gap:20px;align-items:center;justify-content:space-between;margin-top:34px }
+.rs-page .rs-signout-row p { font-size:11px;color:var(--text-mute);margin-top:7px }
+.rs-page .rs-signed-out { text-align:center;padding:50px 20px;border:1px solid var(--line);border-radius:17px }
+.rs-page .rs-signed-out>svg { height:30px;width:30px;color:var(--text-mute);margin-bottom:20px }
+.rs-page .rs-signed-out p { font-size:12px;line-height:1.8;color:var(--text-mute);margin:18px 0 }
+.rs-page .rs-signed-out h3 { font-size:21px;font-weight:450 }
+@media(max-width:1000px) {
+.rs-page .rs-layout { grid-template-columns:145px minmax(0,1fr);gap:25px }
+.rs-page .rs-navigation>button { padding:12px 10px;font-size:11px }
+.rs-page .rs-theme-preview { height:90px }
+}
+@media(max-width:750px) {
+.rs-page .rs-layout { grid-template-columns:1fr;gap:20px }
+.rs-page .rs-navigation { position:static;flex-direction:row;overflow-x:auto;scrollbar-width:none;border:1px solid var(--line);border-radius:12px;padding:4px;background:var(--surface) }
+.rs-page .rs-navigation>button { padding:11px 12px;font-size:11px;gap:7px }
+.rs-page .rs-navigation>small { display:none }
+.rs-page .rs-navigation svg { width:15px;height:15px }
+.rs-page .rs-content h2 { font-size:23px }
+}
+@media(max-width:650px) {
+.rs-page .rs-heading { margin:5px 0 24px }
+.rs-page .rs-heading h1 { font-size:31px }
+.rs-page .rs-theme-grid { gap:9px }
+.rs-page .rs-theme { padding:6px;border-radius:10px }
+.rs-page .rs-theme-preview { height:83px }
+.rs-page .rs-theme-preview>span { padding:17px 6px }
+.rs-page .rs-theme-preview em,.rs-page .rs-theme-preview b { height:6px;margin-bottom:9px }
+.rs-page .rs-theme>span:last-child { padding:10px 1px 4px;font-size:10px;gap:4px }
+.rs-page .rs-theme>span:last-child>svg { width:12px;height:12px }
+.rs-page .rs-card { padding:0 17px }
+.rs-page .rs-row { gap:12px;min-height:80px }
+.rs-page .rs-row p { font-size:10px }
+.rs-page .rs-row>.vault-button { font-size:10px;padding:9px 10px }
+.rs-page .rs-shortcuts .rs-row { align-items:flex-start;flex-direction:column }
+.rs-page .rs-account-shortcut { gap:12px;flex-wrap:wrap }
+.rs-page .rs-account-shortcut>.vault-button { margin-left:auto }
+.rs-page .rs-agent { padding:18px }
+.rs-page .rs-agent-controls { grid-template-columns:1fr }
+.rs-page .rs-select select,.rs-page .rs-quiet input { font-size:16px }
+.rs-page .rs-source>header { padding-right:13px;gap:7px }
+.rs-page .rs-source-open { padding:17px 12px;gap:10px }
+.rs-page .rs-source-open small { font-size:9px }
+.rs-page .rs-event-count { display:none }
+.rs-page .rs-source-events { padding-left:18px;padding-right:15px }
+.rs-page .rs-security-note { padding:20px;gap:13px }
+.rs-page .rs-enrollment { align-items:flex-start;flex-direction:column;gap:15px }
+.rs-page .rs-account-card { padding:21px;gap:15px }
+.rs-page .rs-account-card h3 { font-size:18px }
+.rs-page .rs-footer { font-size:8px }
+}
+.rs-page .rs-switch { position:relative;width:44px;height:44px;min-width:44px;padding:0;border:0;background:transparent }
+.rs-page .rs-switch:before { content:'';position:absolute;left:3px;top:10px;width:38px;height:23px;border:1px solid var(--line);border-radius:20px;background:var(--raised);box-sizing:border-box }
+.rs-page .rs-switch i { position:absolute;left:7px;top:14px }
+.rs-page .rs-switch[aria-checked=true] { background:transparent;border:0 }
+.rs-page .rs-switch[aria-checked=true]:before { background:var(--accent);border-color:var(--accent) }
+.rs-page .rs-content { container-type:inline-size;container-name:settings-content }
+@container settings-content (min-width:680px) {
+.rs-page .rs-agent-list { grid-template-columns:repeat(2,minmax(0,1fr)) }
+}
+.rs-page .rs-quiet label,.rs-page .rs-quiet input { min-width:0 }
+
+/* ── hand additions ── */
+.rs-page { width: 100%; max-width: none; margin: 0; }
+.rs-page .vault-button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; padding: 10px 14px; border: 1px solid var(--line); border-radius: 10px; font-size: 11px; color: var(--text); background: var(--surface); white-space: nowrap; }
+.rs-page .vault-button svg { width: 15px; height: 15px; }
+.rs-page .vault-button:hover:not(:disabled) { background: var(--raised); }
+.rs-page .vault-button.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.rs-page .vault-button:disabled { opacity: .5; cursor: default; }
+.rs-page .rs-theme { color: var(--text); }
+.rs-page .rs-theme > span:last-child { display: flex; align-items: center; gap: 8px; padding: 12px 6px 4px; font-size: 11px; }
+.rs-page .rs-theme > span:last-child strong { flex: 1; font-weight: 450; }
+.rs-page .rs-theme > span:last-child svg { width: 14px; height: 14px; }
+.rs-page .profile-avatar { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: var(--raised); border: 1px solid var(--line); font-size: 11px; font-weight: 600; color: var(--text); flex: none; }
+.rs-page .rs-signout-confirm { display: flex; gap: 8px; }
+.rs-page .rs-agent-name .rd-avatar { width: 34px; height: 34px; }
+.rd-settings-nav .rd-settings-ws { font-size: 9px; color: var(--text-mute); padding: 22px 14px; }
+.rd-app.phone .rd-settings-nav { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding: 0 0 14px; }
+.rd-app.phone .rd-settings-nav button { white-space: nowrap; flex: none; }
+.rd-app.phone .rd-settings-nav .rd-settings-ws { display: none; }
+/* The owner's Settings ruling: the reference geometry, measured from the Codex concept at 1100/1280/1440/1920.
+   79px outer gutters both sides at every width; the Settings block (header + nav + content) capped at 1140px and
+   centred, so very wide windows grow both gutters evenly; nav 170px, 45px to the content; the content's heading
+   sits level with the first nav button. Desktop only (the phone keeps its own stacked layout). */
+.rd-app:not(.phone) .rd-page[data-page="settings"] > :is(.rd-page-top, .rd-page-body) { box-sizing: border-box; width: 100%; max-width: calc(1140px + 156px); margin-inline: auto; padding-left: 78px; padding-right: 78px; } /* 78 + the canvas border = the reference 79 */
+.rd-app:not(.phone) .rd-page[data-page="settings"] > .rd-page-body { padding-top: 17px; font-size: 14px; }
+.rd-app:not(.phone) .rd-page[data-page="settings"] .rs-page :is(.rs-theme-grid > button, .rd-settings-nav button) { line-height: normal; }
+.rd-app:not(.phone) .rd-page[data-page="settings"] .rs-page .rs-theme-grid > button { font-size: 14px; }
+.rd-app:not(.phone) .rd-page[data-page="settings"] .rd-settings-nav { width: 170px; padding: 0; gap: 5px; position: sticky; top: 20px; align-self: start; }
+.rd-app:not(.phone) .rd-page[data-page="settings"] .rd-settings-nav button { min-height: 0; padding: 13px 14px; }
+.rd-app:not(.phone) .rd-page[data-page="settings"] .rs-page { max-width: none; padding: 0 0 40px 45px; }
+.rd-app.phone .rd-page[data-page="settings"] .rs-page { padding: 0 0 30px; max-width: none; }
+/* Sound row: the tone picker beside its switch ("specific sounds"), sized like the reference's selects. */
+.rs-page .rs-row-tail { display: flex; align-items: center; gap: 14px; flex: none; }
+.rs-page .rs-tone { min-height: 36px; padding: 7px 30px 7px 11px; border: 1px solid var(--line); border-radius: 9px; background: var(--bg); color: var(--text); font: inherit; font-size: 11px; }
+.rs-page .rs-tone:disabled { opacity: .5; }
+/* Reference agent card extras (setup-runtime.css) and exact type for the inline avatars and buttons. */
+.rs-page .identity-edit-link { display: block; min-height: 30px; padding: 7px 0 0; border: 0; background: none; font-size: 10px; color: var(--accent); text-align: left; }
+.rs-page .identity-edit-link:hover { text-decoration: underline; }
+.rs-page .vault-button { line-height: 1.4; }
+.rs-page .rs-agent-inline .rd-avatar { width: 26px; height: 26px; font-size: 9px; line-height: 1.7; }
+.rs-page .rs-agent-name .rd-avatar { font-size: 12px; }
+.rs-page .rs-theme > span:last-child { gap: 7px; padding: 12px 4px 5px; }
+.rs-page .rs-theme > span:last-child svg { width: 15px; height: 15px; }
+.rs-page .rs-security-note > .rd-icon { width: 34px; height: 34px; color: var(--accent); flex: none; }
+.rs-page .vault-button.primary { color: var(--bg); }
+.rs-page .profile-avatar { width: 32px; height: 32px; border: 0; font-size: 10px; font-weight: 400; }
+.rs-page .rs-account-card > .profile-avatar { width: 55px; height: 55px; font-size: 18px; }
+.rs-page .rs-account-card p { display: block; }

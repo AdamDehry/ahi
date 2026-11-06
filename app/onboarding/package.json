@@ -1,0 +1,171 @@
+{
+  "name": "ahi-setup",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The guided installer for your own AHI home",
+  "author": "AHI",
+  "license": "UNLICENSED",
+  "main": "src/main.cjs",
+  "scripts": {
+    "start": "electron .",
+    "preview": "node scripts/preview.cjs",
+    "test": "node --test test/*.test.cjs",
+    "test:ui": "node scripts/capture.cjs",
+    "probe": "node scripts/probe.cjs",
+    "stage:runtime": "node scripts/stage-runtime.cjs",
+    "pack": "node scripts/package.cjs --dir",
+    "dist": "node scripts/package.cjs",
+    "test:native": "node scripts/native-smoke.cjs",
+    "test:packaged": "node scripts/packaged-smoke.cjs"
+  },
+  "dependencies": {
+    "@napi-rs/keyring": "2.1.2",
+    "npm": "12.2.1"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.64.1",
+    "electron": "45.2.1",
+    "electron-builder": "26.18.0",
+    "node": "22.22.2"
+  },
+  "build": {
+    "appId": "org.ahi.setup",
+    "productName": "AHI Setup",
+    "icon": "build/icon.png",
+    "artifactName": "AHI-Setup-${version}-${os}-${arch}.${ext}",
+    "directories": {
+      "output": "artifacts"
+    },
+    "files": [
+      "src/**",
+      "ui/**",
+      "package.json",
+      "node_modules/**",
+      "!node_modules/.cache/**"
+    ],
+    "asarUnpack": [
+      "node_modules/**"
+    ],
+    "extraResources": [
+      {
+        "from": "runtime/${os}/${arch}",
+        "to": "runtime"
+      },
+      {
+        "from": "src",
+        "to": "setup-server/src"
+      },
+      {
+        "from": "ui",
+        "to": "setup-server/ui"
+      },
+      {
+        "from": "../dist",
+        "to": "ahi-server/dist"
+      },
+      {
+        "from": "../node_modules",
+        "to": "ahi-server/node_modules",
+        "filter": [
+          "**/*",
+          "!.cache/**"
+        ]
+      },
+      {
+        "from": "../package.json",
+        "to": "ahi-server/package.json"
+      },
+      {
+        "from": "../web/dist",
+        "to": "ahi-server/web/dist"
+      },
+      {
+        "from": "../public",
+        "to": "ahi-server/public"
+      },
+      {
+        "from": "../config",
+        "to": "ahi-server/config"
+      },
+      {
+        "from": "../hooks",
+        "to": "ahi-server/hooks"
+      },
+      {
+        "from": "../../agents",
+        "to": "ahi-seed/agents"
+      },
+      {
+        "from": "../../mission-control",
+        "to": "ahi-seed/mission-control"
+      },
+      {
+        "from": "../../torah",
+        "to": "ahi-seed/torah"
+      },
+      {
+        "from": "staged/skills",
+        "to": "ahi-seed/skills"
+      },
+      {
+        "from": "..",
+        "to": "ahi-server",
+        "filter": [
+          "release.json"
+        ]
+      }
+    ],
+    "electronFuses": {
+      "runAsNode": false,
+      "enableNodeOptionsEnvironmentVariable": false,
+      "enableNodeCliInspectArguments": false
+    },
+    "npmRebuild": false,
+    "mac": {
+      "target": [
+        {
+          "target": "dmg"
+        }
+      ],
+      "category": "public.app-category.productivity",
+      "hardenedRuntime": true
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "deleteAppDataOnUninstall": false
+    },
+    "linux": {
+      "syncDesktopName": true,
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "category": "Utility"
+    }
+  },
+  "desktopName": "ahi-setup.desktop",
+  "engines": {
+    "node": ">=22.22.2"
+  },
+  "allowScripts": {
+    "electron": true,
+    "node": true,
+    "electron-winstaller": true
+  }
+}

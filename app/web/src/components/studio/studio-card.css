@@ -1,0 +1,288 @@
+/* ============================================================
+   studio-card.css — the live studio card (11/03). Self-contained.
+
+   Same PORTABILITY CONTRACT as search-card.css: every color, font, radius
+   and size is read through the --ast-* aliases below, each falling back from
+   the CURRENT shell's token name to the REDESIGN's. No hex values live here;
+   the new shell needs no edit to adopt it.
+   ============================================================ */
+
+.ahi-studio-card {
+  --ast-strong: var(--text, var(--ink));
+  --ast-text: var(--text-body, var(--ink));
+  --ast-mute: var(--text-mute, var(--muted));
+  --ast-faint: var(--text-faint, var(--muted));
+  --ast-ground: var(--surface);
+  --ast-raised: var(--surface-dim, var(--raised));
+  --ast-line: var(--line);
+  --ast-accent: var(--accent-strong, var(--accent));
+  --ast-wash: var(--accent-soft, var(--accent-bg));
+  --ast-focus: var(--focus-halo, 0 0 0 3px var(--ast-wash));
+  --ast-font: var(--font-ui, var(--font, system-ui, sans-serif));
+  --ast-mono: var(--font-mono, ui-monospace, "SF Mono", Menlo, monospace);
+  --ast-radius: var(--radius-card, 10px);
+  --ast-radius-tile: 6px;
+  --ast-fs-body: var(--fs-ui, 14px);
+  --ast-fs-sm: var(--fs-sm, 13px);
+  --ast-fs-label: var(--fs-label, 11px);
+  --ast-gap: 6px;
+  --ast-pad: 12px;
+
+  container-type: inline-size;
+  width: 100%;
+  max-width: 560px;
+  min-width: 0;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: var(--ast-pad);
+  border: 1px solid var(--ast-line);
+  border-radius: var(--ast-radius);
+  background: var(--ast-ground);
+  color: var(--ast-text);
+  font-family: var(--ast-font);
+  font-size: var(--ast-fs-body);
+  line-height: 1.45;
+  overflow: hidden;
+}
+.ahi-studio-card[data-state="decision"] { border-color: color-mix(in srgb, var(--ast-accent) 45%, var(--ast-line)); }
+.ahi-studio-card *,
+.ahi-studio-card *::before,
+.ahi-studio-card *::after { box-sizing: border-box; }
+
+/* ── Header: glyph · question · state ──────────────────────────────── */
+.ahi-studio-card .ast-head { display: flex; align-items: flex-start; gap: 8px; min-width: 0; }
+.ahi-studio-card .ast-glyph {
+  flex: none;
+  margin-top: 2px;
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: var(--ast-accent);
+  stroke-width: 1.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.ahi-studio-card .ast-ask {
+  flex: 1;
+  min-width: 0;
+  color: var(--ast-strong);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+  unicode-bidi: plaintext;
+}
+.ahi-studio-card .ast-state,
+.ahi-studio-card .ast-foot,
+.ahi-studio-card .ast-key,
+.ahi-studio-card .ast-link,
+.ahi-studio-card .ast-btn {
+  font-family: var(--ast-mono);
+  font-size: var(--ast-fs-label);
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+.ahi-studio-card .ast-state { flex: none; margin-top: 3px; color: var(--ast-accent); font-variant-numeric: tabular-nums; }
+.ahi-studio-card[data-state="failed"] .ast-state { color: var(--ast-mute); }
+
+/* ── Options: 2 across, 3 across for three, 4 across on a wide card ── */
+.ahi-studio-card .ast-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--ast-gap);
+}
+.ahi-studio-card .ast-grid[data-count="1"] { grid-template-columns: minmax(0, 1fr); max-width: 320px; }
+.ahi-studio-card .ast-grid[data-count="3"] { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@container (min-width: 520px) {
+  .ahi-studio-card .ast-grid[data-count="4"] { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+.ahi-studio-card .ast-option {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  transition: opacity 180ms ease;
+}
+.ahi-studio-card .ast-option.is-dimmed { opacity: 0.45; }
+.ahi-studio-card .ast-tile {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--ast-radius-tile);
+  background: var(--ast-raised);
+  overflow: hidden;
+  cursor: pointer;
+  -webkit-touch-callout: none; /* our long-press menu, not the OS one */
+  user-select: none;
+  -webkit-user-select: none;
+}
+.ahi-studio-card .ast-tile.is-loading,
+.ahi-studio-card .ast-tile.is-pending { animation: ast-breathe 1.4s ease-in-out infinite; }
+.ahi-studio-card .ast-tile.is-pending:nth-child(2) { animation-delay: 0.15s; }
+.ahi-studio-card .ast-tile.is-pending:nth-child(3) { animation-delay: 0.3s; }
+.ahi-studio-card .ast-tile.is-pending:nth-child(4) { animation-delay: 0.45s; }
+.ahi-studio-card .ast-tile img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 180ms ease, transform 180ms ease;
+}
+.ahi-studio-card .ast-tile.is-loaded img { opacity: 1; }
+.ahi-studio-card .ast-tile.is-broken img { display: none; }
+.ahi-studio-card .ast-tile:hover img { transform: scale(1.03); }
+.ahi-studio-card .ast-tile:focus-visible { outline: none; box-shadow: var(--ast-focus); z-index: 1; }
+.ahi-studio-card .ast-option.is-picked .ast-tile { box-shadow: 0 0 0 2px var(--ast-accent); }
+.ahi-studio-card .ast-tile-fallback {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--ast-faint);
+  font-family: var(--ast-mono);
+  font-size: var(--ast-fs-label);
+}
+
+/* The letter: what he says out loud ("B") is printed on the picture. */
+.ahi-studio-card .ast-key {
+  position: absolute;
+  left: 6px;
+  top: 6px;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  display: grid;
+  place-items: center;
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--ast-ground) 82%, transparent);
+  color: var(--ast-strong);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  pointer-events: none;
+}
+.ahi-studio-card .ast-tile.is-pending .ast-key { color: var(--ast-faint); }
+.ahi-studio-card .ast-option.is-picked .ast-key { background: var(--ast-accent); color: var(--ast-ground); }
+.ahi-studio-card .ast-check {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--ast-accent);
+  pointer-events: none;
+}
+.ahi-studio-card .ast-check::after {
+  content: "";
+  position: absolute;
+  left: 7px;
+  top: 4px;
+  width: 5px;
+  height: 9px;
+  border: solid var(--ast-ground);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+.ahi-studio-card .ast-play {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 34px;
+  height: 34px;
+  margin: -17px 0 0 -17px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--ast-ground) 70%, transparent);
+  pointer-events: none;
+}
+.ahi-studio-card .ast-play::after {
+  content: "";
+  position: absolute;
+  left: 13px;
+  top: 10px;
+  border-style: solid;
+  border-width: 7px 0 7px 11px;
+  border-color: transparent transparent transparent var(--ast-strong);
+}
+.ahi-studio-card .ast-expand {
+  position: absolute;
+  right: 5px;
+  top: 5px;
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--ast-ground) 70%, transparent);
+  color: var(--ast-strong);
+  cursor: zoom-in;
+  opacity: 0.85;
+}
+.ahi-studio-card .ast-expand svg { width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; }
+.ahi-studio-card .ast-expand:hover,
+.ahi-studio-card .ast-expand:focus-visible { opacity: 1; outline: none; box-shadow: var(--ast-focus); }
+.ahi-studio-card .ast-label {
+  color: var(--ast-mute);
+  font-size: var(--ast-fs-sm);
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  unicode-bidi: plaintext;
+}
+
+/* ── Words under the options ───────────────────────────────────────── */
+.ahi-studio-card .ast-hint,
+.ahi-studio-card .ast-note,
+.ahi-studio-card .ast-failed p { margin: 0; font-size: var(--ast-fs-sm); color: var(--ast-mute); }
+.ahi-studio-card .ast-note { color: var(--ast-faint); }
+.ahi-studio-card .ast-failed { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.ahi-studio-card .ast-btn {
+  flex: none;
+  padding: 7px 12px;
+  border: 1px solid var(--ast-line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ast-accent);
+  cursor: pointer;
+}
+.ahi-studio-card .ast-btn:hover { background: var(--ast-wash); }
+
+/* ── Footer: who · when · engine · step — Stop / Folder ────────────── */
+.ahi-studio-card .ast-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--ast-faint);
+  min-width: 0;
+}
+.ahi-studio-card .ast-foot > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ahi-studio-card .ast-link {
+  flex: none;
+  padding: 4px 2px;
+  border: 0;
+  background: none;
+  color: var(--ast-accent);
+  cursor: pointer;
+}
+.ahi-studio-card .ast-link:disabled { color: var(--ast-faint); cursor: default; }
+.ahi-studio-card .ast-link:focus-visible,
+.ahi-studio-card .ast-btn:focus-visible { outline: none; box-shadow: var(--ast-focus); border-radius: 4px; }
+
+@keyframes ast-breathe {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ahi-studio-card .ast-tile.is-loading,
+  .ahi-studio-card .ast-tile.is-pending { animation: none; }
+  .ahi-studio-card .ast-tile img { transition: none; }
+}

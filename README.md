@@ -1,194 +1,93 @@
 # AHI
 
-AHI is a multi-persona, purpose-aligned AI suite that runs on your machine. It gives you a small build team of agents through Claude Code, an optional Telegram gateway, and an optional voice layer.
+AHI is a small team of AI agents that lives on your own computer and works with you: in a calm web app, by voice, and (if you like) from your phone.
 
-The v1 suite ships with three personas:
+- **Michael** — your right hand. Plans, coordinates, keeps track, and brings the important decisions back to you.
+- **Tzali** — builds and fixes software and keeps your setup running.
+- **Avi** — design: turns ideas into thoughtful visuals and products.
+- **Miriam** — personal assistant: your calendar, your documents, and a patient ear.
 
-- **Michael** — coordinator, strategist, and right hand
-- **Tzali** — builder, engineer, and systems operator
-- **Avi** — designer, visual conscience, and product taste layer
-
-Each agent has its own soul file, tool defaults, memory pointers, and optional Telegram bot token. They share the same AHI foundation: distinct agents, one kavana underneath.
-
-## What You Need
-
-- **Claude Max subscription** with the **Claude Code** desktop app installed and signed in. Get it at [claude.ai/download](https://claude.ai/download).
-- **Node.js 20 or newer.** Install from [nodejs.org/en/download](https://nodejs.org/en/download), or via Homebrew (`brew install node`) on macOS.
-- **Optional: Telegram account** if you want to message agents from your phone. The wizard walks you through creating one bot per enabled agent via `@BotFather`.
-- **Optional: OpenAI or Gemini API key** if you want voice replies. Either provider works.
+Each agent has its own character and purpose, and they share one foundation. You can change how they talk to you; you can't change who they are.
 
 ## Install
 
-Clone this repo, then from the repo directory run:
+1. Go to **[Releases](../../releases/latest)** and download AHI Setup for your computer:
+   - **Mac** — `AHI-Setup-…-mac-arm64.dmg` (Apple silicon) or `…-mac-x64.dmg` (Intel)
+   - **Windows** — `AHI-Setup-…-win-x64.exe`
+   - **Linux** — `AHI-Setup-…-linux-x86_64.AppImage`
+2. Open it. AHI Setup walks you through everything, in the app:
+   - your name and a name for your space
+   - where your files live (AHI makes one folder with **Personal** and **Work**, plus a hidden system folder)
+   - connecting a model — sign in with your own account
+   - voice, if you want it
+   - a private address so AHI opens on your phone, if you want it
+3. At the end AHI Setup shows **your key** once. Save it in your password manager — it's how you sign in.
+4. Click **Open AHI**. It opens in your browser. Keep AHI Setup open (minimized is fine) while you use AHI.
 
-```bash
-./install.sh        # macOS / Linux
-.\install.ps1       # Windows PowerShell
+No cloning, no terminal, no code.
+
+> The installers are not code-signed yet. On a Mac, right-click AHI Setup and choose **Open** the first time; on Windows, choose **More info → Run anyway**.
+
+## What you need
+
+- **A Claude account.** The agents think with Claude today. AHI Setup installs Claude's official tool and you sign in with your own account; AHI never sees your password.
+- **Optional:** an OpenAI, Cartesia, ElevenLabs or Google key for spoken replies and voice calls with any agent.
+- **Optional:** a Cloudflare account and a domain, for a private address to open AHI from your phone.
+- Integrations (Gmail, Calendar, Drive, Telegram and more) start unconnected. Link the ones you want during setup or later from **Connections**.
+
+## Your data
+
+Everything lives on your computer, in the folder you chose. Your agents' memory, your documents and your settings are files you own. AHI sends a conversation to the model you connected only when you talk to an agent, and it never sends your key or your files anywhere else.
+
+The agents' souls and library live in the hidden system folder (`AHI_OS`). They're readable files, nothing secret; to change how an agent works, ask Michael rather than editing them by hand.
+
+## Good to know
+
+- AHI runs while AHI Setup is open. Close it and AHI stops; open it again and AHI starts.
+- **Staying up to date:** open **Settings → Updates**. AHI checks this project's latest release and tells you when a newer one is out. New and improved skills install with **Update skills** (anything they replace is kept in `AHI_OS/skills/_backup/`); a newer AHI itself comes as a new AHI Setup from the same release. Your folder and memory stay.
+- The agents run on Claude for now. Other providers can be connected in setup, and will be able to run agents in a later version.
+
+## For developers
+
+```
+app/            the AHI server (TypeScript, Node 22) and its web app (app/web, React + Vite)
+app/onboarding/ AHI Setup (Electron): the installer, setup screens and the launcher
+agents/         the agents' souls (copied into AHI_OS by setup)
+mission-control/ starter files for Michael's workspace
+skills/         the skills shelf: skills/<category>/<skill>/SKILL.md, plus MANIFEST.json
 ```
 
-The wizard takes a few minutes and walks you through six steps:
+### Skills
 
-1. Your name and optional one-line context
-2. Confirm Claude Code is ready
-3. Choose which agents to enable: Michael, Tzali, Avi, or all three
-4. Telegram setup for each selected agent
-5. Voice provider selection
-6. Install — copies files, builds the gateway, registers the auto-start service
+Skills are the agents' step-by-step know-how, one shelf per category (`video`, `design`, `code-quality`,
+`ops-infra`, `research`, `torah`, …). Every `SKILL.md` starts with frontmatter the app and the release read:
 
-When it finishes, open Claude Code in your install directory (default `~/ahi/`) and try:
-
-> Hi Michael, who are you?
-
-For engineering work, talk to Tzali. For design judgment, talk to Avi.
-
-## Meet The Agents
-
-### Michael
-
-Michael is the coordinator and strategic operator. Use him for planning, prioritization, delegation, mission control, and turning vague intent into a sharper work order.
-
-Default model: Sonnet. Default tools include file access, shell access, web research, subagent delegation, and selected skills.
-
-### Tzali
-
-Tzali is the builder and systems engineer. Use him for code, infrastructure, debugging, deployments, repo work, and implementation plans that need to survive contact with the real system.
-
-Default model: Opus. Default tools include read/write/edit, shell access, web research, subagent delegation, and skills.
-
-### Avi
-
-Avi is the designer and visual conscience. Use him for UI/UX direction, product feel, brand surfaces, visual critique, design specs, and creative work where taste matters.
-
-Default model: Opus. Default tools include read/write access, search, web research, design-oriented skills, and no shell by default.
-
-## Where Things Live
-
-By default AHI installs at `~/ahi/`:
-
-```text
-~/ahi/
-  .claude/                # Claude Code project config
-  agents/soul/            # Persona files: MICHAEL.md, TZALI.md, AVI.md
-  mission-control/        # HANDOFF, TODO, TODAY, ACTIVITY_FEED, ARCHITECTURE, AGENT_REGISTRY
-  infra/sessions/         # Session index built up as you work
-  gateway/                # Telegram + voice gateway
-  state/                  # Logs, per-user state, generated files
-  skills/                 # Optional Python skills
+```yaml
+name: oom-safe-test-runs      # = folder name
+description: …                # when to use it (the trigger text)
+version: 1.0.0                # bump on every change
+category: code-quality        # = shelf folder
+private: false                # only private: false skills are published
+last_verified: 2026-11-05
+verified_by: <who checked it>
+sources: [ … ]                # where each step came from
 ```
 
-The `state/` directory is per-install and never committed. `gateway/.env` holds secrets and is locked to your user (`chmod 600`).
+`skills/MANIFEST.json` lists every skill's version and the release they ship in. A release keeps three
+numbers in step — the `v*` tag, `app/package.json` `version` and `skills/MANIFEST.json` `release` — and the
+workflow refuses to publish if they differ. Publishing attaches `ahi-skills.json` (every skill's files with
+their sha256, built by `app/scripts/skills-bundle.mjs`); **Settings → Updates** compares it with the installed
+`MANIFEST.json` and installs the newer skills.
 
-## Day-To-Day Use
+Build the server and web app:
 
-- **Claude Code:** open a session in `~/ahi/` and address the agent you need.
-- **Telegram:** message the agent-specific bot you configured.
-- **Dashboard:** open the local gateway UI and use the agent filter/send target.
-- **Mission control:** agents keep `mission-control/HANDOFF.md`, `TODAY.md`, `TODO.md`, and `ACTIVITY_FEED.md` current as you work.
-
-## MAT Multi-Runtime Mode
-
-This distribution now includes MAT, a composite operating mode that lets Michael, Avi, and Tzali work as one coordinated identity across runtimes. MAT is useful for larger work that benefits from architecture, implementation, and UX lenses together.
-
-Key files:
-
-```text
-agents/MAT-SPEC.md
-agents/MAT-COLLABORATION-PROTOCOL.md
-runtimes/mat/
-runtimes/codex/launch-as.sh
+```sh
+cd app && npm ci --include=dev && npm run build
+cd web && npm ci --include=dev && npm run build
 ```
 
-From a configured install, preview the Codex MAT prompt with:
-
-```bash
-$AHI_HOME/runtimes/codex/launch-as.sh mat --dry-run
-```
-
-For cross-runtime work, MAT coordinates through a `MAT-HANDOFF.md` ledger. RELAY mode is the default: one runtime finishes a checkpoint, writes the next-runtime prompt into the ledger, and stops for the operator to continue the handoff.
-
-## Configuration
-
-The gateway loads one bot per configured token:
-
-```env
-MICHAEL_BOT_TOKEN=
-TZALI_BOT_TOKEN=
-AVI_BOT_TOKEN=
-```
-
-Users and their allowed agents are configured in `gateway/config/users.json`:
-
-```json
-[
-  {
-    "name": "Primary",
-    "agents": ["michael", "tzali", "avi"],
-    "admin": true
-  }
-]
-```
-
-## Troubleshooting
-
-- **Gateway won't start:** check `~/ahi/state/logs/gateway.err.log`.
-- **`claude` command not found:** make sure Claude Code is installed and in `PATH`.
-- **Permission denied on `.env`:** expected; only your user can read it.
-- **macOS LaunchAgent not loading:** run `launchctl load -w ~/Library/LaunchAgents/ai.ahi.gateway.plist` manually.
-
-## Uninstall
-
-```bash
-node ~/ahi/installer/lib/uninstall.js
-```
-
-The uninstaller backs up `gateway/.env` to `~/ahi.env.bak-<timestamp>`, unloads the LaunchAgent when it belongs to this install, and removes `~/ahi/`.
-
-## Linux Note
-
-Auto-start on Linux uses systemd. After install, drop a unit file at `~/.config/systemd/user/ahi-gateway.service`:
-
-```ini
-[Unit]
-Description=AHI Gateway
-After=network.target
-
-[Service]
-Type=simple
-WorkingDirectory=%h/ahi/gateway
-ExecStart=/usr/bin/node %h/ahi/gateway/dist/index.js
-Restart=always
-Environment=AHI_HOME=%h/ahi
-
-[Install]
-WantedBy=default.target
-```
-
-Then `systemctl --user enable --now ahi-gateway`.
-
-## Windows Note
-
-The installer copies files and builds the gateway, but does not register a Windows Service. To run the gateway on login, create a Task Scheduler entry pointing at `node %USERPROFILE%\ahi\gateway\dist\index.js` with the start-in directory set to `%USERPROFILE%\ahi\gateway`.
+Run AHI Setup from source: `cd app/onboarding && npm ci --include=dev && npm run stage:runtime && npm start`. Installers are built for every platform by the **Build AHI Setup installers** workflow; pushing a `v*` tag publishes them as a release.
 
 ## License
 
-See `LICENSE` for terms.
-
-
-## H-038 complete distribution
-
-Fresh installs are designed to be self-building:
-
-1. Run `./install.sh` on macOS/Linux or `.\install.ps1` on Windows.
-2. Answer every wizard question or press Enter to skip optional items.
-3. Open Claude Code in `$AHI_HOME`.
-4. Talk to an agent normally.
-
-The installer initializes an empty private brain under
-`$AHI_HOME/state/primary/sessions/`. No private transcript ships in this
-public repo. As the user talks, the Claude Code Stop hook records each session
-into Markdown transcripts, adds summaries/categories/Sha'ar-Shoresh coordinates
-to the index, and the UserPromptSubmit hook can retrieve matching memories on
-later turns.
-
-Optional skills under `skills/` include per-skill `SETUP.md` files when they
-require a paid account, browser profile, local CLI, or MCP connector.
+See [LICENSE](LICENSE).

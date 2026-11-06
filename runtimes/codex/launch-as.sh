@@ -7,9 +7,8 @@
 #   ./launch-as.sh --list            Print available agents and where each soul lives
 #   ./launch-as.sh -h | --help       Show this help
 #
-# Agents: michael, tzali, eliyahu, miriam, avi
+# Agents: michael, tzali, miriam, avi
 #   mat — composite MAT mode (Michael + Avi + Tzali + AHI core + MAT protocol).
-# (Refael is gateway-only — no Codex path.)
 #
 # H-035 Phase 1 (single-agent). MAT composite added Phase 2 (2026-06-28) by Tzali.
 
@@ -44,7 +43,7 @@ find_codex() {
 }
 
 # Single-agent identities (one soul each). MAT is a composite mode handled separately.
-SINGLE_AGENTS=(michael tzali eliyahu miriam avi)
+SINGLE_AGENTS=(michael tzali miriam avi)
 # All launchable identities, including the composite MAT mode.
 VALID_AGENTS=("${SINGLE_AGENTS[@]}" mat)
 # Souls that make up the composite MAT identity, in lead order.
@@ -95,8 +94,6 @@ print_list() {
   done
   status_proto="MISS"; [[ -f "$MAT_PROTOCOL_FILE" ]] && status_proto="OK  "
   printf "  %-10s [%s] %s\n" "" "$status_proto" "$MAT_PROTOCOL_FILE"
-  echo
-  echo "Note: Refael is gateway-only — no Codex path."
 }
 
 is_valid_agent() {

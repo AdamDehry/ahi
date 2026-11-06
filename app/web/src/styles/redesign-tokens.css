@@ -1,0 +1,116 @@
+/* ============================================================================
+   AHI REDESIGN — FINAL palette over the existing semantic tokens (slice 1).
+   The app's components reference semantic tokens (--bg, --surface, --text-*,
+   --accent-*, --agent-*), so remapping them here moves every existing view
+   onto the FINAL design at once. Values are the prototype's final COMPUTED
+   appearance (redesign/tools/measure-prototype.mjs), not its first definitions
+   (13-DESIGN: later overrides win — the light theme keeps petrol chrome).
+   Fonts: the FINAL system/local stack; no external font dependency.
+   ========================================================================== */
+/* The FINAL face, verbatim (concept.css). One local face with no weight
+   descriptor, so medium weights (500/550) render regular and 600+ get the synthesized bold — that is why
+   FINAL reads lighter ("Continue with Michael") than real Inter/Helvetica Medium/Bold cuts did here. */
+@font-face { font-family: AHI; src: local("Inter"), local("SF Pro Text"), local("Helvetica Neue"); font-display: swap; }
+:root {
+  --font-ui: AHI, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-display: var(--font-ui);
+  --font-label: var(--font-ui);
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  /* Shell geometry (FINAL frame) */
+  --rd-rail-w: 228px;
+  --rd-rail-w-collapsed: 68px;
+  --rd-top-h: 56px;
+  --rd-canvas-gap: 7px;
+  --rd-canvas-radius: 17px;
+  --rd-dock-h: 72px;
+  --rd-dock-space: calc(var(--rd-dock-h) + env(safe-area-inset-bottom, 0px));
+}
+
+/* ---- DARK (FINAL default) ------------------------------------------------ */
+:root, [data-theme="dark"] {
+  --bg:            #101b1a;
+  --bg-wash:       #101b1a;
+  --surface:       #162321;
+  --surface-alt:   #13201e;
+  --surface-dim:   #1c2c29;
+  --raised:        #1c2c29;
+  --skeleton:      #1c2c29;
+  --skeleton-hi:   #24352f;
+  --line:          #34443f;
+  --line-strong:   #4a5c56;
+  --text:          #f2f0e8;
+  --text-body:     #e3e2da;
+  --text-mute:     #a9b5ad;
+  --text-faint:    #8b978f;
+  --text-ghost:    #5f6c66;
+  --accent:        #d4b780;
+  --accent-strong: #d4b780;
+  --accent-soft:   #332e22;
+  --accent-bg:     #332e22;
+  --on-accent:     #17231b;
+  --positive:      #a1c8b0;
+  --negative:      #e7cba0;
+  --focus-halo:    0 0 0 2px #d4b780;
+  --shadow-menu:   0 18px 44px rgba(0, 0, 0, .5);
+  --shadow-card:   0 2px 3px rgba(0, 0, 0, .2);
+  --scrim:         rgba(0, 0, 0, .53);
+  --blur-bar:      #101b1a;
+  --agent-michael: #c7dfd0; --agent-michael-bg: #304b42;
+  --agent-tzali:   #d3ccdf; --agent-tzali-bg:   #3e3a48;
+  --agent-sage:     #dce2c7; --agent-sage-bg:     #3d4231;
+  --agent-miriam:  #e5c9cd; --agent-miriam-bg:  #49373b;
+  --agent-avi:     #c9d3e0; --agent-avi-bg:     #33404a;
+
+  /* Outer chrome (rail + top bar): one uninterrupted shell */
+  --chrome-bg: #0c1716; --chrome-ink: #f2f0e8; --chrome-muted: #a9b5ad;
+  --chrome-line: #34443f; --chrome-accent: #d4b780; --chrome-raised: #1c2c29;
+  --chrome-active: #332e22; --chrome-field: #162321; --html-bg: #080f0e;
+  color-scheme: dark;
+}
+
+/* ---- LIGHT --------------------------------------------------------------- */
+[data-theme="light"] {
+  --bg:            #f5f3ed;
+  --bg-wash:       #f5f3ed;
+  --surface:       #fffefa;
+  --surface-alt:   #efede5;
+  --surface-dim:   #ecefe7;
+  --raised:        #ecefe7;
+  --skeleton:      #e3e6dc;
+  --skeleton-hi:   #eef0ea;
+  --line:          #d3d9cc;
+  --line-strong:   #b9c2b4;
+  --text:          #1c302a;
+  --text-body:     #263a33;
+  --text-mute:     #58695f;
+  --text-faint:    #6e7d74;
+  --text-ghost:    #a2aea6;
+  --accent:        #795823;
+  --accent-strong: #795823;
+  --accent-soft:   #f0e7d6;
+  --accent-bg:     #f0e7d6;
+  --on-accent:     #fffefa;
+  --positive:      #38674d;
+  --negative:      #855a18;
+  --focus-halo:    0 0 0 2px #795823;
+  --shadow-menu:   0 18px 40px rgba(24, 48, 32, .14);
+  --shadow-card:   0 2px 3px rgba(24, 48, 32, .07);
+  --scrim:         rgba(21, 44, 37, .33);
+  --blur-bar:      #f5f3ed;
+  --agent-michael: #435a36; --agent-michael-bg: #e1e9d7;
+  --agent-tzali:   #655780; --agent-tzali-bg:   #e4e1ee;
+  --agent-sage:     #42674e; --agent-sage-bg:     #ddebe2;
+  --agent-miriam:  #795d3b; --agent-miriam-bg:  #f0e5d7;
+  --agent-avi:     #3f5a72; --agent-avi-bg:     #dfe7ee;
+
+  --chrome-bg: #315955; --chrome-ink: #f2f0e8; --chrome-muted: #cedbd3;
+  --chrome-line: #5f7d75; --chrome-accent: #e6c992; --chrome-raised: #416a63;
+  --chrome-active: #26473f; --chrome-field: #3b625d; --html-bg: #1d3a37;
+  color-scheme: light;
+}
+
+html { background: var(--html-bg); }
+body { font-family: var(--font-ui); }
+/* Micro-labels: FINAL uses tracked uppercase sans, not mono. Code stays mono. */
+.mono-label { font-family: var(--font-label); font-weight: 600; letter-spacing: .12em; }

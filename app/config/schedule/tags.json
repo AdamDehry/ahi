@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "note": "Which block a piece of agent work belongs to. First match wins: a build name in names, then the first rule whose words appear in the name. Anything unmatched still shows, in the background lane.",
+  "tags": {
+    "work": "Work"
+  },
+  "names": {},
+  "rules": []
+}

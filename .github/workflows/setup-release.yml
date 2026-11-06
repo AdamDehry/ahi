@@ -1,0 +1,116 @@
+name: Build AHI Setup installers
+# Builds the AHI Setup app (download, open, set up, AHI opens in your browser) for Mac, Windows and Linux.
+# Run by hand for review artifacts; pushing a version tag (v*) also publishes them as a GitHub Release,
+# which is what the app's "Download AHI Setup" button links to.
+on:
+  workflow_dispatch:
+  push:
+    tags: ['v*']
+permissions:
+  contents: read
+jobs:
+  installers:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-15-intel
+            arch: x64
+            target: mac
+          - os: macos-15
+            arch: arm64
+            target: mac
+          - os: windows-latest
+            arch: x64
+            target: win
+          - os: ubuntu-latest
+            arch: x64
+            target: linux
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: app/onboarding
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.22.2'
+          cache: npm
+          cache-dependency-path: |
+            app/package-lock.json
+            app/web/package-lock.json
+            app/onboarding/package-lock.json
+      # The repo and tag this build answers to: the app's Updates page checks this repo's latest release.
+      - name: Record the release channel
+        shell: bash
+        run: |
+          echo "{\"repo\":\"${GITHUB_REPOSITORY}\",\"tag\":\"${GITHUB_REF_NAME}\"}" > ../release.json
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            v=$(node -p "require('../package.json').version")
+            [ "v$v" = "${GITHUB_REF_NAME}" ] || { echo "tag ${GITHUB_REF_NAME} != app/package.json version $v"; exit 1; }
+            [ "$v" = "$(node -p "require('../../skills/MANIFEST.json').release")" ] || { echo "skills/MANIFEST.json release != $v"; exit 1; }
+          fi
+      # The AHI server and web app the installer carries, built with the same Node it bundles.
+      - name: Build the AHI server
+        working-directory: app
+        run: |
+          npm ci --include=dev
+          npm run build
+      # Memory search between conversations is a plain-Node hook: prove it runs on this OS (windows-latest
+      # included) against the server just built, in an isolated empty AHI home.
+      - name: Memory search hook runs on this OS
+        working-directory: app
+        run: node --import tsx --test test/retrieval-hook.test.ts
+      - name: Build the AHI web app
+        working-directory: app/web
+        env:
+          # The Create account card's Download AHI Setup button: this repo's latest release.
+          VITE_AHI_SETUP_URL: ${{ github.server_url }}/${{ github.repository }}/releases/latest
+        run: |
+          npm ci --include=dev
+          npm run build
+      - name: Keep only the server's production packages
+        working-directory: app
+        run: npm prune --omit=dev
+      - run: npm ci --include=dev
+      - run: npm test
+      - name: Bundle native Node runtime
+        run: npm run stage:runtime
+      - name: Build installers without publishing
+        run: npm run dist -- --${{ matrix.target }} --${{ matrix.arch }}
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+          # Unsigned review builds. Signing and notarization are a later release step.
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ahi-setup-${{ matrix.os }}-${{ matrix.arch }}
+          path: |
+            app/onboarding/artifacts/*.dmg
+            app/onboarding/artifacts/*.exe
+            app/onboarding/artifacts/*.AppImage
+            app/onboarding/artifacts/*.blockmap
+          if-no-files-found: error
+          retention-days: 14
+  publish:
+    # Only a pushed version tag publishes; a manual run stops at review artifacts.
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: installers
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.22.2'
+      # The skills shelf as one verified file: what the app's "Update skills" button installs.
+      - name: Pack the skills shelf
+        run: node app/scripts/skills-bundle.mjs skills ahi-skills.json
+      - uses: actions/download-artifact@v4
+        with:
+          path: installers
+          merge-multiple: true
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release create "${GITHUB_REF_NAME}" installers/* ahi-skills.json --repo "${GITHUB_REPOSITORY}" --title "AHI ${GITHUB_REF_NAME}" --notes "Download AHI Setup for your computer, open it, and follow the setup. AHI opens in your browser when you finish. Already running AHI? Open Settings and choose Updates to see this release and install its newer skills."

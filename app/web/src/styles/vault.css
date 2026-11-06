@@ -1,0 +1,14 @@
+/* Vault — the owner's picture. Reuses the Bills/Costs classes; only the owner band and the secret line are new. */
+.vault-owner { margin-top: var(--sp-4); }
+.vault-owner-head { display: flex; align-items: baseline; gap: var(--sp-3); padding: var(--sp-2) var(--sp-1); border-bottom: var(--hairline) solid var(--line); cursor: pointer; }
+.vault-owner-name { font-weight: 600; flex: 1; }
+.vault-owner-net { font-variant-numeric: tabular-nums; }
+.vault-owner-net.neg { color: var(--negative); }
+.vault-row-sub { color: var(--text-mute); font-size: var(--fs-ui); }
+.vault-stale { color: var(--negative); }
+.vault-secret { font-family: var(--font-mono, monospace); letter-spacing: 0.08em; padding: var(--sp-2); border: var(--hairline) solid var(--line); border-radius: var(--radius-btn); user-select: all; }
+.vault-flag { display: flex; gap: var(--sp-2); align-items: flex-start; padding: var(--sp-2) var(--sp-1); border-bottom: var(--hairline) solid var(--line); }
+.vault-flag-body { flex: 1; }
+.vault-band { display: flex; gap: var(--sp-2); flex-wrap: wrap; justify-content: flex-end; margin: var(--sp-2) 0; }
+.vault-muted { color: var(--text-mute); }
+.vault-paste { width: 100%; min-height: 4em; }

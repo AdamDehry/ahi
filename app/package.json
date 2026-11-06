@@ -1,0 +1,35 @@
+{
+  "name": "@michael/gateway",
+  "version": "0.2.0",
+  "description": "Michael AI Gateway — Telegram/voice bridge to Claude Code",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "prebuild": "node scripts/check-sync-conflicts.mjs",
+    "build": "tsc",
+    "test": "node --import tsx --test test/*.test.ts",
+    "start": "node dist/index.js",
+    "build:web": "npm ci --prefix web && npm run build --prefix web"
+  },
+  "dependencies": {
+    "@google-cloud/speech": "^7.3.0",
+    "@grammyjs/runner": "^2.0.3",
+    "@hebcal/core": "^6.4.1",
+    "@hono/node-server": "^1.13.0",
+    "@simplewebauthn/server": "^14.0.3",
+    "dotenv": "^16.5.0",
+    "grammy": "^1.41.1",
+    "hono": "^4.12.8",
+    "openai": "^6.34.0",
+    "sharp": "^0.35.2",
+    "web-push": "^3.6.7",
+    "ws": "^8.20.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/web-push": "^3.6.4",
+    "@types/ws": "^8.18.1",
+    "tsx": "^4.19.0",
+    "typescript": "^5.8.0"
+  }
+}

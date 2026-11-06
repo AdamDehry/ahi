@@ -1,0 +1,358 @@
+/* ============================================================================
+   AHI DASHBOARD — "Ink & Brass" tokens (v1) — Avi, 2026-07-08
+   ----------------------------------------------------------------------------
+   Brand family: Ink & Brass. Core values (--ink, --bone, --brass*, type, radius, focus)
+   are the brand's — dashboard flavor. Dark mode and
+   the chat/agent semantic layer are new here and owned by this file.
+
+   Usage: :root is LIGHT (bone). [data-theme="dark"] overrides (ink) — matches
+   the skeleton's existing data-theme mechanism. Components reference the
+   SEMANTIC tokens (--bg, --surface, --text-*, --accent-*), never brand hex,
+   so both themes come free.
+   ========================================================================== */
+
+:root {
+  /* ---- Brand core (verbatim from the business canonical — do not fork) -------- */
+  --ink:          #121316;
+  --bone:         #F4F1EA;
+  --petrol:       #11303A;   /* brand-moment only (login). Not an app surface. */
+  --petrol-deep:  #0E2830;
+  --brass:        #B6883C;
+  --brass-bright: #C9A24B;
+  --brass-deep:   #8A6526;
+  --green:        #3F7D5B;
+  --warn:         #855A18;   /* action-needed / error. NEVER brass. */
+
+  /* ---- Type roles (verbatim) --------------------------------------------- */
+  --font-display: 'Fraunces', Georgia, 'Times New Roman', serif; /* headings ONLY */
+  --font-ui:      'Geist', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono:    'Geist Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+
+  /* Fraunces settings: weight 420–500,
+     font-optical-sizing auto, letter-spacing -0.015em, italic for the one
+     emphasized word (color: var(--accent-strong)). */
+  --fs-h1: 32px;      /* screen titles (Fraunces 440) */
+  --fs-h2: 24px;      /* section titles (Fraunces 460) */
+  --fs-h3: 19px;      /* card titles (Fraunces 500) */
+  --fs-md: 16.5px;    /* emphasized UI text (Geist 600) */
+  --fs-body: 15px;    /* chat body, line-height 1.6 (Geist 400) */
+  --fs-sm: 13px;      /* previews, secondary rows */
+  --fs-meta: 12px;    /* dense metadata */
+  --fs-label: 11px;   /* mono micro-labels: uppercase, letter-spacing .09em */
+
+  /* ---- Scale (verbatim + chat additions) --------------------------------- */
+  --radius-card:   12px;
+  --radius-row:    10px;
+  --radius-field:  9px;
+  --radius-btn:    10px;
+  --radius-chip:   20px;
+  --radius-bubble: 16px;  /* user message container; corner nearest composer: 6px */
+  --radius-menu:   12px;  /* anchored dropdown / peek panel */
+  --tap-min:       44px;
+
+  --sp-1: 4px;  --sp-2: 8px;  --sp-3: 12px; --sp-4: 16px;
+  --sp-5: 20px; --sp-6: 24px; --sp-7: 32px; --sp-8: 48px;
+
+  --sidebar-w: 288px;
+  --menu-w: 232px;
+  --thread-max: 720px;    /* agent text measure */
+  --bubble-max: 65%;      /* user bubble max width */
+  --topbar-h: 52px;       /* mobile: 56px */
+
+  /* ---- Motion ------------------------------------------------------------- */
+  --ease:     cubic-bezier(.22,.7,.25,1);
+  --t-fast:   150ms;   /* hovers, toggles */
+  --t-menu:   180ms;   /* dropdown / peek: fade + 4px drop, origin top-left */
+  --t-screen: 260ms;   /* mobile screen push/pop slide */
+
+  /* ==========================================================================
+     LIGHT — "Bone" (default)
+     ======================================================================== */
+  --bg:            var(--bone);
+  --bg-wash:       radial-gradient(120% 90% at 50% -10%, #FAF8F3 0%, var(--bone) 55%) var(--bone);
+  --surface:       #FFFFFF;   /* cards, user bubble, dropdown, composer */
+  --surface-alt:   #FAF8F3;   /* sidebar, nested panels */
+  --surface-dim:   #F0ECE3;   /* hover rows, de-emphasized */
+  --skeleton:      #DED9CE;
+  --skeleton-hi:   #EDE9E0;
+
+  --line:          #E0DACE;   /* hairlines, card borders */
+  --line-strong:   #C4BFB3;   /* dashed drop zones, inputs on hover */
+
+  --text:          #22201C;   /* headings */
+  --text-body:     #3A382F;   /* primary — chat text */
+  --text-mute:     #6B6960;   /* previews, secondary */
+  --text-faint:    #8A867D;   /* mono labels, timestamps */
+  --text-ghost:    #A6A196;   /* disabled */
+
+  --accent:        var(--brass);        /* fills: send button, active states */
+  --accent-strong: var(--brass-deep);   /* small text/icons in brass (AA on bone) */
+  --accent-soft:   color-mix(in srgb, var(--brass) 10%, transparent); /* active-row bg */
+  --on-accent:     #14100A;
+
+  --positive:      var(--green);
+  --negative:      var(--warn);
+
+  --focus-halo:    0 0 0 3px color-mix(in srgb, var(--brass-bright) 40%, transparent);
+  --shadow-menu:   0 18px 40px color-mix(in srgb, var(--ink) 16%, transparent);
+  --shadow-card:   0 14px 34px color-mix(in srgb, var(--ink) 14%, transparent);
+  --scrim:         color-mix(in srgb, var(--ink) 20%, transparent);
+  --blur-bar:      color-mix(in srgb, var(--bone) 88%, transparent); /* topbar bg + blur(12px) */
+
+  /* ---- Agents (retuned for Ink & Brass — old electric blue/cyan are dead).
+     One hue per agent, mid-value, reads on both grounds. Dot, name, avatar
+     tint (avatar bg = color-mix(agent 15%, transparent)). ------------------- */
+  --agent-michael: #5F739E;   /* slate-steel   (was #4f6fce) */
+  --agent-miriam:  #B87878;   /* rose clay     (was #c27878) */
+  --agent-tzali:   #4E8E9C;   /* petrol        (was #22b8d9) */
+  --agent-avi:     #8F94A0;   /* bone-silver   (was #bfc4d4) */
+  --agent-sage:     #7C8F6E;   /* ledger moss   (pricing desk — 9C) */
+}
+
+/* ============================================================================
+   DARK — "Ink"
+   Border grays are the exact values shipped in the business's ink footer.
+   Text ramp is bone dimmed warm — never pure white, never cool gray.
+   ========================================================================== */
+[data-theme="dark"] {
+  --bg:            var(--ink);
+  --bg-wash:       radial-gradient(120% 90% at 50% -10%, #17191E 0%, var(--ink) 55%) var(--ink);
+  --surface:       #171A1F;   /* sidebar, cards (the business --surface-dark) */
+  --surface-alt:   #14161A;
+  --surface-dim:   #1B1E24;   /* hover rows */
+  --skeleton:      #22252C;
+  --skeleton-hi:   #2A2E36;
+
+  --line:          #262A31;
+  --line-strong:   #363B44;
+
+  --text:          var(--bone);  /* #F4F1EA — headings */
+  --text-body:     #DAD6CC;
+  --text-mute:     #9B978C;
+  --text-faint:    #7A766C;
+  --text-ghost:    #5D5A52;
+
+  --accent:        var(--brass-bright);  /* #C9A24B */
+  --accent-strong: #DDBC6E;              /* small brass text on ink */
+  --accent-soft:   color-mix(in srgb, var(--brass-bright) 13%, transparent);
+  --on-accent:     #14100A;
+
+  --positive:      #5E9C78;
+  --negative:      #E7CBA0;   /* the business --warn-on-dark */
+
+  --focus-halo:    0 0 0 3px color-mix(in srgb, var(--brass-bright) 35%, transparent);
+  --shadow-menu:   0 18px 44px rgba(0, 0, 0, .52);
+  --shadow-card:   0 14px 34px rgba(0, 0, 0, .42);
+  --scrim:         rgba(0, 0, 0, .45);
+  --blur-bar:      color-mix(in srgb, var(--ink) 82%, transparent);
+
+  /* Agent hues, lifted one step for ink ground */
+  --agent-michael: #7A8DB5;
+  --agent-miriam:  #CC9191;
+  --agent-tzali:   #6BA7B4;
+  --agent-avi:     #A6ABB6;
+  --agent-sage:     #97AB88;
+}
+
+/* ============================================================================
+   SEMANTIC RECIPES (how the tokens combine — reference for Tzali)
+   ----------------------------------------------------------------------------
+   Chat surface
+   • Thread bg:        background: var(--bg-wash)
+   • Agent message:    NO container. Signature line above each run:
+                       8px dot (--agent-*) + name 13px/600 (--agent-*)
+                       + timestamp var(--fs-label) mono uppercase (--text-faint).
+                       Body: var(--fs-body)/1.6 (--text-body), max-width var(--thread-max).
+   • User message:     background var(--surface); border 1px var(--line);
+                       border-radius var(--radius-bubble), composer-side corner 6px;
+                       max-width var(--bubble-max); align right.
+   • Streaming:        2px × 1em blinking caret, background var(--accent).
+   • Tool badge:       mono var(--fs-label) uppercase chip — 1px var(--line),
+                       radius var(--radius-chip), color var(--text-faint).
+   • Media: image = radius var(--radius-card); voice pill = play + brass
+     waveform (--accent) + mono duration; document = file chip card.
+   • Composer: bg var(--surface), 1px var(--line), radius 14px; focus =
+     border-color var(--brass) + var(--focus-halo). Mic sits beside send.
+     Send = 36px circle, bg var(--accent), glyph var(--on-accent).
+
+   Chrome
+   • Topbar: h var(--topbar-h); bg var(--blur-bar) + backdrop-filter blur(12px);
+     border-bottom 1px var(--line).
+   • Anchored menu / peek panel: width var(--menu-w); bg var(--surface);
+     1px var(--line); radius var(--radius-menu); box-shadow var(--shadow-menu);
+     items 40px; active item = bg var(--accent-soft), color var(--accent-strong).
+     Animate var(--t-menu) var(--ease): opacity 0→1, translateY(-4px)→0,
+     transform-origin top left. Anchored to trigger — never screen-centered.
+   • Sidebar: width var(--sidebar-w); bg var(--surface-alt); rows 64px,
+     radius var(--radius-row); active row bg var(--accent-soft);
+     hover bg var(--surface-dim).
+   • Cards (MC/Clipboard/Files): bg var(--surface), 1px var(--line),
+     radius var(--radius-card); hover: border-color var(--brass),
+     translateY(-2px), var(--t-fast).
+   • Stat figures (Costs): mono, tabular-nums, 28–30px/600, color
+     var(--accent-strong); label var(--fs-label) mono uppercase (--text-faint).
+   • ::selection { background: var(--brass-bright); color: var(--on-accent); }
+
+   Motion discipline
+   • Mobile push/pop: var(--t-screen) var(--ease), 24px parallax on underlay.
+   • prefers-reduced-motion: reduce → kill all transitions/animations.
+   ========================================================================== */
+
+/* ============================================================================
+   SKELETON STRUCTURAL ADDITIONS (Tzali) — not brand values. Only tokens the
+   app needs that the design system doesn't define. Everything else above is
+   Avi's file VERBATIM — replace-on-drop stays true: a new Avi tokens.css can
+   overwrite everything above this block.
+   ========================================================================== */
+:root {
+  --composer-max-h: 150px;    /* textarea growth cap */
+  --media-thumb-max-h: 220px; /* image attachment box (fixed so Virtuoso rows don't jump) */
+  --opacity-pending: 0.65;
+  --opacity-disabled: 0.4;
+  --dur-typing: 1.2s;
+  --dur-caret: 1.1s;          /* streaming caret blink (showcase: 1.1s step-end) */
+  --radius-composer: 14px;    /* showcase 1A composer radius (not in Avi's scale) */
+  --radius-bubble-tight: 6px; /* user-bubble corner nearest the composer */
+  --topbar-h-mobile: 56px;
+
+  /* Hairlines + micro-spacing between Avi's --sp steps (artboard values) */
+  --hairline: 1px;
+  --hairline-strong: 1.5px;
+  --sp-0: 2px;
+  --sp-0h: 3px;
+  --sp-1h: 6px;
+  --sp-2h: 10px;
+  --sp-3h: 14px;
+
+  /* Control geometry (showcase 1A–1G) */
+  --icon-btn: 28px;           /* topbar icon buttons */
+  --icon-btn-lg: 34px;        /* composer icons */
+  --fab: 40px;                /* scroll-to-latest circle (step 5 #3) */
+  --ctl: 36px;                /* send circle, avatars, accent buttons */
+  --search-h: 34px;
+  --filter-row-h: 38px;
+  --menu-row-h: 40px;         /* dropdown items; voice pill height */
+  --field-h: 46px;            /* login fields */
+  --mobile-row-h: 56px;       /* mobile menu rows */
+  --mobile-agent-row-h: 72px; /* mobile agent-list rows */
+  --composer-min-h: 50px;
+  --skeleton-min-h: 120px;
+  --stat-min-w: 140px;
+  --card-min-w: 320px;
+  --card-min-w-sm: 260px;
+  --settings-max-w: 560px;
+  --thread-col-max: 760px;    /* bubble column (agent measure = --thread-max) */
+
+  /* Micro-marks */
+  --dot: 6px;                 /* status dots */
+  --caret-w: 2px;             /* streaming caret */
+  --wave-w: 3px;              /* voice waveform bars (showcase v2 2A/2B) */
+  --wave-min: 5px;
+  --radius-pill: 999px;       /* capsule ends — wave bars, speed chip (v2) */
+  --pulse-w: 3px;             /* mc-update hairline pulse */
+  --share-h: 4px;             /* costs share bar */
+  --parallax: 24px;           /* mobile pop underlay shift */
+  --blur-amount: 12px;
+
+  /* UI type sizes the artboards use between Avi's named roles */
+  --fs-micro: 10px;
+  --fs-ui: 14px;
+  --fs-ui-md: 16px;
+  --fs-field-ios: 16px; /* text fields on iPhone: below 16px, iOS zooms the page on focus (lib/ios.ts) */
+  --fs-ui-lg: 17px;
+  --fs-stat: 28px;
+
+  /* Overlay stack (3c#1: menus always above content; modal above all) */
+  --z-settings: 50;
+  --z-menu: 900;
+  --z-modal: 950;
+
+  /* Voice note (3c#3) + cost modal */
+  --voice-note-max: 420px;
+  --modal-w: 480px;
+
+  /* Files view sizes (3d§3) */
+  --file-tile-sm: 120px;
+  --file-tile-md: 220px;
+  --file-tile-lg: 320px;
+  --file-thumb-md: 130px;
+  --file-thumb-lg: 210px;
+
+  --preview-max-w: 960px;   /* file preview modal */
+  --vn-chip-w: 44px;        /* reserved speed-chip slot (3d2 §9) */
+  --vn-chip-w-mobile: 34px; /* slimmer slot inside the mobile bar — fixed
+                               width sized for the widest label, 1.5× (3f#1) */
+  --vn-chip-fs-mobile: 9px; /* one step down so 1.5× centers in the slot */
+  --vn-bar-gap: var(--sp-3); /* voice-bar internal gap (v2 2A; mobile: --sp-2h) */
+  --vn-mobile-max: 75%;     /* mobile voice-bar cap per side (v2 2B "75% WIDTH") */
+  --vn-pill-h: 44px;        /* received voice pill height (v2 2A/2B) */
+  --vn-row-h: 24px;         /* sent voice row height — bare row in bubble (v2) */
+  --vn-play-w: 13px;        /* play/pause slot = play glyph width — FIXED so
+                               toggling play↔pause never shifts the wave */
+  --vn-pause-w: 2.5px;      /* pause glyph bar width = its gap (v2) */
+  --vn-wave-dim: 0.35;      /* UNPLAYED bar opacity; played = 1 (v2 mkWave) */
+  --wave-gap: 1.5px;        /* fixed wave gap (v2: 3px bars / 1.5px gaps) */
+
+  /* Uniform preview cards (3c2#2/#5) + L2 reading width */
+  --mc-card-h: 240px;
+  --clip-card-h: 180px;
+  --l2-max: 760px;
+
+  /* Costs trailing columns (3c2#6) */
+  --cost-type-w: 110px;
+  --cost-price-w: 72px;
+
+  /* Scrollbars (3c2#4) — the PWA treatment: no track, floating thumb */
+  --scroll-w: 4px;
+  --scroll-thumb: color-mix(in srgb, var(--text-ghost) 55%, transparent);
+  --scroll-thumb-hover: color-mix(in srgb, var(--text-ghost) 90%, transparent);
+
+  /* Sent-message collapse (3e#2): long pasted prompts fold to ~10 lines */
+  --sent-clamp-lines: 10;
+
+  /* Mobile breakpoint is 768px — custom properties can't parameterize
+     @media queries; documented exception, keep in sync with app.css. */
+}
+
+/* Sent-bubble ground (showcase v2 2A/2B): dark lifts the user bubble one
+   step ABOVE --surface (#171A1F received pill / composer) so the sent voice
+   bar reads directly on the bubble without its own pill. Light = --surface
+   (v2 light frames keep #FFFFFF). Value lifted from the v2 artboards. */
+:root { --bubble-user-bg: var(--surface); }
+[data-theme="dark"] { --bubble-user-bg: #1E222A; }
+
+/* Review-desk lanes (structural, for Avi to retune).
+   RED is a muted oxblood: unmistakable, never alarm-red, calm on both
+   grounds. YELLOW is the system's action-needed --warn. GREEN is --positive.
+   The *-soft / *-line pair tints a RED card or banner without shouting. */
+:root {
+  --lane-red: #8E3B2F;
+  --lane-yellow: var(--warn);
+  --lane-green: var(--positive);
+  --lane-red-soft: color-mix(in srgb, var(--lane-red) 6%, var(--surface));
+  --lane-red-line: color-mix(in srgb, var(--lane-red) 34%, var(--line));
+  --rv-btn-h: 52px;           /* action bar buttons — one-thumb target */
+  --rv-rule-w: 3px;           /* lane rule on a card's left edge */
+  --rv-card-min-h: 88px;
+}
+[data-theme="dark"] {
+  --lane-red: #D48A7A;
+  --lane-red-soft: color-mix(in srgb, var(--lane-red) 8%, var(--surface));
+  --lane-red-line: color-mix(in srgb, var(--lane-red) 30%, var(--line));
+}
+
+/* Panel family — Builds (#3) + WhatsApp (#5) (Avi's design pass,
+   BUILD-NOTES §4). One tone vocabulary for both panels (C8): warn = yours ·
+   brass = moving · green = built · oxblood ring = stuck · hairline = queued. */
+:root {
+  --tone-you: var(--warn);  --tone-move: var(--accent);  --tone-stuck: var(--lane-red);
+  --tone-built: var(--positive);  --tone-quiet: var(--line-strong);
+  --tone-you-soft: color-mix(in srgb, var(--warn) 7%, var(--surface));
+  --tone-you-line: color-mix(in srgb, var(--warn) 30%, var(--line));
+  --pf-rule-w: 3px; --pf-gutter: 22px; --pf-avatar: 36px; --pf-list-w: 420px;
+}
+[data-theme="dark"] {
+  --tone-you: var(--negative);
+  --tone-you-soft: color-mix(in srgb, var(--negative) 7%, var(--surface));
+  --tone-you-line: color-mix(in srgb, var(--negative) 26%, var(--line));
+}

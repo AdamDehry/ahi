@@ -1,0 +1,232 @@
+{
+  "version": 1,
+  "title": "Your week",
+  "approved": "",
+  "zone": "America/New_York",
+  "note": "A starter week. Ask Michael to shape it around your real days.",
+  "dayEnd": "23:00",
+  "kinds": {
+    "personal": {
+      "label": "Personal",
+      "color": "#7a776f"
+    },
+    "work": {
+      "label": "Work",
+      "color": "#1565c0"
+    }
+  },
+  "days": {
+    "sun": [
+      {
+        "start": "08:00",
+        "title": "Free day",
+        "short": "Free",
+        "kind": "personal"
+      }
+    ],
+    "mon": [
+      {
+        "start": "07:00",
+        "title": "Morning",
+        "short": "Morning",
+        "kind": "personal"
+      },
+      {
+        "start": "09:00",
+        "title": "Focused work",
+        "short": "Work",
+        "kind": "work",
+        "tags": [
+          "work"
+        ]
+      },
+      {
+        "start": "12:30",
+        "title": "Lunch",
+        "short": "Lunch",
+        "kind": "personal"
+      },
+      {
+        "start": "13:30",
+        "title": "Work",
+        "short": "Work",
+        "kind": "work",
+        "tags": [
+          "work"
+        ]
+      },
+      {
+        "start": "17:30",
+        "title": "Evening",
+        "short": "Evening",
+        "kind": "personal"
+      }
+    ],
+    "tue": [
+      {
+        "start": "07:00",
+        "title": "Morning",
+        "short": "Morning",
+        "kind": "personal"
+      },
+      {
+        "start": "09:00",
+        "title": "Focused work",
+        "short": "Work",
+        "kind": "work",
+        "tags": [
+          "work"
+        ]
+      },
+      {
+        "start": "12:30",
+        "title": "Lunch",
+        "short": "Lunch",
+        "kind": "personal"
+      },
+      {
+        "start": "13:30",
+        "title": "Work",
+        "short": "Work",
+        "kind": "work",
+        "tags": [
+          "work"
+        ]
+      },
+      {
+        "start": "17:30",
+        "title": "Evening",
+        "short": "Evening",
+        "kind": "personal"
+      }
+    ],
+    "wed": [
+      {
+        "start": "07:00",
+        "title": "Morning",
+        "short": "Morning",
+        "kind": "personal"
+      },
+      {
+        "start": "09:00",
+        "title": "Focused work",
+        "short": "Work",
+        "kind": "work",
+        "tags": [
+          "work"
+        ]
+      },
+      {
+        "start": "12:30",
+        "title": "Lunch",
+        "short": "Lunch",
+        "kind": "personal"
+      },
+      {
+        "start": "13:30",
+        "title": "Work",
+        "short": "Work",
+        "kind": "work",
+        "tags": [
+          "work"
+        ]
+      },
+      {
+        "start": "17:30",
+        "title": "Evening",
+        "short": "Evening",
+        "kind": "personal"
+      }
+    ],
+    "thu": [
+      {
+        "start": "07:00",
+        "title": "Morning",
+        "short": "Morning",
+        "kind": "personal"
+      },
+      {
+        "start": "09:00",
+        "title": "Focused work",
+        "short": "Work",
+        "kind": "work",
+        "tags": [
+          "work"
+        ]
+      },
+      {
+        "start": "12:30",
+        "title": "Lunch",
+        "short": "Lunch",
+        "kind": "personal"
+      },
+      {
+        "start": "13:30",
+        "title": "Work",
+        "short": "Work",
+        "kind": "work",
+        "tags": [
+          "work"
+        ]
+      },
+      {
+        "start": "17:30",
+        "title": "Evening",
+        "short": "Evening",
+        "kind": "personal"
+      }
+    ],
+    "fri": [
+      {
+        "start": "07:00",
+        "title": "Morning",
+        "short": "Morning",
+        "kind": "personal"
+      },
+      {
+        "start": "09:00",
+        "title": "Focused work",
+        "short": "Work",
+        "kind": "work",
+        "tags": [
+          "work"
+        ]
+      },
+      {
+        "start": "12:30",
+        "title": "Lunch",
+        "short": "Lunch",
+        "kind": "personal"
+      },
+      {
+        "start": "13:30",
+        "title": "Work",
+        "short": "Work",
+        "kind": "work",
+        "tags": [
+          "work"
+        ]
+      },
+      {
+        "start": "17:30",
+        "title": "Evening",
+        "short": "Evening",
+        "kind": "personal"
+      }
+    ],
+    "sat": [
+      {
+        "start": "08:00",
+        "title": "Free day",
+        "short": "Free",
+        "kind": "personal"
+      }
+    ]
+  },
+  "shabbat": {
+    "title": "Day of rest",
+    "short": "Rest",
+    "detail": "No calls, no work.",
+    "kind": "personal"
+  }
+}
