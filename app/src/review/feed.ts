@@ -357,13 +357,14 @@ export function deriveFeed(input: FeedInput): FeedView {
   const inRows = new Set(rows.flatMap((r) => (r.action.kind === "open-review" ? [r.action.item] : [])));
   for (const i of input.reviewItems) {
     if (i.status !== "waiting" || inRows.has(i.id)) continue;
+    const by = i.created_by ? canonicalAgentId(i.created_by) : null;
     rows.push({
       id: i.id,
       kind: "needs_you",
       status: "review",
       what: i.title,
       where: `In Review${i.lane === "RED" ? " · fingerprint" : " · one tap"} · ${i.desk}`,
-      from: i.created_by && /^(michael|zali|avi|foreman)$/.test(canonicalAgentId(i.created_by)) ? canonicalAgentId(i.created_by) : null,
+      from: by && /^(michael|zali|avi|foreman)$/.test(by) ? by : null,
       at: i.created,
       action: { kind: "open-review", item: i.id },
       start: null,

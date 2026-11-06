@@ -21,8 +21,9 @@ export function canonicalAgentId(id: string): string {
 export function aliasLegacyAgentEnv(env: NodeJS.ProcessEnv = process.env): void {
   const prefix = `${OLD.toUpperCase()}_`;
   for (const key of Object.keys(env)) {
+    if (!key.startsWith(prefix)) continue;
     const renamed = `${NEW.toUpperCase()}_${key.slice(prefix.length)}`;
-    if (key.startsWith(prefix) && env[renamed] === undefined) env[renamed] = env[key];
+    if (env[renamed] === undefined) env[renamed] = env[key];
   }
 }
 
@@ -30,7 +31,7 @@ export function aliasLegacyAgentEnv(env: NodeJS.ProcessEnv = process.env): void 
 function renamedName(name: string): string | null {
   const m = /^(tzali)(?=$|[.:_-])/i.exec(name);
   if (!m) return null;
-  const head = m[1] === m[1].toUpperCase() ? NEW.toUpperCase() : m[1][0] === "T" ? "Zali" : NEW;
+  const head = m[1] === "TZALI" ? "ZALI" : m[1] === "Tzali" ? "Zali" : NEW;
   return head + name.slice(m[1].length);
 }
 
@@ -54,10 +55,7 @@ function walk(dir: string, visit: (path: string, name: string, isDir: boolean) =
 
 /** Rewrite object keys named after the old id and string values that are exactly the old id. */
 function renameInJson(value: unknown): { value: unknown; changed: boolean } {
-  if (typeof value === "string") {
-    const r = value === OLD ? NEW : null;
-    return r ? { value: r, changed: true } : { value, changed: false };
-  }
+  if (typeof value === "string") return value === OLD ? { value: NEW, changed: true } : { value, changed: false };
   if (Array.isArray(value)) {
     const out = value.map(renameInJson);
     return { value: out.map((o) => o.value), changed: out.some((o) => o.changed) };
@@ -100,31 +98,33 @@ export function migrateLegacyAgentHome(aiRoot: string, stateRoot: string, log: (
   if (existsSync(marker)) return;
   let moved = 0, rewritten = 0;
   for (const root of [join(aiRoot, "agents"), join(aiRoot, "mission-control"), stateRoot]) {
-    // Paths first (children before parents, so a renamed folder's contents are already done).
-    walk(root, (p, name) => {
+    // Children before parents: a file's text is rewritten, then the file (and later its folder) is renamed.
+    walk(root, (p, name, isDir) => {
+      if (!isDir) rewritten += rewriteFile(p, name, aiRoot);
       const nn = renamedName(name);
       if (!nn) return;
       moveEntry(p, join(p, "..", nn), log);
       moved++;
     });
-    walk(root, (p, name, isDir) => {
-      if (isDir) return;
-      const soulText = /\.md$/i.test(name) && (p.startsWith(join(aiRoot, "agents", "soul")) || name === "AGENT_REGISTRY.md");
-      const jsonl = /\.jsonl$/i.test(name);
-      if (!soulText && !jsonl && !/\.json$/i.test(name)) return;
-      let text: string;
-      try { text = readFileSync(p, "utf8"); } catch { return; }
-      if (!/tzali/i.test(text)) return;
-      let next: string | null = null;
-      if (soulText) next = SOUL_TEXT.reduce((t, [re, s]) => t.replace(re, s), text);
-      else if (jsonl) next = text.split("\n").map((line) => renameJsonText(line, false) ?? line).join("\n");
-      else next = renameJsonText(text, true);
-      if (next === null || next === text) return;
-      writeFileSync(`${p}.renaming`, next, { mode: 0o600 });
-      renameSync(`${p}.renaming`, p);
-      rewritten++;
-    });
   }
   try { writeFileSync(marker, `${new Date().toISOString()}\n`, { mode: 0o600 }); } catch { /* state folder not writable: try again next start */ }
   if (moved || rewritten) log(`renamed ${moved} path(s) and rewrote ${rewritten} file(s) from ${OLD} to ${NEW}`);
+}
+
+/** Rewrite the old id inside one file: JSON / JSON-lines keys and values, or the name in seeded soul text. 1 if rewritten. */
+function rewriteFile(p: string, name: string, aiRoot: string): number {
+  const soulText = /\.md$/i.test(name) && (p.startsWith(join(aiRoot, "agents", "soul")) || name === "AGENT_REGISTRY.md");
+  const jsonl = /\.jsonl$/i.test(name);
+  if (!soulText && !jsonl && !/\.json$/i.test(name)) return 0;
+  let text: string;
+  try { text = readFileSync(p, "utf8"); } catch { return 0; }
+  if (!/tzali/i.test(text)) return 0;
+  let next: string | null;
+  if (soulText) next = SOUL_TEXT.reduce((t, [re, s]) => t.replace(re, s), text);
+  else if (jsonl) next = text.split("\n").map((line) => renameJsonText(line, false) ?? line).join("\n");
+  else next = renameJsonText(text, true);
+  if (next === null || next === text) return 0;
+  writeFileSync(`${p}.renaming`, next, { mode: 0o600 });
+  renameSync(`${p}.renaming`, p);
+  return 1;
 }
