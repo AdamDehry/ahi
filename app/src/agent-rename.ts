@@ -4,14 +4,16 @@
  *   - canonicalAgentId() maps the old id wherever one can still arrive (users.json, foreman records, old links);
  *   - aliasLegacyAgentEnv() lets an old .env (TZALI_BOT_TOKEN, TZALI_ENABLED, ...) keep configuring the agent;
  *   - migrateLegacyAgentHome() renames the agent's folders, files and JSON keys under the AHI home once, at startup.
- * Never overwrites and never deletes: where the new name already exists, the old one is left where it is.
+ * Never overwrites and never deletes: where the new name already exists, the old one is left where it is (and listed).
+ * Never throws: a step that fails is logged, the server starts anyway, and the whole pass runs again at the next start.
  */
-import { existsSync, readdirSync, readFileSync, renameSync, rmdirSync, statSync, writeFileSync } from "fs";
+import { existsSync, readdirSync, readFileSync, renameSync, rmdirSync, rmSync, statSync, writeFileSync } from "fs";
 import { join } from "path";
 
 const OLD = "tzali";
 const NEW = "zali";
 const MARKER = ".agent-renamed-zali";
+const TEMP = ".agent-rename-tmp";
 
 export function canonicalAgentId(id: string): string {
   return id === OLD ? NEW : id;
@@ -35,20 +37,24 @@ function renamedName(name: string): string | null {
   return head + name.slice(m[1].length);
 }
 
-/** Move `from` to `to`; when `to` is a folder that already exists, merge into it entry by entry. */
-function moveEntry(from: string, to: string, log: (s: string) => void): void {
+/** Move `from` to `to`; when `to` is a folder that already exists, merge into it entry by entry. Clashes go to `kept`. */
+function moveEntry(from: string, to: string, kept: string[]): void {
   if (!existsSync(to)) return renameSync(from, to);
-  if (!statSync(from).isDirectory() || !statSync(to).isDirectory()) return log(`kept ${from}: ${to} already exists`);
-  for (const e of readdirSync(from)) moveEntry(join(from, e), join(to, e), log);
-  try { rmdirSync(from); } catch { /* not empty: a conflict was kept */ }
+  if (!statSync(from).isDirectory() || !statSync(to).isDirectory()) return void kept.push(from);
+  for (const e of readdirSync(from)) moveEntry(join(from, e), join(to, e), kept);
+  try { rmdirSync(from); } catch { /* not empty: a clash was kept */ }
 }
 
-function walk(dir: string, visit: (path: string, name: string, isDir: boolean) => void): void {
+/** Children before parents. A folder that does not exist is fine; one that cannot be read goes to `fail`. */
+function walk(dir: string, visit: (path: string, name: string, isDir: boolean) => void, fail: (e: unknown) => void): void {
   let entries;
-  try { entries = readdirSync(dir, { withFileTypes: true }); } catch { return; }
+  try { entries = readdirSync(dir, { withFileTypes: true }); } catch (e) {
+    if ((e as NodeJS.ErrnoException).code !== "ENOENT") fail(e);
+    return;
+  }
   for (const e of entries) {
     const p = join(dir, e.name);
-    if (e.isDirectory()) walk(p, visit);
+    if (e.isDirectory()) walk(p, visit, fail);
     visit(p, e.name, e.isDirectory());
   }
 }
@@ -91,24 +97,31 @@ const SOUL_TEXT: Array<[RegExp, string]> = [[/ (?:— |\()צלי\)?/g, ""], [/\b
 /**
  * One pass over the AHI home (`aiRoot`: agents/, mission-control/) and the server's state folder: rename every path
  * named after the old id, rewrite the old id in JSON keys and values, and the agent's name in the soul files and the
- * agent registry the setup seeded. Runs once; a marker in the state folder records that it ran.
+ * agent registry the setup seeded. Repeats at each start until a pass has no failed step; then a marker in the state
+ * folder (listing any old paths kept because of a clash) stops it for good.
  */
 export function migrateLegacyAgentHome(aiRoot: string, stateRoot: string, log: (s: string) => void = (s) => console.log(`[agent-rename] ${s}`)): void {
   const marker = join(stateRoot, MARKER);
   if (existsSync(marker)) return;
-  let moved = 0, rewritten = 0;
+  let moved = 0, rewritten = 0, failed = 0;
+  const kept: string[] = [];
+  const fail = (what: string, e: unknown) => { failed++; log(`could not ${what}: ${(e as Error).message}`); };
+  const attempt = (what: string, step: () => void) => { try { step(); } catch (e) { fail(what, e); } };
   for (const root of [join(aiRoot, "agents"), join(aiRoot, "mission-control"), stateRoot]) {
-    // Children before parents: a file's text is rewritten, then the file (and later its folder) is renamed.
     walk(root, (p, name, isDir) => {
-      if (!isDir) rewritten += rewriteFile(p, name, aiRoot);
+      // A temp copy left by an interrupted run: the original was never replaced, so the copy is redundant.
+      if (name.endsWith(TEMP)) return attempt(`clear ${p}`, () => rmSync(p, { force: true }));
+      // A file's text is rewritten first, then the file (and after its children, a folder) is renamed.
+      if (!isDir) attempt(`rewrite ${p}`, () => { rewritten += rewriteFile(p, name, aiRoot); });
       const nn = renamedName(name);
-      if (!nn) return;
-      moveEntry(p, join(p, "..", nn), log);
-      moved++;
-    });
+      if (nn) attempt(`rename ${p}`, () => { moveEntry(p, join(p, "..", nn), kept); moved++; });
+    }, (e) => fail("read a folder", e));
   }
-  try { writeFileSync(marker, `${new Date().toISOString()}\n`, { mode: 0o600 }); } catch { /* state folder not writable: try again next start */ }
+  if (kept.length) log(`kept ${kept.length} old path(s) whose new name already exists: ${kept.join(", ")}`);
   if (moved || rewritten) log(`renamed ${moved} path(s) and rewrote ${rewritten} file(s) from ${OLD} to ${NEW}`);
+  if (failed) return log(`${failed} step(s) failed; the migration runs again at the next start`);
+  const record = [new Date().toISOString(), ...kept.map((k) => `kept ${k}`)].join("\n") + "\n";
+  try { writeFileSync(marker, record, { mode: 0o600 }); } catch { /* state folder not writable: runs again next start */ }
 }
 
 /** Rewrite the old id inside one file: JSON / JSON-lines keys and values, or the name in seeded soul text. 1 if rewritten. */
@@ -116,15 +129,14 @@ function rewriteFile(p: string, name: string, aiRoot: string): number {
   const soulText = /\.md$/i.test(name) && (p.startsWith(join(aiRoot, "agents", "soul")) || name === "AGENT_REGISTRY.md");
   const jsonl = /\.jsonl$/i.test(name);
   if (!soulText && !jsonl && !/\.json$/i.test(name)) return 0;
-  let text: string;
-  try { text = readFileSync(p, "utf8"); } catch { return 0; }
+  const text = readFileSync(p, "utf8");
   if (!/tzali/i.test(text)) return 0;
   let next: string | null;
   if (soulText) next = SOUL_TEXT.reduce((t, [re, s]) => t.replace(re, s), text);
   else if (jsonl) next = text.split("\n").map((line) => renameJsonText(line, false) ?? line).join("\n");
   else next = renameJsonText(text, true);
   if (next === null || next === text) return 0;
-  writeFileSync(`${p}.renaming`, next, { mode: 0o600 });
-  renameSync(`${p}.renaming`, p);
+  writeFileSync(p + TEMP, next, { mode: 0o600 });
+  renameSync(p + TEMP, p);
   return 1;
 }

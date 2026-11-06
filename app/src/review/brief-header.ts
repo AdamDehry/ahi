@@ -16,6 +16,7 @@
 import { createHash } from "crypto";
 import { existsSync, readdirSync, readFileSync, statSync } from "fs";
 import { basename, join } from "path";
+import { canonicalAgentId } from "../agent-rename.js";
 
 export const MARKER = "brief";
 const AGENTS = ["zali", "avi"] as const;
@@ -124,6 +125,7 @@ export function parseBriefHeader(text: string): HeaderResult {
   const split = splitFrontMatter(text);
   if ("error" in split) return { valid: false, header: null, errors: [split.error] };
   const { fields, errors } = parseBlock(split.block);
+  if (fields.agent) fields.agent = canonicalAgentId(fields.agent); // a brief from before the builder's rename
   errors.push(...validateFields(fields));
   if (errors.length) return { valid: false, header: null, errors };
   return {
