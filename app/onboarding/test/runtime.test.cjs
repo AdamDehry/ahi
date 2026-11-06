@@ -44,7 +44,12 @@ test('the server runs with every path inside the hidden OS folder and the brain\
   assert.equal(env.HOME, '/h/AHI/AHI_OS/providers/claude');
   assert.equal(env.AHI_CLAUDE_BIN, '/h/AHI/AHI_OS/tools/claude');
   assert.equal(env.AHI_APP_URL, 'http://localhost:18789');
-  for (const k of ['AHI_GATEWAY_STATE_DIR', 'AHI_GATEWAY_BUSINESS_DIR', 'AHI_GATEWAY_LOCK_PATH', 'AHI_TURN_LOG_DIR']) assert.ok(env[k].startsWith('/h/AHI/AHI_OS'), k);
+  // Paths are built with the platform's own separator (backslashes on Windows), so compare against path.join.
+  const os_ = (...p) => path.join('/h/AHI/AHI_OS', ...p);
+  assert.equal(env.AHI_GATEWAY_STATE_DIR, os_('state'));
+  assert.equal(env.AHI_GATEWAY_BUSINESS_DIR, os_('state', 'business'));
+  assert.equal(env.AHI_GATEWAY_LOCK_PATH, os_('logs', 'gateway.pid'));
+  assert.equal(env.AHI_TURN_LOG_DIR, os_('logs'));
   assert.ok(!Object.keys(env).some((k) => /API_KEY|TOKEN|SECRET/.test(k)), 'no provider secrets are passed by setup');
 });
 
