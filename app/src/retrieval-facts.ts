@@ -149,9 +149,9 @@ function loadShard(file: string): ShardCache {
     .filter((l) => l.trim())
     .map((l) => JSON.parse(l) as StoredFact);
   // Document frequency is computed per SHARD, not per store, and that is the
-  // point: inside the gate for infrastructure, "gateway" is in half the facts
-  // and carries no information, while "61302" is in one. A global IDF would
-  // rate "gateway" rare because most of the corpus is not infrastructure, which
+  // point: inside a gate about one topic, that topic's name is in half the facts
+  // and carries no information, while an identifier is in one. A global IDF
+  // would rate the topic's name rare because most of the corpus is elsewhere, which
   // is the opposite of what this layer needs.
   const df = new Map<string, number>();
   const terms = new Map<string, Set<string>>();
@@ -203,10 +203,10 @@ function termsOf(text: string): string[] {
  * Answer-shape preference, the same trick `retrieval.ts` uses to pick which
  * passage to quote, and it earns its place here for the same measured reason:
  * we do not know the answer, but the question tells us its SHAPE. "What process
- * id" wants a fact containing something shaped like a pid. Inside a gate holding
- * 1,400 facts about the gateway, that is most of the discrimination there is —
- * the first cut ranked by word overlap alone and the fact carrying PID 61302
- * did not make the top four, because every fact in that shard says "gateway".
+ * id" wants a fact containing something shaped like a pid. Inside a large gate
+ * about one subject, that is most of the discrimination there is: ranked by
+ * word overlap alone, the fact carrying the pid misses the top four, because
+ * every fact in that shard names the same subject.
  */
 const ANSWER_SHAPES: { asks: RegExp; shape: RegExp }[] = [
   { asks: /\bport\b/i, shape: /\bport\s+\d{2,5}\b|\b\d{4,5}\b/ },

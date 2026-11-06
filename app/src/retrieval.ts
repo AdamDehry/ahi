@@ -470,7 +470,7 @@ const TOP_K = 3;
  *
  * Giving the facts block a session's slot halves detail recall. The session and
  * passage layers are what actually carry a remembered VALUE — the quoted passage
- * is where "$1.86" and "port 3030" live — and a fact statement is a paraphrase
+ * is where an exact price or port number lives — and a fact statement is a paraphrase
  * that usually does not contain the number. So the two layers are not
  * substitutes and the budget cannot be moved between them.
  *
@@ -909,7 +909,7 @@ export async function rankSessions(
 /**
  * The summary says what a conversation was about; the quote says what was
  * actually said. Injecting both is the difference between "we discussed the
- * regression" and "$2.01".
+ * price" and the price itself.
  *
  * Budget-bounded on purpose: this rides on EVERY turn, so one passage per
  * conversation, hard-capped. Retrieval that doubles the prompt to prove a point

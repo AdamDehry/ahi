@@ -9,7 +9,13 @@ import { tmpdir } from "node:os";
 import { isAbsolute, join, resolve } from "node:path";
 
 const DOCS = resolve(import.meta.dirname, "..", "..", "skills", "design", "documents");
-const hasPython = spawnSync("python3", ["--version"]).status === 0;
+// One environment for the probes and the runs: no keys inherited, but what Python and Windows need to start.
+const ENV = Object.fromEntries(
+  ["PATH", "PYTHONPATH", "PYTHONHOME", "VIRTUAL_ENV", "HOME", "USERPROFILE", "SystemRoot", "WINDIR", "TEMP", "TMP", "LANG"]
+    .filter((k) => process.env[k] !== undefined).map((k) => [k, process.env[k]!]),
+);
+const py = (args: string[], opts: { cwd?: string; input?: string } = {}) => spawnSync("python3", args, { ...opts, encoding: "utf8", env: ENV });
+const hasPython = py(["--version"]).status === 0;
 const STUB = `
 import sys, types, runpy
 md = types.ModuleType("markdown"); md.markdown = lambda s, **k: "<p>x</p>"
@@ -25,7 +31,7 @@ runpy.run_path(script, run_name="__main__")
 
 function run(args: string[], input: string, stub: boolean) {
   const cwd = realpathSync(mkdtempSync(join(tmpdir(), "ahi-docs-"))); // macOS tmp is behind a symlink; resolve() follows it
-  const r = spawnSync("python3", stub ? ["-c", STUB, ...args] : args, { cwd, input, encoding: "utf8", env: { PATH: process.env.PATH } });
+  const r = py(stub ? ["-c", STUB, ...args] : args, { cwd, input });
   assert.equal(r.status, 0, r.stderr);
   const out = r.stdout.trim();
   assert.ok(isAbsolute(out), `printed path is not absolute: ${out}`);
@@ -38,7 +44,7 @@ test("gen_pdf and gen_booklet print an absolute path for a relative --out-dir", 
   run([join(DOCS, "gen_booklet.py"), "--out-dir", "rel"], '{"title":"B","sections":[{"heading":"h","body_md":"x"}]}', true);
 });
 
-const hasOpenpyxl = hasPython && spawnSync("python3", ["-c", "import openpyxl"]).status === 0;
+const hasOpenpyxl = hasPython && py(["-c", "import openpyxl"]).status === 0;
 test("gen_excel prints an absolute path for a relative --out-dir", { skip: !hasOpenpyxl && "openpyxl not installed" }, () => {
   run([join(DOCS, "gen_excel.py"), "--out-dir", "rel"], '{"title":"T","sheets":[{"name":"S","headers":["a"],"rows":[[1]]}]}', false);
 });
