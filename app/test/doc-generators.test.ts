@@ -6,7 +6,7 @@ import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdtempSync, realpathSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { isAbsolute, join, resolve } from "node:path";
+import { delimiter, isAbsolute, join, resolve } from "node:path";
 
 const DOCS = resolve(import.meta.dirname, "..", "..", "skills", "design", "documents");
 // One environment for the probes and the runs: no keys inherited, but what Python and Windows need to start.
@@ -14,6 +14,8 @@ const ENV = Object.fromEntries(
   ["PATH", "PYTHONPATH", "PYTHONHOME", "VIRTUAL_ENV", "HOME", "USERPROFILE", "SystemRoot", "WINDIR", "TEMP", "TMP", "LANG"]
     .filter((k) => process.env[k] !== undefined).map((k) => [k, process.env[k]!]),
 );
+// The runs happen in a temp folder, so a relative PYTHONPATH entry must mean the same folder there.
+if (ENV.PYTHONPATH) ENV.PYTHONPATH = ENV.PYTHONPATH.split(delimiter).map((d) => (d ? resolve(d) : d)).join(delimiter);
 const py = (args: string[], opts: { cwd?: string; input?: string } = {}) => spawnSync("python3", args, { ...opts, encoding: "utf8", env: ENV });
 const hasPython = py(["--version"]).status === 0;
 const STUB = `
