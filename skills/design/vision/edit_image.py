@@ -49,7 +49,7 @@ def load_fal_key() -> None:
     """Populate FAL_KEY in env from $AHI_AI_ROOT/secrets.env if not already set."""
     if os.environ.get("FAL_KEY") or os.environ.get("FAL_API_KEY"):
         return
-    secrets = Path.home() / "ai" / "secrets.env"
+    secrets = Path(os.environ.get("AHI_AI_ROOT") or Path.home() / "ai") / "secrets.env"
     if not secrets.exists():
         return
     for line in secrets.read_text().splitlines():

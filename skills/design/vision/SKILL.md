@@ -1,11 +1,11 @@
 ---
 name: vision
 description: Shared image tools any agent can call from a chat turn — OCR an image (Google Cloud Vision), generate one image from a prompt, or edit images from references (both fal.ai). Use for "read the text in this photo", a receipt or document snapshot, or a quick in-chat image when the Higgsfield tools are not reachable. For real image generation and edits prefer higgsfield-generate; those two need a fal.ai key (FAL_KEY).
-version: 1.1.0
+version: 1.2.0
 category: design
 private: false
-last_verified: 2026-11-05
-verified_by: skills-audit
+last_verified: 2026-11-06
+verified_by: build skills-shelf-r3
 ---
 
 # vision
