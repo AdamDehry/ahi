@@ -31,7 +31,8 @@ except ImportError as e:
 
 def output_dir(arg) -> Path:
     """--out-dir if given (the folder the agent's files note names), else <AHI_HOME or ~>/ai/ahi-docs/generated."""
-    return Path(arg).expanduser() if arg else Path(os.environ.get("AHI_HOME") or Path.home()) / "ai" / "ahi-docs" / "generated"
+    # Absolute, so the printed path is one send_file accepts.
+    return (Path(arg).expanduser() if arg else Path(os.environ.get("AHI_HOME") or Path.home()) / "ai" / "ahi-docs" / "generated").resolve()
 
 CSS_STYLE = """
 @page {

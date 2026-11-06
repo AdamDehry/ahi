@@ -234,7 +234,7 @@ export function agentAllowedCategories(agent: string): string[] {
 // Deliberately a SHORT stopword list. BM25's IDF term already discounts words
 // that appear everywhere in this corpus, so a long hand-maintained list only
 // costs recall. What stays are conversational fillers that carry no topic at
-// all — the words the owner uses to *frame* a memory question ("remember that
+// all — the words a user uses to *frame* a memory question ("remember that
 // thing where...") rather than to identify it.
 const STOPWORDS = new Set([
   "the", "and", "for", "but", "not", "you", "are", "can", "did", "was",
@@ -396,9 +396,8 @@ const EXCLUDE_MACHINERY = (process.env.AHI_EXCLUDE_MACHINERY ?? "0") !== "0";
 //   detail recall (containment)   0/26  →  13/26     ← the reason this exists
 //   episode identification (old)  28/40 →  28/40     ← regression guard, held
 //
-// It was built and measured with this default OFF, so the live hook served the
-// unchanged session-level path for the whole build. AHI_PASSAGE_RETRIEVAL=0
-// forces it back off without a redeploy if it ever misbehaves in production.
+// AHI_PASSAGE_RETRIEVAL=0 turns it off without a redeploy if it ever
+// misbehaves in production.
 const PASSAGE_RETRIEVAL_ENABLED = (process.env.AHI_PASSAGE_RETRIEVAL ?? "1") !== "0";
 
 // Confidence floor for the passage layer, calibrated the same way as
@@ -408,7 +407,7 @@ const PASSAGE_RETRIEVAL_ENABLED = (process.env.AHI_PASSAGE_RETRIEVAL ?? "1") !==
 // of samples is a much larger number than the maximum over hundreds even when
 // nothing matches. A junk prompt reliably finds *something* at 0.42.
 //
-// Measured over the 40 harness questions and 18 non-memory prompts:
+// Measured over a set of real memory questions and non-memory prompts:
 //
 //   correct session's best passage   p05 0.364   median 0.516   max 0.698
 //   junk prompts, best passage ANY   median 0.427   p90 0.476   max 0.489
@@ -430,7 +429,7 @@ const MIN_PASSAGE_BM25 = Number(process.env.MIN_PASSAGE_BM25 ?? 12.0);
 // right one — this is the setting that decides whether silence or noise is the
 // failure mode, and we choose silence.
 //
-// Calibrated against the 40 real harness questions and 16 deliberate
+// Calibrated against a set of real memory questions and deliberate
 // non-memory prompts ("hi", "how do I boil an egg", "call my mom"):
 //
 //   real questions   cosine  p05 0.428   p25 0.516   median 0.579
@@ -439,7 +438,7 @@ const MIN_PASSAGE_BM25 = Number(process.env.MIN_PASSAGE_BM25 ?? 12.0);
 // So a cosine floor at 0.42 cleanly separates them. BM25 does NOT separate on
 // its own — junk reaches 10.1 while real questions bottom out at 7.1 — so a
 // lexical hit can only admit a result when the semantic layer is at least
-// warm. That combination is what catches the case where the owner uses exact
+// warm. That combination is what catches the case where the user types exact
 // jargon ("Cartesia", "ElevenLabs") in an otherwise oddly-phrased question.
 const MIN_COSINE = 0.42;
 const STRONG_BM25 = 12.0;
@@ -485,7 +484,7 @@ const FACT_SLOT_TRADE = Number(process.env.FACT_SLOT_TRADE ?? 0);
  * Hard ceiling on the semantic layer. The embedding call is the ONLY network
  * hop on the retrieval path, and retrieval sits in front of the user's first
  * byte. If OpenAI is slow or down we degrade to lexical+gates rather than make
- * The owner wait — a slightly worse memory beats a hung turn.
+ * the user wait — a slightly worse memory beats a hung turn.
  */
 const EMBED_TIMEOUT_MS = 600;
 
@@ -671,7 +670,7 @@ export async function rankSessions(
       }
     } catch {
       // Same contract as every other layer here: an enhancement, never a
-      // dependency. A broken passage store must not cost the owner his memory.
+      // dependency. A broken passage store must not cost the user their memory.
       passageStore = null;
     }
   }
@@ -680,7 +679,7 @@ export async function rankSessions(
   // `semanticLive`: this layer needs no embedding at all, so it is the one part
   // of retrieval that still works with the OpenAI API down. It is also the only
   // layer that can find an opaque identifier, because it matches the rare
-  // anchor terms the owner actually types rather than the value he has forgotten.
+  // anchor terms the user actually types rather than the value they have forgotten.
   const passLexScores = new Float64Array(entries.length);
   const evidenceRowsLex = new Map<number, number[]>();
   if (PASSAGE_RETRIEVAL_ENABLED) {
@@ -861,7 +860,7 @@ export async function rankSessions(
   // actually good at: "is the answer in here", not "is this the right topic".
   if (passageStore && out.length < k) {
     // Two passage layers, two disjoint failure modes: the vector layer finds
-    // "the answer is in here somewhere", BM25 finds the rare anchor term the owner
+    // "the answer is in here somewhere", BM25 finds the rare anchor term the user
     // typed. A candidate qualifies on EITHER floor. Ordering is rank fusion
     // over the two, so a BM25 score of 31 and a cosine of 0.58 never have to be
     // calibrated against one another.
@@ -919,7 +918,7 @@ export async function rankSessions(
  * The cap sits just above the p90 passage length (1,241 chars) rather than at a
  * rounder, smaller number. Truncating mid-passage would cut the answer out of
  * the quote in exactly the cases this layer exists for — and a quote that stops
- * one line above the number the owner asked for is worse than useless, because it
+ * one line above the number the user asked for is worse than useless, because it
  * looks like the memory was retrieved and failed to contain it.
  */
 const EVIDENCE_CHAR_CAP = 1400;
@@ -939,7 +938,7 @@ const EVIDENCE_CHAR_CAP = 1400;
  */
 // ONE passage per conversation. This rides on every turn: at two passages the
 // mean injected context measured 5,722 characters against a 1,189-character
-// baseline — a 5x prompt tax on every message the owner sends, most of it paid on
+// baseline — a 5x prompt tax on every message the user sends, most of it paid on
 // turns that are not memory questions at all. One well-chosen passage is the
 // whole benefit; the second was mostly padding.
 const EVIDENCE_MAX_PASSAGES = 2;
@@ -948,15 +947,15 @@ const EVIDENCE_TOTAL_CHAR_CAP = 2600;
 /**
  * Answer-type-aware evidence selection.
  *
- * The failure this fixes, seen four times in the detail harness: the right
- * conversation is retrieved — sometimes at rank 1 — and the quoted passage
- * still doesn't contain the answer. "What version of bun did we install on the
- * VPS" matches the passage about setting up the VPS, while "1.3.14" sits in a
+ * The failure this fixes: the right conversation is retrieved — sometimes at
+ * rank 1 — and the quoted passage still doesn't contain the answer. "What
+ * version of the runtime did we install on the server" matches the passage
+ * about setting up the server, while the version string itself sits in a
  * different passage of the same conversation.
  *
  * Ranking by similarity cannot fix that: the passage holding a bare version
  * string has almost no anchor terms in it. But we know something about the
- * ANSWER even though we don't know the answer — the owner asked "what version", so
+ * ANSWER even though we don't know the answer — the user asked "what version", so
  * the passage we want contains something SHAPED like a version.
  *
  * So: among a handful of candidate passages from the same conversation, prefer
@@ -964,9 +963,8 @@ const EVIDENCE_TOTAL_CHAR_CAP = 2600;
  * straight back to the best-scoring passage when the question implies no shape
  * or nothing matches, which is the common case for ordinary turns.
  *
- * Honest caveat: the pattern table is inferred from the kinds of things the owner
- * actually asks this system, so it is tuned to this corpus rather than derived
- * from anything general.
+ * Caveat: the pattern table is a heuristic for common question types, not
+ * derived from anything general; extend it for the questions your users ask.
  */
 const ANSWER_SHAPES: { asks: RegExp; shape: RegExp }[] = [
   { asks: /\bport\b/i, shape: /\bport\s+\d{2,5}\b|\b\d{4,5}\b/ },
@@ -986,8 +984,8 @@ function selectEvidenceRows(
 ): number[] | undefined {
   if (!picked?.length) return picked;
 
-  // Candidates: each matched passage plus the one after it. The value the owner
-  // forgot often lands in the reply that follows the passage he'd recognise.
+  // Candidates: each matched passage plus the one after it. The value the user
+  // forgot often lands in the reply that follows the passage they'd recognise.
   const candidates: number[] = [];
   for (const r of picked) {
     if (!candidates.includes(r)) candidates.push(r);
@@ -1036,7 +1034,7 @@ export async function getRelevantContext(
 ): Promise<string> {
   // ── H-046 step 4: the gates go first. ──────────────────────────────────────
   //
-  // This is the layering the owner asked for. The fact layer narrows by address —
+  // The layering: the fact layer narrows by address —
   // Sha'ar then Shoresh — and nothing else; the session, vector and passage
   // layers below it are the FALLBACK for what the addressing did not reach,
   // rather than five signals voting in parallel with the gate at weight 0.4.
@@ -1045,7 +1043,7 @@ export async function getRelevantContext(
   // session budget to pay for this block was considered and rejected on
   // measurement grounds: the 40-question guard calls `rankSessions` directly
   // with k=3, so a change made only inside this function is invisible to it —
-  // an unmeasurable change is exactly what R4's standing rule is about. The
+  // an unmeasurable change is exactly what the cost rule above forbids. The
   // facts block is instead capped hard (FACT_CHAR_CAP) and its per-turn cost is
   // reported next to the detail harness that has to justify it.
   //
@@ -1124,7 +1122,7 @@ export async function getRelevantContext(
   //
   // When addressing DID reach something, the fallback gives a slot back. This is
   // what makes the layer free at turn time rather than a 600-character tax on
-  // every message — R4's standing rule is that a change the harnesses score as
+  // every message — the rule is that a change the harnesses score as
   // neutral ships only if it costs nothing, and a facts block bolted on top of
   // an unchanged session block is not that.
   //

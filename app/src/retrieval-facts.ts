@@ -20,10 +20,10 @@
  *
  * WHY THIS IS CHEAP ENOUGH TO RUN ON EVERY TURN
  *
- * R4's standing rule: a change the harnesses score as neutral ships only if it
+ * The standing rule: a change the harnesses score as neutral ships only if it
  * is free at turn time, and anything with a per-turn cost must show a number.
- * The store is 8,552 facts / 9.9 MB and parses in ~97 ms — far too much for a
- * hook that sits in front of the owner's first byte. So the store is written as one
+ * A store of several thousand facts (~10 MB) parses in ~100 ms — far too much for a
+ * hook that sits in front of the user's first byte. So the store is written as one
  * shard per address pair and a turn reads only the shards its gates name:
  * usually one or two of 59, the largest of which parses in ~4 ms. The gate-first
  * architecture is not just faithful to the brief, it is what makes the layer
@@ -239,7 +239,7 @@ function scoreFact(queryTerms: string[], fact: StoredFact, shard: ShardCache, sh
   }
   if (score === 0) return 0;
   if (shape && shape.test(fact.statement)) score *= SHAPE_BONUS;
-  // A fact the owner arrived at twice in different conversations is more load-bearing
+  // A fact the user arrived at twice in different conversations is more load-bearing
   // than one said once in passing.
   return score * (1 + Math.min(0.3, 0.1 * (fact.learned_count - 1)));
 }
