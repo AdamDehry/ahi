@@ -48,3 +48,17 @@ test('remote route on the bundled AHI port waits for a finished setup, then star
 test('completion writes one stable secret-free handoff and preserves pending connections',async()=>{const {s}=await prepared();await s.verifyProvider('claude');await s.patch({connections:['gmail','github']});await s.complete();await s.complete();const handoff=JSON.parse(await fs.readFile(path.join(s.state.root,'AHI_OS','setup-handoff.json'),'utf8'));assert.equal(handoff.defaultBrain,'claude');assert.deepEqual(handoff.pendingConnections,['gmail','github']);assert.equal(handoff.agentHandoff.status,'pending-runtime');assert.equal(handoff.setupId,s.state.id);assert.equal(s.state.completed,true);});
 test('editing a finished setup makes a new finish necessary',async()=>{const {s}=await prepared();await s.verifyProvider('claude');await s.complete();await s.patch({workspace:'Another name'});assert.equal(s.state.completed,false);});
 test('duplicate install requests do not spawn a second writer',async()=>{const {s}=await prepared();let release,started;const ready=new Promise(resolve=>{started=resolve;});s.runner=async()=>new Promise(resolve=>{release=()=>resolve({code:1,out:''});started();});const first=s.installTool('gemini');await ready;await assert.rejects(s.installTool('codex'),/already running/);release();await assert.rejects(first);});
+test('a voice key saved after AHI is open restarts the AHI server this Setup started, with the key',async t=>{
+  const runtime=require('../src/ahi-runtime.cjs'),{EventEmitter}=require('node:events'),real=runtime.start;t.after(()=>{runtime.start=real;});
+  // A fake runtime.start: one server at a time; while it runs, a second start adopts it (child: null), as the real one does.
+  const starts=[];let live=null;
+  runtime.start=async({extra})=>{starts.push(extra);if(live&&live.exitCode===null)return {url:'http://localhost:18789/',child:null};
+    live=Object.assign(new EventEmitter(),{exitCode:null,signalCode:null,kill(){this.exitCode=0;this.emit('exit',0);}});return {url:'http://localhost:18789/',child:live};};
+  const keys=new Map();const {s}=await prepared({fetcher:async()=>({ok:true}),keyring:{set:async(r,k)=>keys.set(r,k),get:async r=>keys.get(r)},ahi:{serverDir:'/x',seed:'/x',port:18789}});
+  await s.verifyProvider('claude');s.state.completed=true;
+  await s.ensureAhi();const first=s.ahiChild;assert.equal(starts[0].OPENAI_API_KEY,undefined);
+  await s.ensureAhi();assert.equal(s.ahiChild,first,'nothing changed: the running server is kept');assert.equal(first.exitCode,null);
+  await s.saveVoice({id:'openai',key:'synthetic-voice-key-ONLY'});await s.ensureAhi();
+  assert.equal(first.exitCode,0,'the old server was stopped');assert.notEqual(s.ahiChild,first);assert.equal(starts.at(-1).OPENAI_API_KEY,'synthetic-voice-key-ONLY');
+  assert.equal(JSON.stringify(s.snapshot()).includes('synthetic-voice-key-ONLY'),false);
+});

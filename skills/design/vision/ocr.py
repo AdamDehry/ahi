@@ -6,7 +6,7 @@ Shared vision skill. Any AHI agent (Miriam, Michael, Avi, ...) can
 invoke this directly. Not scoped to a single agent.
 
 Usage:
-    $AHI_HOME/skills/design/vision/ocr.py /path/to/image.jpg
+    $AHI_AI_ROOT/skills/design/vision/ocr.py /path/to/image.jpg
 
 Auth (checked in order):
     1. GOOGLE_VISION_API_KEY      — dedicated Vision API key
@@ -44,7 +44,7 @@ def main():
         try:
             import requests
         except ImportError:
-            log("[ocr] requests not installed. $AHI_HOME/venvs/miriam-docs/venv/bin/pip install requests")
+            log("[ocr] requests not installed. $AHI_AI_ROOT/venvs/miriam-docs/venv/bin/pip install requests")
             sys.exit(2)
         log(f"[ocr] Using API key auth for {image_path}")
         payload = {
@@ -75,7 +75,7 @@ def main():
             from google.cloud import vision
         except ImportError as e:
             log(f"[ocr] Missing dependency: {e}")
-            log("[ocr] Install: $AHI_HOME/venvs/miriam-docs/venv/bin/pip install google-cloud-vision")
+            log("[ocr] Install: $AHI_AI_ROOT/venvs/miriam-docs/venv/bin/pip install google-cloud-vision")
             sys.exit(2)
         log(f"[ocr] Using service account auth for {image_path}")
         client = vision.ImageAnnotatorClient()

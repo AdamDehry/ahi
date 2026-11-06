@@ -173,9 +173,13 @@ class SetupService {
     // Once remote access is set up, AHI's links and sign-in pages use the remote address instead of localhost.
     const r=this.state.remote||{};
     const appUrl=r.hostname&&['configured','running','stopped'].includes(r.stage)?`https://${r.hostname}`:null;
-    if(this.ahiChild&&(this.ahiAppUrl??null)!==appUrl)await this.stopAhi();
-    const s=await runtime.start({node:this.node,serverDir:this.ahi.serverDir,managed,root,port:this.ahi.port,claude,extra:{...await this.voiceEnv(),...(appUrl?{AHI_APP_URL:appUrl}:{})}});
-    if(s.child){this.ahiChild=s.child;this.ahiAppUrl=appUrl;}this.ahiUrl=s.url;
+    const extra={...await this.voiceEnv(),...(appUrl?{AHI_APP_URL:appUrl}:{})};
+    // The server reads these only when it starts: if they changed since this Setup started it (a voice key saved
+    // after AHI opened, remote access set up), restart it. Only a digest is kept, never the keys.
+    const envId=crypto.createHash('sha256').update(JSON.stringify(extra)).digest('hex');
+    if(this.ahiChild&&this.ahiEnvId!==envId)await this.stopAhi();
+    const s=await runtime.start({node:this.node,serverDir:this.ahi.serverDir,managed,root,port:this.ahi.port,claude,extra});
+    if(s.child){this.ahiChild=s.child;this.ahiEnvId=envId;}this.ahiUrl=s.url;
     return s.url;
   });}
   async invoke(method,arg){

@@ -16,10 +16,12 @@ Spec (JSON on stdin):
     ]
   }
 
-Writes to $AHI_HOME/ahi-docs/generated/<timestamp>-<slug>.pdf and prints ONLY
+Writes to <--out-dir, default $AHI_HOME/ai/ahi-docs/generated>/<timestamp>-<slug>.pdf and prints ONLY
 the absolute path to stdout.
 """
+import argparse
 import json
+import os
 import re
 import sys
 from datetime import datetime
@@ -33,10 +35,12 @@ try:
     from weasyprint import HTML, CSS
 except ImportError as e:
     log(f"[gen_booklet] Missing dependency: {e}")
-    log("[gen_booklet] Install: $AHI_HOME/venvs/miriam-docs/venv/bin/pip install weasyprint markdown")
+    log("[gen_booklet] Install: $AHI_AI_ROOT/venvs/miriam-docs/venv/bin/pip install weasyprint markdown")
     sys.exit(2)
 
-OUTPUT_DIR = Path.home() / "ai" / "ahi-docs" / "generated"
+def output_dir(arg) -> Path:
+    """--out-dir if given (the folder the agent's files note names), else <AHI_HOME or ~>/ai/ahi-docs/generated."""
+    return Path(arg).expanduser() if arg else Path(os.environ.get("AHI_HOME") or Path.home()) / "ai" / "ahi-docs" / "generated"
 
 CSS_STYLE = """
 @page {
@@ -126,6 +130,9 @@ def slugify(s: str) -> str:
     return s[:60] or "booklet"
 
 def main():
+    ap = argparse.ArgumentParser(description="Reads the JSON spec on stdin.")
+    ap.add_argument("--out-dir", help="Folder to write into (default: $AHI_HOME/ai/ahi-docs/generated)")
+    args = ap.parse_args()
     try:
         spec = json.load(sys.stdin)
     except json.JSONDecodeError as e:
@@ -140,13 +147,14 @@ def main():
         log("[gen_booklet] No sections in spec")
         sys.exit(3)
 
-    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    out_dir = output_dir(args.out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
     ts = datetime.now().strftime("%Y%m%d-%H%M%S")
     if spec.get("out"):
         name = spec["out"] if spec["out"].endswith(".pdf") else spec["out"] + ".pdf"
     else:
         name = f"{ts}-{slugify(title)}.pdf"
-    out_path = OUTPUT_DIR / name
+    out_path = out_dir / name
 
     subtitle = cover.get("subtitle", "")
     author = cover.get("author", "")

@@ -18,7 +18,7 @@
 import { existsSync, realpathSync, statSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { homedir } from "node:os";
-import { basename, resolve, sep } from "node:path";
+import { basename, isAbsolute, resolve, sep } from "node:path";
 import { multiUserPaths } from "../multi-user-paths.js";
 import { sendAgentFiles, type ChatFilesDeps } from "./service.js";
 import { applyBillSentinels, BILL_SENTINEL_RE } from "../bills.js";
@@ -63,7 +63,7 @@ export function parseSendFileSentinels(response: string, env: NodeJS.ProcessEnv 
   let m: RegExpExecArray | null;
   while ((m = re.exec(response)) !== null) {
     const p = resolveSentinelPath(m[1], env);
-    if (p.startsWith("/") && existsSync(p) && statSync(p).isFile()) {
+    if (isAbsolute(p) && existsSync(p) && statSync(p).isFile()) {
       if (!paths.includes(p)) paths.push(p);
     } else rejected.push(m[1].trim());
   }

@@ -8,7 +8,7 @@ Usage:
     gen_pdf.py --title "My Document" --body-file /path/to/body.md
     gen_pdf.py --title "..." --out custom-name.pdf   # optional custom filename
 
-Writes PDF to $AHI_HOME/ahi-docs/generated/<timestamp>-<slug>.pdf and prints
+Writes PDF to <--out-dir, default $AHI_HOME/ai/ahi-docs/generated>/<timestamp>-<slug>.pdf and prints
 ONLY the absolute path to stdout. Logs go to stderr.
 """
 import argparse
@@ -26,10 +26,12 @@ try:
     from weasyprint import HTML, CSS
 except ImportError as e:
     log(f"[gen_pdf] Missing dependency: {e}")
-    log("[gen_pdf] Install into venv: $AHI_HOME/venvs/miriam-docs/venv/bin/pip install weasyprint markdown")
+    log("[gen_pdf] Install into venv: $AHI_AI_ROOT/venvs/miriam-docs/venv/bin/pip install weasyprint markdown")
     sys.exit(2)
 
-OUTPUT_DIR = Path.home() / "ai" / "ahi-docs" / "generated"
+def output_dir(arg) -> Path:
+    """--out-dir if given (the folder the agent's files note names), else <AHI_HOME or ~>/ai/ahi-docs/generated."""
+    return Path(arg).expanduser() if arg else Path(os.environ.get("AHI_HOME") or Path.home()) / "ai" / "ahi-docs" / "generated"
 
 CSS_STYLE = """
 @page {
@@ -129,6 +131,7 @@ def main():
     ap.add_argument("--body", help="Markdown body (if omitted, reads stdin)")
     ap.add_argument("--body-file", help="Path to a markdown file")
     ap.add_argument("--out", help="Optional output filename (name only, not path)")
+    ap.add_argument("--out-dir", help="Folder to write into (default: $AHI_HOME/ai/ahi-docs/generated)")
     args = ap.parse_args()
 
     if args.body_file:
@@ -142,14 +145,15 @@ def main():
         log("[gen_pdf] Empty body; nothing to render")
         sys.exit(3)
 
-    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    out_dir = output_dir(args.out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
 
     ts = datetime.now().strftime("%Y%m%d-%H%M%S")
     if args.out:
         name = args.out if args.out.endswith(".pdf") else args.out + ".pdf"
     else:
         name = f"{ts}-{slugify(args.title)}.pdf"
-    out_path = OUTPUT_DIR / name
+    out_path = out_dir / name
 
     body_html = md_mod.markdown(
         body_md,

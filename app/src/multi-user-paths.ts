@@ -17,7 +17,7 @@ export interface MultiUserDataPaths {
   clipboardJson: string;
   legacy: {
     appSessionsIndex: string;
-    helenAppRoot: string;
+    userAppRoot: string;
     operatorSessionsIndex: string;
     clipboardJson: string;
     clipboardUserJson: string;
@@ -142,7 +142,7 @@ export function multiUserPaths(userId: string): MultiUserDataPaths {
     agentsJson: join(businessRoot, "agents.json"),
     clipboardJson: join(businessRoot, "clipboard.json"),
     legacy: {
-      helenAppRoot: resolve(gatewayBusinessRoot(), safeUserId, "app"),
+      userAppRoot: resolve(gatewayBusinessRoot(), safeUserId, "app"),
       appSessionsIndex: resolve(gatewayBusinessRoot(), safeUserId, "app", "sessions", "index.json"),
       // ~/ai/sessions — a different root, and read-only legacy: not moved.
       operatorSessionsIndex: resolve(AI_ROOT, "sessions", "index.json"),

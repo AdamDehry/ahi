@@ -8,9 +8,9 @@ Shared vision skill. Designed for AHI agents to embed the returned URL in
 Telegram responses — Telegram auto-previews image URLs inline.
 
 Usage:
-    $AHI_HOME/skills/design/vision/gen_image.py --prompt "..." [--model ENDPOINT] [--aspect 1:1]
+    $AHI_AI_ROOT/skills/design/vision/gen_image.py --prompt "..." [--model ENDPOINT] [--aspect 1:1]
 
-Auth: reads FAL_KEY from env, or from $AHI_HOME/secrets.env if not already set.
+Auth: reads FAL_KEY from env, or from $AHI_AI_ROOT/secrets.env if not already set.
 
 Model defaults to fal-ai/flux/dev — good quality, ~5-10s, inside any
 reasonable request timeout. Swap to fal-ai/flux-pro/v1.1 for sharper
@@ -35,7 +35,7 @@ def log(msg: str) -> None:
 
 
 def load_fal_key() -> None:
-    """Populate FAL_KEY in env from $AHI_HOME/secrets.env if not already set."""
+    """Populate FAL_KEY in env from $AHI_AI_ROOT/secrets.env if not already set."""
     if os.environ.get("FAL_KEY") or os.environ.get("FAL_API_KEY"):
         return
     secrets = Path.home() / "ai" / "secrets.env"
@@ -76,13 +76,13 @@ def main() -> int:
 
     load_fal_key()
     if not (os.environ.get("FAL_KEY") or os.environ.get("FAL_API_KEY")):
-        log("[gen_image] FAL_KEY missing — not in env and not found in $AHI_HOME/secrets.env")
+        log("[gen_image] FAL_KEY missing — not in env and not found in $AHI_AI_ROOT/secrets.env")
         return 1
 
     try:
         import fal_client
     except ImportError:
-        log("[gen_image] fal_client not installed. Run this script with $AHI_HOME/venvs/fal/bin/python")
+        log("[gen_image] fal_client not installed. Run this script with $AHI_AI_ROOT/venvs/fal/bin/python")
         return 1
 
     log(f"[gen_image] calling {args.model} (aspect: {args.aspect})")

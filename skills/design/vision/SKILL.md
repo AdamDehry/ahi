@@ -21,13 +21,13 @@ Three small scripts, one job each. Each prints its result on stdout (text or a U
 ## Steps
 
 1. OCR:
-   `python3 $AHI_HOME/skills/design/vision/ocr.py /path/to/image.jpg`
+   `python3 $AHI_AI_ROOT/skills/design/vision/ocr.py /path/to/image.jpg`
    Key, first found wins: `GOOGLE_VISION_API_KEY` → `GOOGLE_TTS_API_KEY` (shared Google key with Vision enabled) → `GOOGLE_APPLICATION_CREDENTIALS` (service-account JSON path).
 2. Generate one image:
-   `python3 $AHI_HOME/skills/design/vision/gen_image.py --prompt "..." [--aspect 1:1] [--model fal-ai/flux/dev]`
+   `python3 $AHI_AI_ROOT/skills/design/vision/gen_image.py --prompt "..." [--aspect 1:1] [--model fal-ai/flux/dev]`
    Needs `FAL_KEY` (or `FAL_API_KEY`); falls back to reading the secrets env file. Prints the hosted URL.
 3. Edit from references:
-   `python3 $AHI_HOME/skills/design/vision/edit_image.py --prompt "..." --ref <path-or-url> [--ref ...] [--negative "..."]`
+   `python3 $AHI_AI_ROOT/skills/design/vision/edit_image.py --prompt "..." --ref <path-or-url> [--ref ...] [--negative "..."]`
    Default model `fal-ai/nano-banana-2/edit`, up to ~9 refs; local files are uploaded to fal first. Same key as step 2.
 4. Exit codes: 0 success, 1 missing arg/credentials/dependency, 2 provider error.
 

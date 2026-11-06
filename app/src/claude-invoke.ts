@@ -418,18 +418,17 @@ const DEFAULT_MICHAEL_CACHE_READ_RESET_TOKENS = 750_000;
 const MICHAEL_CONTEXT_BLOAT_REASON = "michael-context-bloat";
 
 /**
- * What the agent is told about being on a CALL (R3-10 + R4-4).
+ * What the agent is told about being on a CALL.
  *
  * Applied wherever `voiceStreamId` is set rather than passed per call site, so
  * it cannot be forgotten on one path — the cold turn and the speculative turn
  * both get it, which matters because a speculated turn that answers in a
  * different register is a different agent, and committing it would show.
  *
- * The replay clause is R4-4. Asked to "repeat that" mid-call, Michael read the
- * ENTIRE session transcript back out loud. Nothing was injecting a transcript
- * to cause it: reading a log back is a reasonable thing to do in TEXT, where
- * you can skim it. Spoken it is unbearable, and nobody on a phone call has
- * ever meant "read me the minutes" by "say that again."
+ * The replay clause exists because "repeat that" is ambiguous to a model with
+ * the transcript in context: reading a log back is reasonable in TEXT, where
+ * it can be skimmed, but spoken it is unbearable. On a call "say that again"
+ * means the last thing said, never the whole conversation.
  */
 /**
  * The call hint for one caller: their own name and neutral pronouns.

@@ -18,10 +18,12 @@ Spec:
     ]
   }
 
-Writes to $AHI_HOME/ahi-docs/generated/<timestamp>-<slug>.xlsx and prints ONLY
+Writes to <--out-dir, default $AHI_HOME/ai/ahi-docs/generated>/<timestamp>-<slug>.xlsx and prints ONLY
 the absolute path to stdout. Logs to stderr.
 """
+import argparse
 import json
+import os
 import re
 import sys
 from datetime import datetime
@@ -36,10 +38,12 @@ try:
     from openpyxl.utils import get_column_letter
 except ImportError as e:
     log(f"[gen_excel] Missing dependency: {e}")
-    log("[gen_excel] Install: $AHI_HOME/venvs/miriam-docs/venv/bin/pip install openpyxl")
+    log("[gen_excel] Install: $AHI_AI_ROOT/venvs/miriam-docs/venv/bin/pip install openpyxl")
     sys.exit(2)
 
-OUTPUT_DIR = Path.home() / "ai" / "ahi-docs" / "generated"
+def output_dir(arg) -> Path:
+    """--out-dir if given (the folder the agent's files note names), else <AHI_HOME or ~>/ai/ahi-docs/generated."""
+    return Path(arg).expanduser() if arg else Path(os.environ.get("AHI_HOME") or Path.home()) / "ai" / "ahi-docs" / "generated"
 
 def slugify(s: str) -> str:
     s = re.sub(r"[^\w\s-]", "", (s or "workbook").strip().lower())
@@ -47,6 +51,9 @@ def slugify(s: str) -> str:
     return s[:60] or "workbook"
 
 def main():
+    ap = argparse.ArgumentParser(description="Reads the JSON spec on stdin.")
+    ap.add_argument("--out-dir", help="Folder to write into (default: $AHI_HOME/ai/ahi-docs/generated)")
+    args = ap.parse_args()
     try:
         spec = json.load(sys.stdin)
     except json.JSONDecodeError as e:
@@ -59,13 +66,14 @@ def main():
         log("[gen_excel] No sheets in spec")
         sys.exit(3)
 
-    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    out_dir = output_dir(args.out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
     ts = datetime.now().strftime("%Y%m%d-%H%M%S")
     if spec.get("out"):
         name = spec["out"] if spec["out"].endswith(".xlsx") else spec["out"] + ".xlsx"
     else:
         name = f"{ts}-{slugify(title)}.xlsx"
-    out_path = OUTPUT_DIR / name
+    out_path = out_dir / name
 
     wb = Workbook()
     wb.remove(wb.active)

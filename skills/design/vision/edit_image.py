@@ -10,7 +10,7 @@ sent (via Telegram or uploaded to the dashboard) and return a new version.
 Telegram auto-previews the returned URL inline.
 
 Usage:
-    $AHI_HOME/skills/design/vision/edit_image.py --prompt "..." --ref <path-or-url> [--ref <path-or-url>...] [--model ENDPOINT] [--negative "..."]
+    $AHI_AI_ROOT/skills/design/vision/edit_image.py --prompt "..." --ref <path-or-url> [--ref <path-or-url>...] [--model ENDPOINT] [--negative "..."]
 
 Arguments:
     --prompt    REQUIRED. The edit you want ("change background to soft pink,"
@@ -21,7 +21,7 @@ Arguments:
     --model     Optional fal.ai endpoint (default: fal-ai/nano-banana-2/edit).
     --negative  Optional negative prompt — things to avoid in the output.
 
-Auth: reads FAL_KEY from env, or from $AHI_HOME/secrets.env if not set.
+Auth: reads FAL_KEY from env, or from $AHI_AI_ROOT/secrets.env if not set.
 
 Typical latency: 5-15s for a single-reference edit. Multi-reference may be slower.
 
@@ -46,7 +46,7 @@ def log(msg: str) -> None:
 
 
 def load_fal_key() -> None:
-    """Populate FAL_KEY in env from $AHI_HOME/secrets.env if not already set."""
+    """Populate FAL_KEY in env from $AHI_AI_ROOT/secrets.env if not already set."""
     if os.environ.get("FAL_KEY") or os.environ.get("FAL_API_KEY"):
         return
     secrets = Path.home() / "ai" / "secrets.env"
@@ -103,13 +103,13 @@ def main() -> int:
 
     load_fal_key()
     if not (os.environ.get("FAL_KEY") or os.environ.get("FAL_API_KEY")):
-        log("[edit_image] FAL_KEY missing — not in env and not found in $AHI_HOME/secrets.env")
+        log("[edit_image] FAL_KEY missing — not in env and not found in $AHI_AI_ROOT/secrets.env")
         return 1
 
     try:
         import fal_client
     except ImportError:
-        log("[edit_image] fal_client not installed. Run this script with $AHI_HOME/venvs/fal/bin/python")
+        log("[edit_image] fal_client not installed. Run this script with $AHI_AI_ROOT/venvs/fal/bin/python")
         return 1
 
     # Resolve all refs (upload locals, pass through URLs)

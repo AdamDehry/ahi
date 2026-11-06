@@ -16,41 +16,31 @@ import { FACT_RETRIEVAL_ENABLED, factStats, factsForQuery, formatFacts } from ".
 export { getMessagesForRetrieval } from "./message-store.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
-// H-043 — retrieval rebuild
+// Retrieval design
 //
-// What was wrong, measured against a 40-question harness built from real
-// sessions and asked in the owner's own paraphrased words:
+// Two rules this module depends on:
 //
-//   as shipped ................................  0/40   (0%)
-//   index bug fixed, old scoring ..............  1/40   (3%)
-//   + lexical rebuild .........................  21/40  (53%)
-//   + semantic layer .......................... 28/40   (70%)
+//   1. ONE CANONICAL INDEX. Read the archive index the distiller maintains
+//      (the one with episode names, categories, summaries and Sha'ar/Shoresh
+//      addresses), never a per-user stub index. The eligibility filter below
+//      requires a name, a category and a summary, so a stub index whose
+//      entries lack them leaves `eligible` empty and this function returns ""
+//      while the gate layer in `shaar-shoresh.ts` keeps working.
 //
-// Two independent faults, either of which alone was fatal:
-//
-//   1. WRONG INDEX. This module read the gateway's per-user stub index
-//      (~/business/owner/sessions/index.json) — 155 entries, every one of them
-//      with a null episode_name, null category and no summary. The eligibility
-//      filter below requires all three, so `eligible` was ALWAYS empty and
-//      this function returned "" on every turn for months. The index the
-//      distiller actually maintains — 660 conversations back to March, with
-//      summaries and Sha'ar/Shoresh addresses — is the one `shaar-shoresh.ts`
-//      already reads, which is why the gate layer kept working while this
-//      path was dead. Fixed by reading the canonical index.
-//
-//   2. ONE-SIGNAL SCORING. Relevance was literal word overlap against a
-//      six-word episode title, under an exponential recency curve with a
-//      three-day half-life. On an archive whose median conversation is 116
-//      days old, that curve zeroes out ~80% of the corpus, and what survives
-//      still has to be asked using the exact words in the title. Replaced
-//      with rank fusion over four signals — see SIGNALS below.
+//   2. MULTI-SIGNAL SCORING. Literal word overlap against a short episode
+//      title under a steep recency curve discards most of an older archive,
+//      and what survives must be asked in the title's exact words. Scoring is
+//      rank fusion over four signals — see SIGNALS below. Measure changes
+//      against questions phrased the way a user actually asks, not in the
+//      titles' words.
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
  * The canonical archive, written by `infra/sessions/scripts/distill.py` and
  * already the source of truth for the Sha'ar/Shoresh layer. Deliberately the
  * SAME constant as `shaar-shoresh.ts#EPISODE_INDEX_PATH` — the two layers
- * disagreeing about which file is the archive is exactly the bug above.
+ * disagreeing about which file is the archive is the failure rule 1 above
+ * describes.
  *
  * Derived from ahiSessionsRoot() so AHI_SESSIONS_ROOT moves the whole corpus.
  */
@@ -82,8 +72,8 @@ export interface IndexEntry {
   /**
    * Principal attribution, written at ingestion by the Telegram path
    * (`claude-invoke.ts`). NULL on every entry the distiller creates
-   * (`infra/sessions/scripts/distill.py` hardcodes both to None), which is why
-   * the `personal` pool carries 64 unowned entries. See PRINCIPAL SCOPING.
+   * (`infra/sessions/scripts/distill.py` hardcodes both to None), so
+   * distilled entries arrive unowned. See PRINCIPAL SCOPING.
    */
   telegram_user?: string | null;
   telegram_chat_id?: number | string | null;
@@ -334,8 +324,8 @@ function bm25(lex: LexicalIndex, queryTokens: string[], candidates: number[]): F
 // calibrated against each other — and one loud signal can't drown the others.
 const RRF_K = 60;
 const SIGNAL_WEIGHTS = {
-  lexical: 1.1,   // exact words he happens to reuse
-  semantic: 1.5,  // what he means, in his own words, months later
+  lexical: 1.1,   // exact words the user happens to reuse
+  semantic: 1.5,  // what the user means, in their own words, months later
   gates: 0.4,     // Sha'ar/Shoresh — the addressing layer, as a strong tiebreak
   recency: 0.2,   // a prior, not a gate: newer wins ties, older stays reachable
   // H-044. Deliberately ZERO — the passage layer does not vote in this fusion.
@@ -414,9 +404,9 @@ const PASSAGE_RETRIEVAL_ENABLED = (process.env.AHI_PASSAGE_RETRIEVAL ?? "1") !==
 // Confidence floor for the passage layer, calibrated the same way as
 // MIN_COSINE — see calibrate-passages.mjs. It sits HIGHER than the session
 // floor for a statistical reason that is easy to get wrong: this store has
-// ~28,000 rows against the session store's ~660, and the maximum of 28,000
-// samples is a much larger number than the maximum of 660 even when nothing
-// matches. A junk prompt reliably finds *something* at 0.42.
+// roughly forty passages per session, and the maximum over tens of thousands
+// of samples is a much larger number than the maximum over hundreds even when
+// nothing matches. A junk prompt reliably finds *something* at 0.42.
 //
 // Measured over the 40 harness questions and 18 non-memory prompts:
 //

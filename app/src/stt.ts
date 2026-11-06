@@ -10,8 +10,8 @@
         recognizer and forwards partial results live.
 
         Auth: tries `apiKey` from GOOGLE_TTS_API_KEY first (same key
-        already wired for Chirp 3 HD TTS — STT is enabled on the same
-        project per the owner's 2026-04-20 confirmation). If the SDK
+        already wired for Chirp 3 HD TTS — the Speech-to-Text API must be
+        enabled on the same Google Cloud project). If the SDK
         rejects api-key auth for streaming (some gRPC targets require
         ADC), callers fall back to `transcribeShort` below.
 
