@@ -32,6 +32,12 @@ export function loadSnapshot(): Snapshot | null {
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Snapshot;
     if (!parsed || !parsed.user || typeof parsed.threads !== "object") return null;
+    // The builder was renamed: a snapshot saved before the rename still opens on, and caches, its old id.
+    if (parsed.activeBot === "tzali") parsed.activeBot = "zali";
+    if (parsed.threads.tzali) {
+      parsed.threads.zali ??= parsed.threads.tzali;
+      delete parsed.threads.tzali;
+    }
     // Never resurrect pending/failed local sends from a previous session.
     for (const bot of Object.keys(parsed.threads)) {
       parsed.threads[bot] = (parsed.threads[bot] ?? []).filter((m) => !m.pending && !m.failed);

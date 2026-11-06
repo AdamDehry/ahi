@@ -300,19 +300,19 @@ export const COST_CATEGORIES: Array<{ key: string; label: string }> = [
 ];
 
 /** Bot metadata — same registry as public/app.js:7-18. */
-export const BOT_ORDER = ["michael", "miriam", "tzali", "avi"] as const;
+export const BOT_ORDER = ["michael", "miriam", "zali", "avi"] as const;
 
 export const BOT_LABELS: Record<string, string> = {
   michael: "Michael",
   miriam: "Miriam",
-  tzali: "Tzali",
+  zali: "Zali",
   avi: "Avi",
 };
 
 export const BOT_SUBTITLES: Record<string, string> = {
   michael: "Strategist",
   miriam: "Personal assistant",
-  tzali: "Builder",
+  zali: "Builder",
   avi: "Visual conscience",
 };
 

@@ -116,7 +116,7 @@ function ItemCard({ item, held }: { item: ReviewItem; held?: boolean }) {
   );
 }
 
-const AGENT_NAME: Record<string, string> = { michael: "Michael", tzali: "Tzali", avi: "Avi", miriam: "Miriam", foreman: "Michael" };
+const AGENT_NAME: Record<string, string> = { michael: "Michael", zali: "Zali", avi: "Avi", miriam: "Miriam", foreman: "Michael" };
 type ReviewTab = "Waiting" | "Holding" | "Done" | "System";
 
 function DoneRow({ item }: { item: ReviewItem }) {

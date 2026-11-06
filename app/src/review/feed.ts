@@ -28,6 +28,7 @@
 import type { BuildSummary } from "./ledger.js";
 import type { BuildsView, Card, SectionKey } from "./builds.js";
 import { humanize } from "./builds.js";
+import { canonicalAgentId } from "../agent-rename.js";
 import type { Track } from "./tracks.js";
 import { isOpen } from "./tracks.js";
 import type { ReviewItem } from "./types.js";
@@ -362,7 +363,7 @@ export function deriveFeed(input: FeedInput): FeedView {
       status: "review",
       what: i.title,
       where: `In Review${i.lane === "RED" ? " · fingerprint" : " · one tap"} · ${i.desk}`,
-      from: i.created_by && /^(michael|tzali|avi|foreman)$/.test(i.created_by) ? i.created_by : null,
+      from: i.created_by && /^(michael|zali|avi|foreman)$/.test(canonicalAgentId(i.created_by)) ? canonicalAgentId(i.created_by) : null,
       at: i.created,
       action: { kind: "open-review", item: i.id },
       start: null,

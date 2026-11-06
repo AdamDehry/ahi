@@ -5,7 +5,7 @@ thing lives, where new work belongs, and what not to touch.
 
 ## Purpose
 
-AHI is a small team of agents (Michael, Tzali, Avi, Miriam) that runs on the owner's own computer:
+AHI is a small team of agents (Michael, Zali, Avi, Miriam) that runs on the owner's own computer:
 a server with a web app, voice, and an installer that sets it all up. On Linux it also carries a
 foreman for supervised build sessions. This map is the one-page guide to the tree, for people and
 agents alike.
@@ -20,7 +20,7 @@ agents alike.
 | `agents/` | The agents' souls and shared foundation, copied into `AHI_OS` by setup |
 | `mission-control/` | Starter files for Michael's workspace, copied into `AHI_OS` by setup |
 | `skills/` | The skills shelf: `skills/<category>/<skill>/SKILL.md`, plus `MANIFEST.json` |
-| `foreman/` | Supervised build sessions: Michael starts, steers and closes Tzali/Avi builds in tmux. Linux only; see `foreman/README.md` |
+| `foreman/` | Supervised build sessions: Michael starts, steers and closes Zali/Avi builds in tmux. Linux only; see `foreman/README.md` |
 | `torah/` | The agents' library. It ships empty; texts arrive only when the owner asks, with their source |
 | `runtimes/` | Entry points for other runtimes (`codex/`, `mat/`) |
 | `infra/` | Shared infrastructure; `infra/sessions/` holds the session index built up as you work |

@@ -100,7 +100,7 @@ function tagMessageForBot(
 const PDF_TRANSCRIPTION_BOTS = new Set<string>([]);
 const PDF_THRESHOLD_CHARS = 1500;
 
-// Tzali: don't voice-respond if response contains code
+// Zali: don't voice-respond if response contains code
 function containsCode(text: string): boolean {
   return /```[\s\S]*?```/.test(text) || /`[^`]+`/.test(text) && text.split("`").length > 4;
 }
@@ -109,8 +109,8 @@ function shouldVoiceRespond(botName: string, response: string, inputWasVoice: bo
   if (TEXT_ONLY_BOTS.has(botName)) {
     return false;
   }
-  if (botName === "tzali") {
-    // Tzali: voice only if input was voice AND response is conversational (no code)
+  if (botName === "zali") {
+    // Zali: voice only if input was voice AND response is conversational (no code)
     return inputWasVoice && !containsCode(response);
   }
   // a learning agent, Miriam: always voice regardless of input
@@ -422,7 +422,7 @@ export async function sendResponse(
     }
   }
 
-  // Text fallback (or Michael/Tzali default for text input)
+  // Text fallback (or Michael/Zali default for text input)
   // Telegram hard-caps sendMessage at 4096 chars; we keep a 96-char safety
   // margin (split threshold 4000) so Markdown/formatting don't push us over.
   // When a chunk still exceeds the limit, we cascade: paragraph → line → hard.
@@ -548,7 +548,7 @@ export function createBot(botCfg: BotConfig, gatewayCfg: GatewayConfig): BotInst
     const greetings: Record<string, string> = {
       michael: "Hi! Michael is online. Send me a message.",
       miriam: "Hi! Miriam is here. How can I help you today?",
-      tzali: "Hi! Tzali is online. What are we building?",
+      zali: "Hi! Zali is online. What are we building?",
       avi: "Hi! Avi is here. What are we making?",
     };
     await ctx.reply(greetings[name] || `${name} is online.`);

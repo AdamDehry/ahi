@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # mat.sh — MAT coordination helpers (session, worktrees, handoff ledger, prompt).
 #
-# MAT = Michael + Avi + Tzali operating as one mode across Codex and Claude Code.
+# MAT = Michael + Avi + Zali operating as one mode across Codex and Claude Code.
 # This script implements the mechanical side of the MAT collaboration protocol:
 #   $AHI_HOME/agents/MAT-COLLABORATION-PROTOCOL.md
 # The protocol (what the agent must do) matters more than the script (what it
@@ -20,7 +20,7 @@
 #                           [--project-root P] [--checkpoints L] [--handoff PATH]
 #   mat.sh --list | help | -h
 #
-# MAT Phase 2. Created 2026-06-28 by Tzali (Claude Code).
+# MAT Phase 2. Created 2026-06-28 by Zali (Claude Code).
 
 set -uo pipefail
 

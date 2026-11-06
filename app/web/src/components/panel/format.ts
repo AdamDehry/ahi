@@ -59,4 +59,4 @@ export function clockLabel(iso: string, tz: string, now = Date.now()): string {
   return d.toLocaleDateString("en-US", { timeZone: tz, month: "short", day: "numeric" });
 }
 
-export const AGENT_LABEL: Record<string, string> = { michael: "Michael", tzali: "Tzali", avi: "Avi", foreman: "Foreman" };
+export const AGENT_LABEL: Record<string, string> = { michael: "Michael", zali: "Zali", avi: "Avi", foreman: "Foreman" };

@@ -18,7 +18,7 @@ import { existsSync, readdirSync, readFileSync, statSync } from "fs";
 import { basename, join } from "path";
 
 export const MARKER = "brief";
-const AGENTS = ["tzali", "avi"] as const;
+const AGENTS = ["zali", "avi"] as const;
 const RUNTIMES = ["claude", "codex"] as const;
 const EFFORT: Record<(typeof RUNTIMES)[number], readonly string[]> = {
   claude: ["low", "medium", "high", "xhigh", "max"],
@@ -36,7 +36,7 @@ const LINE_RE = /^([A-Za-z_][A-Za-z0-9_]*)\s*:\s*(.*)$/;
 
 export interface BriefHeader {
   feed: string;
-  agent: "tzali" | "avi";
+  agent: "zali" | "avi";
   runtime: "claude" | "codex";
   model: string;
   effort: string;

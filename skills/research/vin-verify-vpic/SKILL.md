@@ -5,7 +5,7 @@ version: 1.1.0
 category: research
 private: false
 last_verified: 2026-11-05
-verified_by: tzali
+verified_by: zali
 ---
 
 # vin-verify-vpic

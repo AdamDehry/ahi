@@ -43,7 +43,7 @@ echo "2. dummy build start"
 git -C "$T/work" init -q && git -C "$T/work" -c user.email=smoke -c user.name=smoke \
   commit -q --allow-empty -m init
 out="$("$FM/build_start.sh" -r claude -m claude-opus-5-5 -e high -w "smoke test of a fresh foreman install" \
-  tzali smoke "$T/work" "Smoke test brief: reply ok and stop." 2>&1)"; rc=$?
+  zali smoke "$T/work" "Smoke test brief: reply ok and stop." 2>&1)"; rc=$?
 echo "$out" | tail -5 | sed 's/^/    | /'
 ID="$(printf '%s\n' "$out" | sed -n 's/^BUILD_ID=//p' | tail -1)"
 [ "$rc" -eq 0 ] && [ -n "$ID" ] && ok "build_start → $ID" || bad "build_start rc=$rc"
@@ -66,7 +66,7 @@ check "tmux session gone"              bash -c "! tmux has-session -t 'fm-$ID'"
 echo "5. close the LAST build while the queue still has work (the chain must name it, not abort)"
 echo "- [ ] queued smoke item: tidy the readme" >> "$AHI_HOME/foreman/QUEUE.md"
 out="$("$FM/build_start.sh" -r claude -m claude-opus-5-5 -e high -w "smoke test of the close chain with a queued item" \
-  tzali smoke-chain "$T/work" "Smoke test brief: reply ok and stop." 2>&1)"
+  zali smoke-chain "$T/work" "Smoke test brief: reply ok and stop." 2>&1)"
 ID2="$(printf '%s\n' "$out" | sed -n 's/^BUILD_ID=//p' | tail -1)"
 [ -n "$ID2" ] && ok "second build → $ID2" || bad "second build_start failed"
 out="$("$FM/build_done.sh" "$ID2" done 2>&1)"; rc=$?

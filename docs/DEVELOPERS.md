@@ -31,7 +31,7 @@ set `CHROMIUM_PATH` to use a specific one). Shrink them below ~400 KB each befor
 
 ## Supervised builds (Linux)
 
-On Linux, AHI Setup also installs the foreman, which lets Michael start, watch and close Tzali's and Avi's longer
+On Linux, AHI Setup also installs the foreman, which lets Michael start, watch and close Zali's and Avi's longer
 build sessions in the background. It needs `tmux`, `git` and `python3`; see `AHI_OS/foreman/README.md`. On a Mac
 or Windows it is not installed.
 

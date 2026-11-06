@@ -8,7 +8,7 @@ This runbook is for the operator. It assumes the Phase 2 build is in place:
 - Launcher: `$AHI_HOME/runtimes/codex/launch-as.sh` (adds the `mat` identity).
 - Helpers: `$AHI_HOME/runtimes/mat/scripts/mat.sh` (session / worktree / handoff / prompt).
 - Protocol (source of truth): `$AHI_HOME/agents/MAT-COLLABORATION-PROTOCOL.md`.
-- Souls (source of truth): `$AHI_HOME/agents/soul/{MICHAEL,AVI,TZALI}.md`.
+- Souls (source of truth): `$AHI_HOME/agents/soul/{MICHAEL,AVI,ZALI}.md`.
 
 ---
 
@@ -25,7 +25,7 @@ If the composed MAT prompt appears in the input box instead of immediately submi
 press **Enter** to send it. MAT should then acknowledge in one voice and wait for direction.
 
 **Talk to it:** just say *"Hey MAT, …"* and describe what you want. MAT carries all
-three lenses (Michael = architecture/ops, Avi = design/clarity, Tzali = build/verify)
+three lenses (Michael = architecture/ops, Avi = design/clarity, Zali = build/verify)
 and names the leading lens only when it helps you.
 
 **For a two-runtime task** (Codex *and* Claude Code working the same job), generate one
@@ -49,10 +49,10 @@ That's it. Everything below is detail for when you want it.
 | **Claude Code** | Open Claude Code, then paste a MAT prompt (see §5). Claude Code reads its identity from the pasted prompt + repo `AGENTS.md`/`CLAUDE.md`. |
 
 `launch-as.sh mat` composes one system prompt from: the MAT boot header → Michael soul
-→ Avi soul → Tzali soul → shared neshamah → AHI Foundation → universal NESHAMA/USER
+→ Avi soul → Zali soul → shared neshamah → AHI Foundation → universal NESHAMA/USER
 layers (if present) → the MAT collaboration protocol → per-soul memories → runtime
-orientation. The single-agent identities (`michael`, `tzali`, `avi`, `miriam`)
-are unchanged — `launch-as.sh tzali` still does exactly what it always did.
+orientation. The single-agent identities (`michael`, `zali`, `avi`, `miriam`)
+are unchanged — `launch-as.sh zali` still does exactly what it always did.
 
 Check what's wired up:
 
@@ -192,7 +192,7 @@ The visible coordination filename is **always** `MAT-HANDOFF.md`, wherever it ph
 | **`session-init` says "ledger already exists … leaving it intact"** | Overwrite protection — it won't destroy peer checkpoints | Expected and safe. Use a new `--task-slug`, or `--force` if you genuinely want a fresh header. |
 | **Branch already exists** on `worktree-prepare` | A prior run created `mat/<slug>/<runtime>` | The helper attaches a worktree to the existing branch instead of failing. To start clean, remove the old worktree (`git worktree remove`) and delete the branch, or use a new slug. |
 | **Codex shows the full MAT prompt instead of answering** | The TUI loaded the composed prompt into the input buffer and is waiting for confirmation | Press **Enter** to submit it. If a "Create a plan?" prompt appears, dismiss or choose the normal mode you want, then submit. |
-| **MAT feels like a committee** (three voices arguing) | The mode is being over-used for trivial work | MAT should speak as one. For a quick single-lens task, boot a single agent (`launch-as.sh tzali`) instead. Reserve MAT for work that genuinely benefits from the cross-lens / cross-runtime cover. |
+| **MAT feels like a committee** (three voices arguing) | The mode is being over-used for trivial work | MAT should speak as one. For a quick single-lens task, boot a single agent (`launch-as.sh zali`) instead. Reserve MAT for work that genuinely benefits from the cross-lens / cross-runtime cover. |
 
 **Restore the launcher** if a change ever regresses single-agent behavior:
 

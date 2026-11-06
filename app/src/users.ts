@@ -1,4 +1,5 @@
 import { readFileSync, existsSync } from "fs";
+import { canonicalAgentId } from "./agent-rename.js";
 import { resolve } from "path";
 
 /**
@@ -130,7 +131,7 @@ export function loadUsers(): UserConfig[] {
       telegramChatId: entry.telegramChatId ?? null,
       timezone: entry.timezone?.trim() ?? "America/New_York",
       locationLabel: entry.locationLabel?.trim() ?? "",
-      agents: entry.agents,
+      agents: [...new Set(entry.agents.map(canonicalAgentId))],
       admin: entry.admin === true,
       jewishCalendar: entry.jewishCalendar === true,
     });

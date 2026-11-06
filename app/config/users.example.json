@@ -5,7 +5,7 @@
     "telegramChatId": null,
     "timezone": "America/New_York",
     "locationLabel": "New York, NY",
-    "agents": ["michael", "tzali", "avi", "miriam"],
+    "agents": ["michael", "zali", "avi", "miriam"],
     "admin": true,
     "jewishCalendar": false
   }

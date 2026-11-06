@@ -9,7 +9,7 @@
 /* Agent avatars (rail, header, picker) — per-agent fg/bg pairs */
 .rd-avatar { display: inline-grid; place-items: center; width: 34px; height: 34px; flex: none; border-radius: 50%; font-size: 12px; font-weight: 550; color: var(--agent-michael); background: var(--agent-michael-bg); }
 .rd-avatar.sm { width: 26px; height: 26px; font-size: 10px; }
-.rd-avatar[data-bot="tzali"]   { color: var(--agent-tzali);   background: var(--agent-tzali-bg); }
+.rd-avatar[data-bot="zali"]   { color: var(--agent-zali);   background: var(--agent-zali-bg); }
 .rd-avatar[data-bot="avi"]     { color: var(--agent-avi);     background: var(--agent-avi-bg); }
 .rd-avatar[data-bot="miriam"]  { color: var(--agent-miriam);  background: var(--agent-miriam-bg); }
 

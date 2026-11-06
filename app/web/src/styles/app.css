@@ -69,7 +69,7 @@ html.ios select { font-size: var(--fs-field-ios) !important; }
 }
 .agent-dot[data-bot="michael"] { background: var(--agent-michael); }
 .agent-dot[data-bot="miriam"]  { background: var(--agent-miriam); }
-.agent-dot[data-bot="tzali"]   { background: var(--agent-tzali); }
+.agent-dot[data-bot="zali"]   { background: var(--agent-zali); }
 .agent-dot[data-bot="avi"]     { background: var(--agent-avi); }
 
 .agent-avatar {
@@ -82,7 +82,7 @@ html.ios select { font-size: var(--fs-field-ios) !important; }
 }
 .agent-avatar[data-bot="michael"] { background: color-mix(in srgb, var(--agent-michael) 15%, transparent); color: var(--agent-michael); }
 .agent-avatar[data-bot="miriam"]  { background: color-mix(in srgb, var(--agent-miriam) 15%, transparent);  color: var(--agent-miriam); }
-.agent-avatar[data-bot="tzali"]   { background: color-mix(in srgb, var(--agent-tzali) 15%, transparent);   color: var(--agent-tzali); }
+.agent-avatar[data-bot="zali"]   { background: color-mix(in srgb, var(--agent-zali) 15%, transparent);   color: var(--agent-zali); }
 .agent-avatar[data-bot="avi"]     { background: color-mix(in srgb, var(--agent-avi) 15%, transparent);     color: var(--agent-avi); }
 
 /* ── App shell ─────────────────────────────────────────────────────── */
@@ -287,7 +287,7 @@ html.ios select { font-size: var(--fs-field-ios) !important; }
 .agent-name { font-size: var(--fs-sm); font-weight: 600; }
 .agent-name[data-bot="michael"] { color: var(--agent-michael); }
 .agent-name[data-bot="miriam"]  { color: var(--agent-miriam); }
-.agent-name[data-bot="tzali"]   { color: var(--agent-tzali); }
+.agent-name[data-bot="zali"]   { color: var(--agent-zali); }
 .agent-name[data-bot="avi"]     { color: var(--agent-avi); }
 .agent-time { font-size: var(--fs-micro); letter-spacing: 0.1em; }
 /* Sent-message timestamp (Step 5 #2) — the agent-time treatment, right-
@@ -2020,7 +2020,7 @@ html.ios select { font-size: var(--fs-field-ios) !important; }
 .pf-meta .warn { color: var(--tone-you); }
 .pf-meta .agent { display: inline-flex; align-items: center; gap: 5px; }
 .pf-meta .agent::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--dot, var(--text-ghost)); }
-.pf-meta .agent.tzali { --dot: var(--agent-tzali); }
+.pf-meta .agent.zali { --dot: var(--agent-zali); }
 .pf-meta .agent.avi { --dot: var(--agent-avi); }
 .pf-meta .agent.michael { --dot: var(--agent-michael); }
 
@@ -2154,7 +2154,7 @@ html.ios select { font-size: var(--fs-field-ios) !important; }
 .pf-kicker { display: inline-flex; align-items: center; gap: var(--sp-2); min-width: 0; font-family: var(--font-mono); font-size: var(--fs-micro); font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-faint); white-space: nowrap; overflow: hidden; }
 .pf-kicker .agent { display: inline-flex; align-items: center; gap: 5px; color: var(--text-mute); }
 .pf-kicker .agent::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--dot, var(--text-ghost)); }
-.pf-kicker .agent.tzali { --dot: var(--agent-tzali); }
+.pf-kicker .agent.zali { --dot: var(--agent-zali); }
 .pf-kicker .agent.avi { --dot: var(--agent-avi); }
 .pf-kicker .agent.michael { --dot: var(--agent-michael); }
 .pf-row.you .pf-kicker > span:first-child { color: var(--tone-you); }
@@ -2380,7 +2380,7 @@ html.ios select { font-size: var(--fs-field-ios) !important; }
 .mp-tile-badge svg { width: 9px; height: 9px; }
 .mp-tile-dot { position: absolute; right: 6px; top: 6px; width: 8px; height: 8px; border-radius: 50%; border: 1.5px solid var(--surface); background: var(--agent-michael); }
 .mp-tile-dot[data-bot="avi"] { background: var(--agent-avi); }
-.mp-tile-dot[data-bot="tzali"] { background: var(--agent-tzali); }
+.mp-tile-dot[data-bot="zali"] { background: var(--agent-zali); }
 .mp-tile-dot[data-bot="miriam"] { background: var(--agent-miriam); }
 
 .mp-row {

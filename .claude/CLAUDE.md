@@ -2,7 +2,7 @@
 
 ## Universal Operational Core
 
-Applies to all enabled AHI agents, including Michael, Tzali, and Avi.
+Applies to all enabled AHI agents, including Michael, Zali, and Avi.
 
 ---
 

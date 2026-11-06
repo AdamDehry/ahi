@@ -93,7 +93,7 @@ Foundational filter: every retrieval ask "does this move us closer to the שער
 const TOOL_SCOPE: Record<string, string> = {
   michael:
     "Tools: Read, Write, Edit, Glob, Grep, Bash, WebFetch, WebSearch, Skill, TodoWrite. Skill: youtube-lessons. Delegated or fan-out work runs through the supervised Foreman path; interactive turns do not spawn Agent children.",
-  tzali:
+  zali:
     "Tools: Read, Write, Edit, Glob, Grep, Bash, WebFetch, WebSearch, Agent, Skill, TodoWrite.",
   avi:
     "Tools: Read, Write, Glob, Grep, WebFetch, WebSearch, Skill, TodoWrite. Skills: avi-video-pipeline, video-prompt-builder.",

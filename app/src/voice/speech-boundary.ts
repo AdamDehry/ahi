@@ -4,7 +4,7 @@
    Each piece of a call answer is synthesized on its own, so every cut is an
    audible seam: the voice ends the piece as if the thought were finished,
    then starts the next one fresh. The owner heard it as Michael pausing at the
-   wrong points ("…for Tzali's feed. So," <pause> "and then…"). The old rule
+   wrong points ("…for Zali's feed. So," <pause> "and then…"). The old rule
    cut at any period-plus-space — "Dr. ", "option 1. ", "Wait... " — and,
    failing that, at whatever space sat nearest 120 characters, which could be
    right after "So," or "and" (call-pauses diagnosis, 10/14).

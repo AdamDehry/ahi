@@ -356,7 +356,7 @@ function dashboardContainsCode(text: string): boolean {
 }
 
 function dashboardShouldVoiceRespond(botName: string, response: string, inputWasVoice: boolean): boolean {
-  if (botName === "tzali") return inputWasVoice && !dashboardContainsCode(response);
+  if (botName === "zali") return inputWasVoice && !dashboardContainsCode(response);
   if (DASHBOARD_ALWAYS_VOICE_BOTS.has(botName)) return true;
   return inputWasVoice;
 }
@@ -2064,7 +2064,7 @@ export function createDashboard(instances: BotInstance[], gatewayConfig: Gateway
     return c.json({ ok: true, steered: steerDashboardTurn(user.userId, botName) });
   });
 
-  // --- Morning-brief injection (Step 7 — Tzali) ---
+  // --- Morning-brief injection (Step 7 — Zali) ---
   //
   // POST /app/brief — deliver a PRE-AUTHORED agent message to BOTH surfaces:
   // the app (persisted to the message store + WS broadcast, as a playable
@@ -2219,7 +2219,7 @@ export function createDashboard(instances: BotInstance[], gatewayConfig: Gateway
     return c.json({ ok, alreadyDelivered: false, delivered: ledger }, ok ? 200 : 502);
   });
 
-  // --- Web Push (Step 8 — Tzali) ---
+  // --- Web Push (Step 8 — Zali) ---
   //
   // The PWA's notification stack: the client fetches the VAPID public key,
   // subscribes via its service worker, and registers the subscription
@@ -2277,7 +2277,7 @@ export function createDashboard(instances: BotInstance[], gatewayConfig: Gateway
     return c.json({ ok: true, settings });
   });
 
-  // --- PWA Sessions endpoints (H-040 Batch 4 — Tzali) ---
+  // --- PWA Sessions endpoints (H-040 Batch 4 — Zali) ---
   //
   // Read-only feed for the Sessions Sidebar in the PWA. The canonical
   // index lives at `~/ai/infra/sessions/index.json` (the AHI memory index,
@@ -2399,7 +2399,7 @@ export function createDashboard(instances: BotInstance[], gatewayConfig: Gateway
     }
   });
 
-  // --- PWA Files endpoints (H-040 Batch 5 — Tzali) ---
+  // --- PWA Files endpoints (H-040 Batch 5 — Zali) ---
   //
   // Storage layout: ~/business/<userId>/files/<conversation_id>/<filename>
   // (resolved via multi-user-paths so we never hand-roll the path).

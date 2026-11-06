@@ -148,7 +148,7 @@ export interface Briefing {
 // ── gathering ─────────────────────────────────────────────────────────
 
 const human = (name: string) => name.replace(/[-_]+/g, " ").trim();
-const AGENT_NAME: Record<string, string> = { michael: "Michael", tzali: "Tzali", avi: "Avi", miriam: "Miriam" };
+const AGENT_NAME: Record<string, string> = { michael: "Michael", zali: "Zali", avi: "Avi", miriam: "Miriam" };
 export const agentName = (a: string) => AGENT_NAME[a.toLowerCase()] ?? (a ? a[0].toUpperCase() + a.slice(1) : "An agent");
 
 interface Gathered {
@@ -225,7 +225,7 @@ export function gather(sources: ScheduleSources, rules: TagRules, owner: string,
   }
 
   for (const a of safe(() => sources.activity(since), [])) {
-    const m = /^(Michael|Tzali|Avi|Miriam)\b[:\s]*(.*)$/.exec(a.title);
+    const m = /^(Michael|Zali|Avi|Miriam)\b[:\s]*(.*)$/.exec(a.title);
     lines.push({ id: `act:${a.at.toISOString()}:${a.title.slice(0, 40)}`, at: a.at.toISOString(), text: a.title, who: m ? m[1] : "Michael", tag: tagFor(a.title, rules), source: "activity" });
   }
 

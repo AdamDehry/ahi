@@ -288,7 +288,7 @@ Options:
 Examples:
   memory_fetch.sh --gate בנ --root זכר
   memory_fetch.sh --gate build --root memory --limit 5
-  memory_fetch.sh --gate self --root soul --agent tzali
+  memory_fetch.sh --gate self --root soul --agent zali
   memory_fetch.sh --gate ahi --root state
   memory_fetch.sh --gate founding --root angel
 `);

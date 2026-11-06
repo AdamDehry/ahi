@@ -124,7 +124,7 @@ fm_is_live() {
 # caller can route around it. Two signals, each covering the other's blind spot:
 #   (1) IN-FLIGHT — is a `claude … --resume <michael-session-id>` running right
 #       now? Matches ps LINES for specific session ids (never a count, never a
-#       bare `--resume` that would false-refuse a Tzali/Avi resume); our own pid
+#       bare `--resume` that would false-refuse a Zali/Avi resume); our own pid
 #       tree is excluded so the probe cannot match itself.
 #   (2) a short SETTLE timestamp — covers only the seconds between the POST and
 #       the resume appearing in ps. Small on purpose, so a legitimate SEQUENTIAL

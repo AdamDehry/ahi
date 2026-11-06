@@ -15,7 +15,7 @@ import { SETTINGS_SECTIONS, setSettingsSection, useSettingsSection } from "./Set
 
 export const PURPOSE: Record<string, string> = {
   michael: "Your first point of contact. Plans, delegates, and brings the important decisions back to you.",
-  tzali: "Builds your software and keeps it running.",
+  zali: "Builds your software and keeps it running.",
   avi: "Turns ideas into thoughtful design.",
   miriam: "Makes room in your calendar and personal life.",
 };

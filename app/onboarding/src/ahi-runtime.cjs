@@ -11,7 +11,7 @@ const { spawn, spawnSync } = require('node:child_process');
 const { existsSync } = require('node:fs');
 const { publicSkills } = require('./public-skills.cjs');
 
-const AGENTS = ['michael', 'tzali', 'avi', 'miriam'];
+const AGENTS = ['michael', 'zali', 'avi', 'miriam'];
 const DEFAULT_PORT = 18789;
 
 async function exists(p) { try { await fs.access(p); return true; } catch { return false; } }

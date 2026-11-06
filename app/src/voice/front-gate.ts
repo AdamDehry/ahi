@@ -178,7 +178,7 @@ const WORK = new RegExp(
       "should (?:i|we)", "do you think", "what do you think", "opinion", "recommend", "advice", "better", "worse", "decide",
       "accurate", "true", "right now", "last call", "earlier",
       // the team
-      "tzali", "avi", "miriam", "elevenlabs", "cartesia", "openai", "claude",
+      "zali", "avi", "miriam", "elevenlabs", "cartesia", "openai", "claude",
     ].join("|") +
     ")\\b",
   "i",
@@ -252,7 +252,7 @@ const IMPERATIVE = new RegExp(
   "i",
 );
 /** Things in his world the fast layer knows nothing about. */
-const WORLD = /\b(tzali|avi|miriam|elevenlabs|cartesia|openai|claude|calendar|meeting|deal|lead|customer|client|invoice|lease|payment|dealer|inventory|file|folder|code|log|logs|build|builds|deploy|transcript|recording|message|messages|inbox|email|mail|weather|news|price|quote|order|today|tonight|tomorrow|yesterday|week|weekend|plan|plans|schedule|earlier|last time)\b/i;
+const WORLD = /\b(zali|avi|miriam|elevenlabs|cartesia|openai|claude|calendar|meeting|deal|lead|customer|client|invoice|lease|payment|dealer|inventory|file|folder|code|log|logs|build|builds|deploy|transcript|recording|message|messages|inbox|email|mail|weather|news|price|quote|order|today|tonight|tomorrow|yesterday|week|weekend|plan|plans|schedule|earlier|last time)\b/i;
 /** Openers stripped before reading whether a clause asks something ("Good, so where were we"). */
 const OPENERS = /^(?:(?:okay|ok|so|and|but|good|great|well|hey|alright|right|um|uh|oh|yeah|now|then|michael)[,.!]?\s+)+/i;
 /** Asking Michael to decide, judge or tell him something — the main brain's job, however casual. */

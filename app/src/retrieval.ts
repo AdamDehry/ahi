@@ -211,14 +211,14 @@ const ALL_CATEGORIES = [
 // business/context-ambiguous sessions there, and those can carry business /
 // infra content that must not leak across trust boundaries
 // (e.g. Miriam must not see a contractor-licensing business session even if
-// it was classified "general"). Michael and Tzali legitimately see everything.
+// it was classified "general"). Michael and Zali legitimately see everything.
 // Unknown agents deny by default.
 const AHI_CATEGORIES = ALL_CATEGORIES;
 
 export function agentAllowedCategories(agent: string): string[] {
   switch (agent.toLowerCase()) {
     case "michael":
-    case "tzali":
+    case "zali":
       return AHI_CATEGORIES;
     case "avi":
       return ["ahi-infrastructure"];

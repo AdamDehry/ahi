@@ -4,7 +4,7 @@ A skill for AHI agents to consult OpenAI's Codex CLI (GPT-5 / Codex Plus) as a s
 
 ## Why this exists
 
-Frontier models disagree productively. When Tzali, Michael, or any other AHI agent
+Frontier models disagree productively. When Zali, Michael, or any other AHI agent
 is about to commit a non-trivial decision — an architecture choice, a security
 finding, a tricky bug fix — getting Codex's independent take catches blind spots
 that a single model's reasoning misses.

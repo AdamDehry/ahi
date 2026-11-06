@@ -1408,7 +1408,7 @@ P_CONTENT_RAILS = (
     ("internal-agent-name",
      re.compile(r"\b(?:(?i:agent|executor|subagent|foreman)\s+"
                 r"(?:(?i:called|named)\s+)?[A-Z][a-z]+"
-                r"|Tzali|Avi)\b"),
+                r"|Zali|Avi)\b"),
      "internal agent or session persona name"),
     ("marker-token",
      re.compile(r"\b[A-Z][A-Z0-9]+(?:[-_][A-Z0-9]+)+\b"),

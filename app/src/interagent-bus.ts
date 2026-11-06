@@ -2,7 +2,7 @@ import { AI_ROOT } from "./ai-root.js";
 // ── interagent-bus.ts — two-way peer channel between AHI agents ─────────────
 //
 // Lets one agent send a message to another agent and receive that agent's
-// reply, so Michael and Tzali can run round-trips without the owner relaying.
+// reply, so Michael and Zali can run round-trips without the owner relaying.
 //
 // ── What already existed, and what this actually adds ──────────────────────
 //
@@ -131,7 +131,7 @@ export interface PeerReply {
 export interface SendToPeerOptions {
   /** Speaking agent's bot name, e.g. "michael". Tagged into the message. */
   from: string;
-  /** Receiving agent's bot name, e.g. "tzali". Must be a configured bot. */
+  /** Receiving agent's bot name, e.g. "zali". Must be a configured bot. */
   to: string;
   text: string;
   /** Loop identity — scopes the session so concurrent loops never cross. */
@@ -157,8 +157,8 @@ export interface SendToPeerOptions {
  * Stable synthetic chatId for a thread's conversation with one agent.
  *
  * Keyed by thread AND agent so each side of a loop keeps its own session and
- * its own memory of the exchange — Michael resuming Michael's view, Tzali
- * resuming Tzali's. Deterministic, so a resumed loop rejoins its sessions.
+ * its own memory of the exchange — Michael resuming Michael's view, Zali
+ * resuming Zali's. Deterministic, so a resumed loop rejoins its sessions.
  */
 export function busChatId(threadId: string, agent: string): number {
   // NUL separator, written as an escape so it is visible in source (a raw

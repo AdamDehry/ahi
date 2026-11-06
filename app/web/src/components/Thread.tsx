@@ -258,7 +258,7 @@ export default function Thread({
     pinToBottom(PIN_MS_JUMP);
   }, [pinToBottom]);
 
-  // The Home-to-Tzali bug: on a slow load the chat's history landed
+  // The Home-to-Zali bug: on a slow load the chat's history landed
   // after the mount pin had expired, the list settled its heights with
   // nothing holding the bottom, and the chat opened ~2,000px up with the
   // newest message off screen. Now, whenever the list's height changes, the

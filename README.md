@@ -24,7 +24,7 @@
 AHI is four AI agents, each with its own character, working together for you. They live in a calm app that opens in your browser. You can type, talk by voice, and — if you like — open AHI on your phone.
 
 - **Michael** — your right hand. Plans, coordinates, keeps track, and brings the important decisions back to you.
-- **Tzali** — builds and fixes software and keeps your setup running.
+- **Zali** — builds and fixes software and keeps your setup running.
 - **Avi** — design: turns ideas into thoughtful visuals and products.
 - **Miriam** — your personal assistant: your calendar, your documents, and a patient ear.
 

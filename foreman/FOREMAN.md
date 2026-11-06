@@ -1,7 +1,7 @@
 # AHI Foreman — supervised build sessions
 
 The foreman lets a supervisor agent (Michael) commission, watch, steer and close dedicated builder
-sessions (Tzali, Avi) end to end, while the owner watches from anywhere and only gets pulled in for
+sessions (Zali, Avi) end to end, while the owner watches from anywhere and only gets pulled in for
 real decisions.
 
 ## How it works
@@ -9,7 +9,7 @@ real decisions.
 ```
 Michael (gateway turn)                    Build session (tmux + claude | codex)
   build_start.sh ────────────────────────► session starts in its workdir,
-                                            addressed to Tzali/Avi
+                                            addressed to Zali/Avi
                                             │ works autonomously
        ◄──────── Stop hook (foreman_wake) ──┘ turn ends / goes idle
   gateway /ui/send wakes Michael
@@ -92,8 +92,8 @@ generation, and are refused), `-e` effort and `-w` why (one line, written into `
 choice with no recorded reason teaches the next build nothing; with one, the ledger becomes a record
 of judgment. Read `MODEL-SELECTION.md` and `build_ledger.sh` before choosing.
 
-- **Decide the runtime by fit, against your own bias.** One builder, two runtimes: Tzali on Claude Code
-  IS Tzali on Codex — same soul, different capability set. Exhaustive sweeps and precision review suit
+- **Decide the runtime by fit, against your own bias.** One builder, two runtimes: Zali on Claude Code
+  IS Zali on Codex — same soul, different capability set. Exhaustive sweeps and precision review suit
   one; ambiguous design work and long narrative merges suit the other. Whoever BUILDS does not GRADE.
 - **Before writing "we have never measured X" — go count** in the ledger, not in memory.
 - Effort words differ between the owner's picker and each runtime's CLI; `fm_effort.py` translates and

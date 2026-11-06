@@ -10,7 +10,7 @@ Every build makes **three** decisions, never one:
 2. **Model** — which slug inside that runtime
 3. **Effort** — how hard it thinks per turn
 
-Two things are *not* decisions, they're routing: **build work goes to Tzali, design work goes to Avi**, in whichever runtime the three decisions land on. Identity is sovereign across runtimes — Tzali on Codex is the same Tzali.
+Two things are *not* decisions, they're routing: **build work goes to Zali, design work goes to Avi**, in whichever runtime the three decisions land on. Identity is sovereign across runtimes — Zali on Codex is the same Zali.
 
 There is a fallback model in `build_start.sh` for a hand-run command outside the live registry, and it is not an answer. The gate refuses any `build_start.sh` against the live registry without explicit `-r -m -e -w`, so the fallback can never fire silently. `-w` is the one-line reason; it lands in `meta.json` and becomes the record the *next* decision reads.
 

@@ -5,6 +5,7 @@ import { gatewayStateRoot } from "./multi-user-paths.js";
 import { VOICE_STYLES } from "./voice-styles.js";
 import { normalizeClaudeModel } from "./claude-models.js";
 import { normalizeEffort } from "./claude-effort.js";
+import { aliasLegacyAgentEnv } from "./agent-rename.js";
 
 loadEnv({ path: resolve(import.meta.dirname, "../.env") });
 
@@ -190,13 +191,14 @@ export interface GatewayConfig {
 }
 
 export function loadConfig(): GatewayConfig {
+  aliasLegacyAgentEnv();
   const bots: BotConfig[] = [];
 
   // Voice name defaults per agent (used for both Chirp 3 HD and Gemini — same name pool)
   const voiceDefaults: Record<string, string> = {
     michael: "Charon",        // deep, authoritative (locked)
     miriam: "Aoede",          // warm, level, Sephardic/Israeli Hebrew (locked)
-    tzali: "Iapetus",         // level builder register, age and geological patience (locked)
+    zali: "Iapetus",         // level builder register, age and geological patience (locked)
     avi: "Puck",              // Gemini default if switched (not in use — Avi stays on OpenAI fable)
   };
 
@@ -207,7 +209,7 @@ export function loadConfig(): GatewayConfig {
     openaiVoiceDefault: string
   ): BotConfig | null {
     // Every agent is present in the app. A Telegram token only adds the phone chat for that agent;
-    // AGENT_ENABLED=false (e.g. TZALI_ENABLED=false) turns an agent off.
+    // AGENT_ENABLED=false (e.g. ZALI_ENABLED=false) turns an agent off.
     const token = process.env[tokenEnvKey] ?? "";
     if (process.env[`${name.toUpperCase()}_ENABLED`] === "false") return null;
     const PREFIX = name.toUpperCase();
@@ -257,9 +259,9 @@ export function loadConfig(): GatewayConfig {
   const miriam = makeBotConfig("miriam", "MIRIAM_BOT_TOKEN", "claude-haiku-4-5", "nova");
   if (miriam) bots.push(miriam);
 
-  // Tzali
-  const tzali = makeBotConfig("tzali", "TZALI_BOT_TOKEN", "claude-opus-5-5","cedar");
-  if (tzali) bots.push(tzali);
+  // Zali
+  const zali = makeBotConfig("zali", "ZALI_BOT_TOKEN", "claude-opus-5-5","cedar");
+  if (zali) bots.push(zali);
 
   // Avi
   const avi = makeBotConfig("avi", "AVI_BOT_TOKEN", "claude-opus-5-5","fable");

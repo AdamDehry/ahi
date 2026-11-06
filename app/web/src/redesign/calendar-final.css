@@ -36,7 +36,7 @@
 .rd-cal .hour-row time { width:44px;flex-shrink:0;color:var(--text-mute);font-size:9px;padding-top:0 }
 .rd-cal .hour-row>span { border-top:1px solid var(--line);flex:1 }
 .rd-cal .calendar-events { position:absolute;top:0;left:69px;right:0 }
-.rd-cal .calendar-event { position:absolute;left:0;right:10px;display:flex;flex-direction:column;align-items:flex-start;text-align:left;padding:12px 17px;background:var(--tzali-bg);border:1px solid var(--line);border-left:3px solid var(--tzali-fg);border-radius:8px;color:var(--tzali-fg);overflow:hidden }
+.rd-cal .calendar-event { position:absolute;left:0;right:10px;display:flex;flex-direction:column;align-items:flex-start;text-align:left;padding:12px 17px;background:var(--zali-bg);border:1px solid var(--line);border-left:3px solid var(--zali-fg);border-radius:8px;color:var(--zali-fg);overflow:hidden }
 .rd-cal .calendar-event.sales { background:var(--sage-bg);color:var(--sage-fg);border-left-color:var(--sage-fg) }
 .rd-cal .calendar-event.personal { background:var(--miriam-bg);color:var(--miriam-fg);border-left-color:var(--miriam-fg) }
 .rd-cal .calendar-event.protected { background:var(--michael-bg);color:var(--michael-fg);border-left-color:var(--success) }
@@ -56,7 +56,7 @@
 .rd-cal .week-calendar { display:grid;grid-template-columns:repeat(7,minmax(82px,1fr));border-top:1px solid var(--line);border-left:1px solid var(--line);border-radius:10px;overflow:hidden }
 .rd-cal .week-column { border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:0 5px 20px;min-height:610px }
 .rd-cal .week-column-label { font-size:9px;text-align:center;color:var(--text-mute);padding:17px 0 20px }
-.rd-cal .week-event { display:flex;align-items:flex-start;text-align:left;flex-direction:column;gap:7px;background:var(--tzali-bg);color:var(--tzali-fg);width:100%;padding:12px 8px;border-radius:6px;margin:0 0 13px;min-height:72px }
+.rd-cal .week-event { display:flex;align-items:flex-start;text-align:left;flex-direction:column;gap:7px;background:var(--zali-bg);color:var(--zali-fg);width:100%;padding:12px 8px;border-radius:6px;margin:0 0 13px;min-height:72px }
 .rd-cal .week-event strong { font-size:10px;font-weight:500;line-height:1.6;overflow-wrap:anywhere }
 .rd-cal .week-event span { font-size:8px }
 .rd-cal .week-event.sales { background:var(--sage-bg);color:var(--sage-fg) }

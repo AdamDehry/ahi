@@ -75,7 +75,7 @@ const KIND_WORD: Record<TimelineEvent["kind"], string> = {
 
 const NODE_CLASS: Record<TimelineEvent["kind"], string> = { progress: "progress", needs_operator: "needs", closed: "closed", failed: "failed", note: "michael", ship: "ship" };
 
-/** Newest first, grouped by run ("Run 1 · Tzali · Wed 4:38 AM"). */
+/** Newest first, grouped by run ("Run 1 · Zali · Wed 4:38 AM"). */
 export function Timeline({ runs }: { runs: Array<{ key: string; label: string; events: TimelineEvent[]; empty?: string }> }) {
   return (
     <div className="pf-tl">

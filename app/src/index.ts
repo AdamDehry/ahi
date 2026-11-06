@@ -4,6 +4,8 @@ import { asksToLook, estimateImageTokens, framePolicy, type ScreenFrame } from "
 import { formatPick, type WatchPick } from "./voice/screen-watch.js";
 import { serve } from "@hono/node-server";
 import { loadConfig } from "./config.js";
+import { migrateLegacyAgentHome } from "./agent-rename.js";
+import { AI_ROOT } from "./ai-root.js";
 import { createBot, setupWebhook, startPolling, type BotInstance } from "./telegram.js";
 import { appChatId, createDashboard, resolveUser, tagDashboardMessageForBot } from "./dashboard.js";
 import { takeSentinelFiles } from "./chat-files/sentinel.js";
@@ -181,6 +183,8 @@ process.on("unhandledRejection", (reason) => {
   console.error("[gateway] unhandledRejection:", reason);
 });
 
+// Before anything reads agent state: an install from before the builder's rename gets its folders and keys renamed.
+migrateLegacyAgentHome(AI_ROOT, gatewayStateRoot());
 const config = loadConfig();
 applySavedSettings(config.bots);
 watchMissionControl();

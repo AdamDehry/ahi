@@ -1,6 +1,6 @@
 # Foreman
 
-The foreman is how Michael runs a build team. It starts a builder (Tzali or Avi) in its own tmux
+The foreman is how Michael runs a build team. It starts a builder (Zali or Avi) in its own tmux
 session on Claude Code or Codex, types steering into it, wakes Michael whenever the builder stops,
 and closes the build out — reviewed, archived and cleaned — when the work ships. The owner can watch
 or type into any session at any time, and is only asked for real decisions.
@@ -32,7 +32,7 @@ $AHI_HOME/foreman/bin/fm_setup.sh --print-cron     # prints the lines; add them 
 ```bash
 cd $AHI_HOME/foreman/bin
 ./build_start.sh -r claude -m claude-opus-5-5 -e high -w "small refactor, needs design judgment" \
-  tzali tidy-utils ~/code/myrepo "Tzali — tidy src/utils: split the 400-line file, keep behaviour, run the tests."
+  zali tidy-utils ~/code/myrepo "Zali — tidy src/utils: split the 400-line file, keep behaviour, run the tests."
 ./build_status.sh                 # all builds; ./build_status.sh <id> for one, with a live pane snapshot
 ./build_say.sh <id> "also add a test for the date parser"
 ./build_done.sh <id> done

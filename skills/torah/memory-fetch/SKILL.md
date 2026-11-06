@@ -74,7 +74,7 @@ $AHI_HOME/skills/torah/memory-fetch/memory_fetch.sh --gate בנ --root זכר
 $AHI_HOME/skills/torah/memory-fetch/memory_fetch.sh --gate build --root memory
 
 # Special pseudo-gates:
-$AHI_HOME/skills/torah/memory-fetch/memory_fetch.sh --gate self --root soul --agent tzali
+$AHI_HOME/skills/torah/memory-fetch/memory_fetch.sh --gate self --root soul --agent zali
 $AHI_HOME/skills/torah/memory-fetch/memory_fetch.sh --gate ahi --root state
 $AHI_HOME/skills/torah/memory-fetch/memory_fetch.sh --gate founding --root angel
 
@@ -94,8 +94,8 @@ Default plain-text format:
 == Memory @ בנ/זכר (build / construct / infrastructure | root: memory) ==
 Total entries at this address: 93. Showing 10 most recent.
 
-### 2026-04-26 — The One About H-034 Memory Architecture (tzali)
-- Tzali shipped the stable preamble + memory-fetch skill...
+### 2026-04-26 — The One About H-034 Memory Architecture (zali)
+- Zali shipped the stable preamble + memory-fetch skill...
 - ...
 
 ### 2026-04-25 — The One About Session Cataloging (michael)
@@ -118,7 +118,7 @@ $AHI_HOME/skills/torah/memory-fetch/memory_fetch.sh --gate קנ --root רכב
 
 **Need your full soul (only the identity paragraph is in the stable preamble):**
 ```bash
-$AHI_HOME/skills/torah/memory-fetch/memory_fetch.sh --gate self --root soul --agent tzali
+$AHI_HOME/skills/torah/memory-fetch/memory_fetch.sh --gate self --root soul --agent zali
 ```
 
 **What's the current AHI state?:**

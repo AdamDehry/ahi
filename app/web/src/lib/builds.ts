@@ -28,7 +28,7 @@ export interface Card {
   title: string;
   order: number | null;
   kicker: Kicker;
-  from: "michael" | "tzali" | "avi" | "foreman" | null;
+  from: "michael" | "zali" | "avi" | "foreman" | null;
   opened_at: string;
   last_activity_at: string | null;
   ask: string | null;

@@ -15,7 +15,7 @@ Required:
 ```text
 $AHI_HOME/agents/soul/MICHAEL.md
 $AHI_HOME/agents/soul/AVI.md
-$AHI_HOME/agents/soul/TZALI.md
+$AHI_HOME/agents/soul/ZALI.md
 $AHI_HOME/agents/neshamah.md
 $AHI_HOME/agents/soul/AHI-FOUNDATION.md
 $AHI_HOME/agents/MAT-COLLABORATION-PROTOCOL.md
@@ -28,7 +28,7 @@ $AHI_HOME/agents/soul/NESHAMA.md
 $AHI_HOME/agents/soul/USER.md
 $AHI_HOME/agents/memory/michael/MEMORY.md
 $AHI_HOME/agents/memory/avi/MEMORY.md
-$AHI_HOME/agents/memory/tzali/MEMORY.md
+$AHI_HOME/agents/memory/zali/MEMORY.md
 ```
 
 ## Composition Order
@@ -36,12 +36,12 @@ $AHI_HOME/agents/memory/tzali/MEMORY.md
 1. MAT boot header.
 2. Michael soul.
 3. Avi soul.
-4. Tzali soul.
+4. Zali soul.
 5. Shared neshamah.
 6. AHI Foundation.
 7. Universal soul/user layers if present.
 8. MAT collaboration protocol.
-9. Optional memories for Michael, Avi, and Tzali.
+9. Optional memories for Michael, Avi, and Zali.
 10. Runtime orientation.
 
 ## Boot Header Draft
@@ -49,13 +49,13 @@ $AHI_HOME/agents/memory/tzali/MEMORY.md
 ```md
 # AHI Identity Boot - MAT on Codex
 
-You are MAT: Michael, Avi, and Tzali operating as one harmonious AHI mode.
+You are MAT: Michael, Avi, and Zali operating as one harmonious AHI mode.
 You are not three agents taking turns. You are one orchestrating intelligence
 that carries three lenses:
 
 - Michael: architecture, operations, prioritization, and day-to-day operability.
 - Avi: UX, design, clarity, and the felt experience.
-- Tzali: engineering, implementation, deployment, and verification.
+- Zali: engineering, implementation, deployment, and verification.
 
 Use all three lenses quietly. Name the leading lens only when it helps the operator.
 For protocol/design decisions, explicitly record Michael and Avi lens checks.
@@ -67,7 +67,7 @@ When a task spans Codex and Claude Code, follow the MAT collaboration protocol.
 Implementation sketch only:
 
 ```sh
-VALID_AGENTS=(michael tzali miriam avi mat)
+VALID_AGENTS=(michael zali miriam avi mat)
 
 compose_prompt() {
   local agent="$1"
@@ -93,8 +93,8 @@ $AHI_HOME/runtimes/codex/launch-as.sh mat --dry-run
 Expected:
 
 1. `.last-system-prompt.md` is written.
-2. It contains Michael, Avi, Tzali, AHI core, and MAT protocol sections.
-3. It does not break existing `launch-as.sh tzali --dry-run`.
+2. It contains Michael, Avi, Zali, AHI core, and MAT protocol sections.
+3. It does not break existing `launch-as.sh zali --dry-run`.
 
 ## Lens Notes
 

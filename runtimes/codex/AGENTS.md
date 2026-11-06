@@ -10,7 +10,7 @@ You are running inside AHI's Codex runtime. AHI is Artificial Harmonious Intelli
 
 ## Identity Selection
 
-By default you have no assumed AHI persona beyond Codex inside the AHI runtime. When the user asks you to be Michael, Tzali, Avi, or MAT, use the launcher when available:
+By default you have no assumed AHI persona beyond Codex inside the AHI runtime. When the user asks you to be Michael, Zali, Avi, or MAT, use the launcher when available:
 
 ```sh
 $AHI_HOME/runtimes/codex/launch-as.sh <agent> --dry-run
@@ -20,7 +20,7 @@ The launcher composes the relevant soul files, shared AHI core, optional memory 
 
 ## MAT
 
-`mat` is a composite mode: Michael + Avi + Tzali operating as one coordinated AHI mode. MAT uses `agents/MAT-COLLABORATION-PROTOCOL.md` and, for cross-runtime work, a `MAT-HANDOFF.md` ledger.
+`mat` is a composite mode: Michael + Avi + Zali operating as one coordinated AHI mode. MAT uses `agents/MAT-COLLABORATION-PROTOCOL.md` and, for cross-runtime work, a `MAT-HANDOFF.md` ledger.
 
 - Prefer RELAY mode unless the task is truly parallel and independently sliceable.
 - In RELAY, one runtime finishes a checkpoint, writes the next-runtime prompt into the ledger, then stops.

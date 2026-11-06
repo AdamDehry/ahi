@@ -10,7 +10,7 @@ THE HEADER is a flat front-matter block at the very top of the brief:
 
     ---
     feed: brief                      # format marker; must be exactly "brief"
-    agent: tzali                     # tzali | avi
+    agent: zali                      # zali | avi
     runtime: claude                  # claude | codex
     model: claude-opus-5-5           # full slug, never a bare alias
     effort: high                     # claude: low medium high xhigh max · codex: none low medium high xhigh ultra max
@@ -41,7 +41,7 @@ import re
 import sys
 
 MARKER = "brief"
-AGENTS = ("tzali", "avi")
+AGENTS = ("zali", "avi")
 RUNTIMES = ("claude", "codex")
 EFFORT = {
     "claude": ("low", "medium", "high", "xhigh", "max"),
@@ -101,6 +101,9 @@ def validate_fields(f):
             errors.append(f"missing: {k}")
     if f.get("feed") and f["feed"] != MARKER:
         errors.append(f"feed must be exactly {MARKER!r}")
+    # The builder was renamed; a brief written before the rename still names it by its old id.
+    if f.get("agent") == "tzali":
+        f["agent"] = "zali"
     if f.get("agent") and f["agent"] not in AGENTS:
         errors.append("agent must be one of " + ", ".join(AGENTS))
     rt = f.get("runtime")

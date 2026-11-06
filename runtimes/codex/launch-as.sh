@@ -7,10 +7,10 @@
 #   ./launch-as.sh --list            Print available agents and where each soul lives
 #   ./launch-as.sh -h | --help       Show this help
 #
-# Agents: michael, tzali, miriam, avi
-#   mat — composite MAT mode (Michael + Avi + Tzali + AHI core + MAT protocol).
+# Agents: michael, zali, miriam, avi
+#   mat — composite MAT mode (Michael + Avi + Zali + AHI core + MAT protocol).
 #
-# H-035 Phase 1 (single-agent). MAT composite added Phase 2 (2026-06-28) by Tzali.
+# H-035 Phase 1 (single-agent). MAT composite added Phase 2 (2026-06-28) by Zali.
 
 set -uo pipefail
 
@@ -43,11 +43,11 @@ find_codex() {
 }
 
 # Single-agent identities (one soul each). MAT is a composite mode handled separately.
-SINGLE_AGENTS=(michael tzali miriam avi)
+SINGLE_AGENTS=(michael zali miriam avi)
 # All launchable identities, including the composite MAT mode.
 VALID_AGENTS=("${SINGLE_AGENTS[@]}" mat)
 # Souls that make up the composite MAT identity, in lead order.
-MAT_SOULS=(MICHAEL AVI TZALI)
+MAT_SOULS=(MICHAEL AVI ZALI)
 
 # ---- helpers ----
 warn() { printf "warn: %s\n" "$*" >&2; }
@@ -82,7 +82,7 @@ print_list() {
   done
   echo
   echo "Composite mode:"
-  printf "  %-10s %s\n" "mat" "Michael + Avi + Tzali + shared AHI core + MAT collaboration protocol."
+  printf "  %-10s %s\n" "mat" "Michael + Avi + Zali + shared AHI core + MAT collaboration protocol."
   for upper in "${MAT_SOULS[@]}"; do
     lower="$(printf '%s' "$upper" | tr '[:upper:]' '[:lower:]')"
     soul="${SOUL_DIR}/${upper}.md"
@@ -130,12 +130,12 @@ compose_mat_prompt() {
   # 1. MAT boot header.
   {
     printf '# AHI Identity Boot — MAT on Codex\n\n'
-    printf 'You are **MAT**: Michael, Avi, and Tzali operating as ONE harmonious AHI mode.\n'
+    printf 'You are **MAT**: Michael, Avi, and Zali operating as ONE harmonious AHI mode.\n'
     printf 'You are not three agents taking turns. You are one orchestrating intelligence\n'
     printf 'that carries three lenses:\n\n'
     printf '%s\n' '- **Michael** — architecture, operations, prioritization, and day-to-day operability.'
     printf '%s\n' '- **Avi** — UX, design, clarity, and the felt experience.'
-    printf '%s\n\n' '- **Tzali** — engineering, implementation, deployment, and verification.'
+    printf '%s\n\n' '- **Zali** — engineering, implementation, deployment, and verification.'
     printf 'Use all three lenses quietly. Name the leading lens only when it helps the operator.\n'
     printf 'For protocol/design decisions, explicitly record Michael and Avi lens checks.\n'
     printf 'Speak as one unit — avoid three separate monologues unless a contrast is genuinely useful.\n'
@@ -146,7 +146,7 @@ compose_mat_prompt() {
   # 2-4. The three souls, in lead order.
   append_section "$COMPOSED_FILE" "MAT SOUL — MICHAEL (architecture / operations / synthesis)" "${SOUL_DIR}/MICHAEL.md"
   append_section "$COMPOSED_FILE" "MAT SOUL — AVI (design / UX / felt experience)"            "${SOUL_DIR}/AVI.md"
-  append_section "$COMPOSED_FILE" "MAT SOUL — TZALI (engineering / implementation / deploy)"   "${SOUL_DIR}/TZALI.md"
+  append_section "$COMPOSED_FILE" "MAT SOUL — ZALI (engineering / implementation / deploy)"   "${SOUL_DIR}/ZALI.md"
 
   # 5-6. Shared AHI core.
   append_section "$COMPOSED_FILE" "SHARED NESHAMAH (operational core)" "${NESHAMAH_FILE}"
@@ -162,7 +162,7 @@ compose_mat_prompt() {
   # 9. Per-soul persistent memories (optional — warn-and-skip if absent).
   append_section "$COMPOSED_FILE" "PERSISTENT MEMORY — michael" "${MEMORY_DIR}/michael/MEMORY.md"
   append_section "$COMPOSED_FILE" "PERSISTENT MEMORY — avi"     "${MEMORY_DIR}/avi/MEMORY.md"
-  append_section "$COMPOSED_FILE" "PERSISTENT MEMORY — tzali"   "${MEMORY_DIR}/tzali/MEMORY.md"
+  append_section "$COMPOSED_FILE" "PERSISTENT MEMORY — zali"   "${MEMORY_DIR}/zali/MEMORY.md"
 
   # 10. Runtime orientation — MAT-aware, Codex side.
   {

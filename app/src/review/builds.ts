@@ -22,13 +22,14 @@ import type { TimelineEntry } from "../foreman-messages/timeline.js";
 import { shipState, type ShipState } from "../foreman-messages/ship.js";
 import { runGroupKey, type BuildSummary } from "./ledger.js";
 import { isOpen, type Track, type TrackStep } from "./tracks.js";
+import { canonicalAgentId } from "../agent-rename.js";
 import type { ReviewItem } from "./types.js";
 
 export type SectionKey = "needs_you" | "ready" | "moving" | "stuck" | "queued" | "closed_week";
 export const SECTION_ORDER: readonly SectionKey[] = ["needs_you", "ready", "moving", "stuck", "queued", "closed_week"];
 
 export type Kicker = "your-step" | "question" | "in-review" | "ship" | "shipping" | "rolled-back" | "now" | "started" | "built" | "stuck" | "queued" | "closed";
-export type Agent = "michael" | "tzali" | "avi" | "foreman";
+export type Agent = "michael" | "zali" | "avi" | "foreman";
 
 export interface CardRun {
   build: string;
@@ -140,7 +141,7 @@ const QUIET_MS = 3 * DAY; // the review desk's STALE_MS — "old" means the same
 const WEEK = 7 * DAY;
 const FINISHED = new Set(["done", "shipped"]);
 const TROUBLE = new Set(["failed", "abandoned", "stalled"]);
-const AGENTS = new Set<Agent>(["michael", "tzali", "avi", "foreman"]);
+const AGENTS = new Set<Agent>(["michael", "zali", "avi", "foreman"]);
 
 // ── runs → groups ───────────────────────────────────────────────────────
 
@@ -453,7 +454,7 @@ function baseCard(id: string, track: Track | null, runs: BuildSummary[], trackId
   const lastCounted = counted[counted.length - 1] ?? null;
   const closedRec = lastCounted ? [...recordsOf(input.timelines.get(lastCounted.id))].reverse().find((r) => r.kind === "closed") ?? null : null;
   const lead = lastCounted ?? runs[runs.length - 1] ?? null;
-  const agent = lead?.agent?.toLowerCase() as Agent | undefined;
+  const agent = lead?.agent ? (canonicalAgentId(lead.agent.toLowerCase()) as Agent) : undefined;
   // Age runs from the first run that counts: a launch that never happened doesn't make the job older.
   const firstRun = (counted[0] ?? runs[0])?.created ?? null;
   const opened = track && track.source !== "build" ? [new Date(track.created), ...(firstRun ? [firstRun] : [])].reduce((m, d) => (d < m ? d : m)) : firstRun ?? new Date(track?.created ?? input.now);

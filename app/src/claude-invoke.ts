@@ -539,13 +539,13 @@ function configuredTurnCeilingSeconds(botName: string): number {
 // than only on the rare SIGTERM line. Reads process.env at module load — if
 // the env file changes, restart the gateway.
 (function logTurnCeilings() {
-  const bots = ["michael", "tzali", "avi", "miriam"];
+  const bots = ["michael", "zali", "avi", "miriam"];
   const resolved = bots.map((b) => `${b}=${configuredTurnCeilingSeconds(b)}s`).join(" ");
   console.log(`[claude-invoke] turn-ceilings (default=${DEFAULT_TURN_CEILING_SECONDS}s): ${resolved}`);
 })();
 
 (function logBudgetCeilings() {
-  const bots = ["michael", "tzali", "avi", "miriam"];
+  const bots = ["michael", "zali", "avi", "miriam"];
   const resolved = bots.map((b) => `${b}=$${configuredBudgetUsd(b).toFixed(2)}`).join(" ");
   console.log(`[claude-invoke] budget-ceilings (default=$${DEFAULT_BUDGET_USD.toFixed(2)}): ${resolved}`);
 })();
@@ -567,12 +567,12 @@ const RETRIEVAL_ENABLED = process.env.GATEWAY_RETRIEVAL_ENABLED === "true";
 // interactive gateway turns: Agent children
 // are separately metered and bypass both the parent --max-budget-usd ceiling
 // and this gateway's spawn semaphore. Foreman remains the supervised path for
-// delegated/fan-out work. Tzali keeps Agent for explicitly assigned builds.
+// delegated/fan-out work. Zali keeps Agent for explicitly assigned builds.
 // Lookup is by `botName` lowercase; unknown bots get Michael's conservative
 // set rather than inheriting recursive delegation.
 const PER_BOT_ALLOWED_TOOLS: Record<string, string[]> = {
   michael:  ["Read", "Write", "Edit", "Glob", "Grep", "Bash", "WebFetch", "WebSearch",          "Skill", "TodoWrite"],
-  tzali:    ["Read", "Write", "Edit", "Glob", "Grep", "Bash", "WebFetch", "WebSearch", "Agent", "Skill", "TodoWrite"],
+  zali:    ["Read", "Write", "Edit", "Glob", "Grep", "Bash", "WebFetch", "WebSearch", "Agent", "Skill", "TodoWrite"],
   avi:      ["Read", "Write",         "Glob", "Grep",         "WebFetch", "WebSearch",          "Skill", "TodoWrite"],
   miriam:   ["Read", "Write",         "Glob", "Grep", "Bash", "WebFetch", "WebSearch",          "Skill", "TodoWrite"],
 };
@@ -581,7 +581,7 @@ function allowedToolsFor(botName: string): string {
   const key = botName.toLowerCase();
   const list = PER_BOT_ALLOWED_TOOLS[key];
   if (!list) {
-    console.warn(`[claude-invoke] No allowlist for bot=${botName} — falling back to Michael/Tzali set`);
+    console.warn(`[claude-invoke] No allowlist for bot=${botName} — falling back to Michael/Zali set`);
     return PER_BOT_ALLOWED_TOOLS.michael.join(",");
   }
   return list.join(",");
@@ -601,7 +601,7 @@ function allowedToolsFor(botName: string): string {
 const HEAVY_SKILLS = ["avi-video-pipeline", "video-prompt-builder", "youtube-lessons"] as const;
 const PER_BOT_ALLOWED_SKILLS: Record<string, ReadonlyArray<string>> = {
   michael: ["youtube-lessons"],
-  tzali:   [],
+  zali:   [],
   avi:     ["avi-video-pipeline", "video-prompt-builder"],
   miriam:  [],
 };

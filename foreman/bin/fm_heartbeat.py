@@ -2,7 +2,7 @@
 """fm_heartbeat — what the heartbeat owes each open build, decided in one place.
 
 The rule: whenever a build is started, something keeps working in the
-background to wake the supervisor, the builder (Tzali, Avi), or whoever needs
+background to wake the supervisor, the builder (Zali, Avi), or whoever needs
 waking, until the build is completed.
 
 The heartbeat used to be a dead-session detector: it noticed a dark build and

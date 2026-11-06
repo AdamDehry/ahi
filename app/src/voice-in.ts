@@ -9,7 +9,7 @@ export interface TranscriptionResult {
 
 let openaiClient: OpenAI | null = null;
 
-const AHI_VOCAB = "Conversation between a person and their AHI agents. Proper nouns that may appear: Michael, Tzali, Avi, Miriam, AHI.";
+const AHI_VOCAB = "Conversation between a person and their AHI agents. Proper nouns that may appear: Michael, Zali, Avi, Miriam, AHI.";
 
 function getClient(): OpenAI {
   if (!openaiClient) {

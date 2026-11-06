@@ -23,7 +23,7 @@ import { gatewayStateRoot } from "./multi-user-paths.js";
  *
  * Storage format (`<state root>/polling-offset.json`, i.e.
  * `~/ai/state/polling-offset.json` unless AHI_GATEWAY_STATE_DIR moves it):
- *   { "michael": 12345, "tzali": 12346, ... }
+ *   { "michael": 12345, "zali": 12346, ... }
  */
 
 // Read-modify-write of one shared file: two gateways sharing it would stomp

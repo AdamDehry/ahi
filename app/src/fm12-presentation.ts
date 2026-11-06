@@ -136,7 +136,7 @@ export const FM12_CONTENT_RAILS: ReadonlyArray<{ id: string; re: RegExp; note: s
   },
   {
     id: "internal-agent-name",
-    re: /\b(?:(?:[Aa]gent|[Ee]xecutor|[Ss]ubagent|[Ff]oreman)\s+(?:(?:called|named)\s+)?[A-Z][a-z]+|Tzali|Miriam)\b/,
+    re: /\b(?:(?:[Aa]gent|[Ee]xecutor|[Ss]ubagent|[Ff]oreman)\s+(?:(?:called|named)\s+)?[A-Z][a-z]+|Zali|Miriam)\b/,
     note: "internal agent or session persona name",
   },
   { id: "marker-token", re: /\b[A-Z][A-Z0-9]+(?:[-_][A-Z0-9]+)+\b/, note: "internal marker or screaming-caps token" },

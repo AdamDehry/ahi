@@ -8,7 +8,7 @@ Status: DRAFT. These are implementation markers, not completed work.
 - TODO(MAT-launcher): Add `mat` as a valid agent.
 - TODO(MAT-launcher): Add `compose_mat_prompt` and keep existing single-agent composition unchanged.
 - TODO(MAT-launcher): Reuse `append_section`.
-- TODO(MAT-launcher): Include Michael, Avi, Tzali, shared AHI core, and `$AHI_HOME/agents/MAT-COLLABORATION-PROTOCOL.md`.
+- TODO(MAT-launcher): Include Michael, Avi, Zali, shared AHI core, and `$AHI_HOME/agents/MAT-COLLABORATION-PROTOCOL.md`.
 - TODO(MAT-launcher): Confirm `launch-as.sh mat --dry-run` and an existing single-agent dry run both work.
 
 ## Handoff And Worktrees

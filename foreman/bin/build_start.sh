@@ -27,7 +27,7 @@
 #               because an unrecognised value is DROPPED SILENTLY, not rejected.
 #               NEVER use interactive /effort in build sessions — it saves as the
 #               GLOBAL default (sticky). Effort is per session, via -e.
-#   agent:   tzali | avi  (identity the session is addressed to)
+#   agent:   zali | avi  (identity the session is addressed to)
 #   name:    short kebab-case build name
 #   workdir: absolute path; created if missing (use a git worktree for repo work)
 # Prints: BUILD_ID=<id> and, for claude, the claude.ai session URL when Remote

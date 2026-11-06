@@ -7,7 +7,7 @@
 | Agent | Role | Status | Current Assignment |
 |---|---|---|---|
 | Michael | Coordination / strategy | AVAILABLE | |
-| Tzali | Engineering / implementation | AVAILABLE | |
+| Zali | Engineering / implementation | AVAILABLE | |
 | Avi | Design / product feel | AVAILABLE | |
 
 ## Capabilities Quick Reference
@@ -15,7 +15,7 @@
 | Agent | Best For |
 |---|---|
 | Michael | Priorities, plans, handoffs, operations |
-| Tzali | Code, infrastructure, debugging, verification |
+| Zali | Code, infrastructure, debugging, verification |
 | Avi | UX, design critique, visual systems, creative direction |
 
 ## Delegation Package Template

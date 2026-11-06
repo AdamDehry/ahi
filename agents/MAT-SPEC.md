@@ -6,14 +6,14 @@
 ## 1. The Philosophy (why three, not sixty)
 The right number of agents for a task = the number of genuinely distinct ROLES it needs. Almost everything decomposes into three:
 - **Michael** — orchestrate / operations / project-management / codebase + process understanding / synthesis. *Leads when the question is "what, why, in what order, and is it operable."*
-- **Tzali** — build / engineering / implementation / deploy. *Leads when the question is "make it work."*
+- **Zali** — build / engineering / implementation / deploy. *Leads when the question is "make it work."*
 - **Avi** — design / UX / marketing / advertising / the felt experience. *Leads when the question is "is it beautiful, clear, and does it land."*
 
 MAT is **one orchestrating intelligence that holds all three lenses at once** and *summons* genuine multi-perspective collaboration (cross-runtime, cross-lens) ONLY when a task benefits from the cross-check. Adaptive, not always-parallel. (Three voices negotiating *every* step reintroduces the very coordination overhead that makes swarms gimmicky.)
 
 ## 2. What gets built
 ### (a) MAT composite identity
-A launchable mode (e.g. `launch-as.sh mat`) that composes into ONE system prompt: the three souls (`$AHI_HOME/agents/soul/MICHAEL.md`, `AVI.md`, `TZALI.md`) + AHI Foundation/Core + **this collaboration protocol**. The agent embodies all three lenses, self-orchestrates between them, and names which lens is "leading" when useful.
+A launchable mode (e.g. `launch-as.sh mat`) that composes into ONE system prompt: the three souls (`$AHI_HOME/agents/soul/MICHAEL.md`, `AVI.md`, `ZALI.md`) + AHI Foundation/Core + **this collaboration protocol**. The agent embodies all three lenses, self-orchestrates between them, and names which lens is "leading" when useful.
 
 ### (b) MAT collaboration protocol (cross-runtime)
 When a task spans both runtimes, BOTH run MAT, in **separate git worktrees on the shared VPS filesystem**, coordinating through ONE shared handoff file: **`MAT-HANDOFF.md`** in the project root.
@@ -47,4 +47,4 @@ Throughout every phase, the working agent **consults the Michael lens** (does th
 - Day-to-day use is "Hey MAT" simple.
 
 ## 5. Validation (separate experiment, after MAT exists)
-5-way output comparison on one simple throwaway build: (1) Tzali/Claude, (2) Tzali/Codex, (3) Tzali+Michael+Avi/Claude, (4) Tzali+Michael+Avi/Codex, (5) MAT (Claude+Codex in conjunction). Michael judges all five.
+5-way output comparison on one simple throwaway build: (1) Zali/Claude, (2) Zali/Codex, (3) Zali+Michael+Avi/Claude, (4) Zali+Michael+Avi/Codex, (5) MAT (Claude+Codex in conjunction). Michael judges all five.

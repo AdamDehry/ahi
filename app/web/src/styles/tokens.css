@@ -104,7 +104,7 @@
      tint (avatar bg = color-mix(agent 15%, transparent)). ------------------- */
   --agent-michael: #5F739E;   /* slate-steel   (was #4f6fce) */
   --agent-miriam:  #B87878;   /* rose clay     (was #c27878) */
-  --agent-tzali:   #4E8E9C;   /* petrol        (was #22b8d9) */
+  --agent-zali:   #4E8E9C;   /* petrol        (was #22b8d9) */
   --agent-avi:     #8F94A0;   /* bone-silver   (was #bfc4d4) */
   --agent-sage:     #7C8F6E;   /* ledger moss   (pricing desk — 9C) */
 }
@@ -149,13 +149,13 @@
   /* Agent hues, lifted one step for ink ground */
   --agent-michael: #7A8DB5;
   --agent-miriam:  #CC9191;
-  --agent-tzali:   #6BA7B4;
+  --agent-zali:   #6BA7B4;
   --agent-avi:     #A6ABB6;
   --agent-sage:     #97AB88;
 }
 
 /* ============================================================================
-   SEMANTIC RECIPES (how the tokens combine — reference for Tzali)
+   SEMANTIC RECIPES (how the tokens combine — reference for Zali)
    ----------------------------------------------------------------------------
    Chat surface
    • Thread bg:        background: var(--bg-wash)
@@ -199,7 +199,7 @@
    ========================================================================== */
 
 /* ============================================================================
-   SKELETON STRUCTURAL ADDITIONS (Tzali) — not brand values. Only tokens the
+   SKELETON STRUCTURAL ADDITIONS (Zali) — not brand values. Only tokens the
    app needs that the design system doesn't define. Everything else above is
    Avi's file VERBATIM — replace-on-drop stays true: a new Avi tokens.css can
    overwrite everything above this block.

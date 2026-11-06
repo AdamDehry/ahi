@@ -25,7 +25,7 @@ test('install makes the owner key once, keeps it private, tailors the souls and 
   assert.match(first.token, /^[0-9a-f]{64}$/);
   const users = JSON.parse(await fs.readFile(first.usersFile, 'utf8'));
   assert.equal(users.length, 1);
-  assert.deepEqual({ name: users[0].name, admin: users[0].admin, agents: users[0].agents, jewishCalendar: users[0].jewishCalendar, timezone: users[0].timezone }, { name: 'Dana', admin: true, agents: ['michael', 'tzali', 'avi', 'miriam'], jewishCalendar: false, timezone: 'Europe/London' });
+  assert.deepEqual({ name: users[0].name, admin: users[0].admin, agents: users[0].agents, jewishCalendar: users[0].jewishCalendar, timezone: users[0].timezone }, { name: 'Dana', admin: true, agents: ['michael', 'zali', 'avi', 'miriam'], jewishCalendar: false, timezone: 'Europe/London' });
   if (process.platform !== 'win32') assert.equal((await fs.stat(first.usersFile)).mode & 0o077, 0);
   assert.equal(await fs.readFile(path.join(managed, 'agents', 'soul', 'MICHAEL.md'), 'utf8'), `# Michael\n- **Dana** — your human\n- Mission control: \`${managed}/mission-control/\`\n`);
   assert.equal(await fs.readFile(path.join(managed, 'mission-control', 'AHI_NESHAMA.md'), 'utf8'), 'Learning with Dana.\n');
@@ -110,7 +110,7 @@ test('voice keys go only to the server, with the voice turned on when it can bot
   svc.state = { voice: { elevenlabs: { storage: 'keychain', reference: 'setup-1:elevenlabs', status: 'key-verified' } } };
   svc.keyring = { get: async () => 'el-test-0000000000' };
   const speakOnly = await svc.voiceEnv();
-  assert.equal(speakOnly.TZALI_TTS_PROVIDER, 'elevenlabs');
+  assert.equal(speakOnly.ZALI_TTS_PROVIDER, 'elevenlabs');
   assert.equal(speakOnly.VOICE_STT_PROVIDER, undefined);
   assert.equal(speakOnly.VOICE_MODE_ENABLED, undefined);
   // An unreadable key is skipped, never thrown.
