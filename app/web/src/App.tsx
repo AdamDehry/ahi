@@ -33,7 +33,7 @@ import ScheduleHost from "./components/schedule/ScheduleModal";
 import { DesktopShell, PhoneShell } from "./redesign/Shell";
 import RedesignBody from "./redesign/Body";
 import ChatHeader from "./redesign/ChatHeader";
-import { startHistorySync } from "./redesign/history";
+import { phoneChatOpen, startHistorySync } from "./redesign/history";
 import { isHashRoute } from "./redesign/nav";
 
 /**
@@ -169,8 +169,9 @@ function MobileApp() {
   return (
     <PhoneShell menuOpen={menuOpen} setMenuOpen={setMenuOpen}>
     <div className="mobile-shell">
-      {/* The attention bar sits above every screen, pushed ones included. */}
-      <AttentionBar mobile />
+      {/* The attention bar sits above every screen, pushed ones included — except an open
+          conversation, which owns the whole screen: banners never cover a chat. */}
+      {!phoneChatOpen(state) && <AttentionBar mobile />}
       {/* Root screen — agent list or tool page (one context at a time). */}
       <div className={`mobile-screen root${pushed ? " under" : ""}`} {...(pushed ? {} : handlers)}>
         {/* The redesign's phone chrome (top bar + dock + full menu) replaces the old root topbar. */}

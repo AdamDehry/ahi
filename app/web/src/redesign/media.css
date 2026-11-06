@@ -13,7 +13,15 @@
   font-family: var(--font-ui); font-size: 10px; letter-spacing: .12em; color: var(--text-mute);
 }
 .rd-messages .vn-dur, .rd-app.phone .vn-dur { letter-spacing: 0; font-size: 11px; }
-.rd-messages .agent-run .voice-note, .rd-app.phone .agent-run .voice-note { border: 1px solid var(--line); border-radius: 999px; padding: 8px 18px; }
+/* A voice note is just the floating player (play, wave, time, the speed slot) with Transcript
+   under it — no outline around the whole note. His own note is the SAME player at the same width, right-aligned:
+   no bubble around it, so there is no squeezed bar and no dead space. */
+.rd-messages .bubble-user.has-voice, .rd-app.phone .bubble-user.has-voice { width: min(400px, 100%); max-width: none; padding: 0; border: 0; background: none; box-shadow: none; }
+.rd-app.phone .bubble-user.has-voice { width: var(--vn-mobile-max); }
+.rd-messages .bubble-user .voice-note, .rd-app.phone .bubble-user .voice-note { --voice-note-max: 100%; }
+.rd-messages .bubble-user .vn-bar, .rd-app.phone .bubble-user .vn-bar {
+  height: var(--vn-pill-h); padding: 0 var(--sp-3h); background: var(--surface); border: var(--hairline) solid var(--line); border-radius: var(--radius-chip);
+}
 
 /* Context menu: a small raised card */
 .context-menu.dropdown-panel { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 18px 44px rgba(0, 0, 0, .35); padding: 5px; }
@@ -33,19 +41,8 @@
 .media-panel.is-page .mp-tabs { order: 0; background: var(--surface); border-radius: 12px; }
 .media-panel.is-page .mp-tab { font-size: 12px; font-weight: 400; min-height: 36px; padding: 8px 13px; border-radius: 8px; letter-spacing: 0; }
 .media-panel.is-page .mp-body { padding: 18px 0 0; overflow: visible; }
-.media-panel.is-page .mp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 18px; }
-.mp-card { display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: var(--surface); }
-.mp-card .mp-tile { width: 100%; aspect-ratio: 4 / 3; border-radius: 0; }
-.mp-card .mp-tile img { width: 100%; height: 100%; object-fit: cover; }
-.mp-card-text { display: grid; gap: 6px; padding: 14px 14px 10px; }
-.mp-card-text .mp-row-name { font-size: 13px; color: var(--text); }
-.mp-card-text .mp-row-meta { font-size: 10.5px; color: var(--text-mute); }
-.mp-card-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 0 10px 10px; }
-.mp-card-btn { display: grid; place-items: center; min-height: 36px; border: 1px solid var(--line); border-radius: 8px; font-size: 11.5px; color: var(--text); text-decoration: none; }
-.mp-card-btn:hover { background: var(--raised); }
 .media-panel.is-page .mp-row { border: 1px solid var(--line); border-radius: 12px; background: var(--surface); margin-bottom: 10px; }
 .rd-app.phone .media-panel.is-page { position: absolute; inset: 0; padding: 0 16px 24px; z-index: 5; }
-.rd-app.phone .media-panel.is-page .mp-grid { grid-template-columns: 1fr; }
 .media-panel.is-page .mp-grabber { display: none; }
 .rd-app.phone .mobile-screen:has(.media-panel.is-page) .scroll-bottom-fab { display: none; }
 
@@ -81,13 +78,10 @@
   .mp-summary { font-size: 9px; }
   .mp-summary small { display: none; }
 }
-.media-panel.is-page .mp-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
-@media (max-width: 1100px) { .rd-app:not(.phone) .media-panel.is-page .mp-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
-.rd-app.phone .media-panel.is-page .mp-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-.media-panel.is-page .mp-card-text { padding: 11px 11px 8px; gap: 4px; }
-.media-panel.is-page .mp-card-text .mp-row-name { font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.media-panel.is-page .mp-card-text .mp-row-meta { font-size: 10px; }
-.media-panel.is-page .mp-card-actions { padding: 0 8px 8px; }
-.media-panel.is-page .mp-card-btn { min-height: 32px; font-size: 10.5px; }
-/* Card buttons keep their words on one line however narrow the card. */
-.media-panel.is-page .mp-card-btn { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 6px; }
+/* Media = a thumbnail grid: square tiles, the picture itself, a tap opens the viewer. The body
+   never shrinks to the page (it squeezed the old cards' images to 0px on a phone); the page scrolls instead. */
+.media-panel.is-page .mp-body { flex: none; }
+.media-panel.is-page .mp-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px; border-radius: 12px; }
+.rd-app.phone .media-panel.is-page .mp-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 3px; }
+.media-panel.is-page .mp-tile { width: 100%; aspect-ratio: 1; border-radius: 4px; cursor: zoom-in; }
+.media-panel.is-page .mp-tile img { object-position: top; }

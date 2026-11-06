@@ -17,6 +17,7 @@ import { Icon } from "./icons";
 import GlobalSearch from "./Search";
 import BellInbox, { bellCount, useBellSources } from "./Bell";
 import { playTone } from "../lib/tones";
+import { phoneChatOpen } from "./history";
 
 /** Shortcuts per platform — ⌘J / ⌘K on a Mac (and iPad), Ctrl J / Ctrl K on Windows and Linux. */
 const IS_MAC = (() => {
@@ -388,8 +389,9 @@ export function PhoneShell({ children, menuOpen, setMenuOpen }: { children: Reac
   const s = useAppState();
   const admin = !!s.user?.admin;
   const page = currentPage(s.view, s.settingsOpen);
+  const chat = phoneChatOpen(s) && !menuOpen;
   return (
-    <div className={`rd-app phone${menuOpen ? " menu-open" : ""}`} data-page={page}>
+    <div className={`rd-app phone${menuOpen ? " menu-open" : ""}${chat ? " chat-open" : ""}`} data-page={page}>
       <header className="rd-top">
         <button type="button" className="rd-brand" aria-label="AHI home" onClick={() => (setMenuOpen(false), goPage("home"))}>
           ahi<span className="rd-brand-dot">.</span>

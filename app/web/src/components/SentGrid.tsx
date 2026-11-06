@@ -3,6 +3,7 @@ import type { MediaRef } from "../lib/types";
 import { IconFiles } from "./icons";
 import ExpandedMedia from "./ExpandedMedia";
 import AudioFile from "./AudioFile";
+import { formatSize, mediaUrl, sharpenOnLoad, thumbSrc } from "../lib/mediaFormat";
 import VideoFile from "./VideoFile";
 
 /* ============================================================
@@ -11,27 +12,21 @@ import VideoFile from "./VideoFile";
    Cargo that has been SENT. Layout is decided by count, not by a generic
    flow, because the lock specifies each case:
 
-     1     natural aspect, capped at 296
+     1     natural aspect, capped at 296 (a taller image: its top, cropped)
      2     equal pair
      3     wide over two
      4     2×2
      5–10  2×2 with the 4th tile scrimmed + a mono +N
 
    3px inset, 2px gutters, tile radius 11 outer / 3 inner, tiles never
-   below 44px.
+   below 44px. Tiles are fixed boxes: a tall page shows its top,
+   sharp, never a full-length strip — the viewer has the whole thing.
 
    4F (mixed): images collage first, then full-width doc rows, then the
    caption last in body type — so the words never arrive detached from the
    cargo they were sent with.
    ============================================================ */
 
-function mediaUrl(id: string): string {
-  return `/ui/media/${encodeURIComponent(id)}`;
-}
-
-function imageSrc(m: MediaRef): string {
-  return m.thumbnail ? `${mediaUrl(m.id)}/thumb` : mediaUrl(m.id);
-}
 
 /** Grid shape token for CSS. 5–10 all share the 2×2 + overflow treatment. */
 function layoutFor(count: number): string {
@@ -70,7 +65,7 @@ const SentGrid = memo(function SentGrid({ items }: { items: MediaRef[] }) {
                 onClick={() => setExpandedAt(images.indexOf(m))}
                 aria-label={m.originalName}
               >
-                <img src={imageSrc(m)} alt={m.originalName} loading="lazy" />
+                <img src={thumbSrc(m)} alt={m.originalName} loading="lazy" onLoad={(e) => sharpenOnLoad(e, m.id)} />
                 {isOverflowTile && <span className="sent-overflow mono-label">+{overflow}</span>}
               </button>
             );
@@ -108,11 +103,5 @@ const SentGrid = memo(function SentGrid({ items }: { items: MediaRef[] }) {
     </div>
   );
 });
-
-function formatSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
 
 export default SentGrid;

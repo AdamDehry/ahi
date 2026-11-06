@@ -116,7 +116,8 @@
 .rd-picker-head .rd-eyebrow { margin: 0; }
 .rd-app.phone .agent-list.mobile .agent-avatar { border-radius: 50%; }
 .rd-chat-header.phone .rd-avatar { display: none; }
-.rd-chat-header.phone > .rd-chat-control:first-child { border: 1px solid var(--line); background: var(--surface); }
+/* Back: small and bare at the top-left, WhatsApp-style; 36px stays the tap target. */
+.rd-chat-header.phone .rd-chat-back { width: 32px; margin-left: -4px; color: var(--text); }
 .rd-app.phone .day-divider { font-size: 9px; letter-spacing: .16em; color: var(--text-mute); padding-top: 16px; }
 
 /* Working folder control (slice 10) */

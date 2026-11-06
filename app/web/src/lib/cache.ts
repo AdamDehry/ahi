@@ -90,3 +90,22 @@ export function saveSnapshot(nextState: PersistableState): void {
     }
   }, DEBOUNCE_MS);
 }
+
+/** A small list of strings kept in localStorage (seen / dismissed keys). Storage that refuses
+ *  (private mode, a blocked context) reads as empty and drops the write — the caller keeps it in memory. */
+export function readStoredList(key: string): string[] {
+  try {
+    const v: unknown = JSON.parse(localStorage.getItem(key) ?? "[]");
+    return Array.isArray(v) ? v.filter((k): k is string => typeof k === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
+export function writeStoredList(key: string, list: string[], cap: number): void {
+  try {
+    localStorage.setItem(key, JSON.stringify(list.slice(-cap)));
+  } catch {
+    // refused: memory only for this session
+  }
+}

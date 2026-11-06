@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { actions, availableBots, useAppState } from "../store";
 import { BOT_LABELS, type MediaRef } from "../lib/types";
 import { fetchPanelPage, asMediaRef, shortDate, showInChat, type PanelItem, type PanelTab } from "../lib/mediaPanel";
-import { downloadUrl, formatDuration, formatSize, mediaUrl } from "../lib/mediaFormat";
+import { downloadUrl, formatDuration, formatSize, mediaUrl, sharpenOnLoad, thumbSrc } from "../lib/mediaFormat";
 import { showToast } from "../lib/toast";
 import ExpandedMedia from "./ExpandedMedia";
 import AudioFile from "./AudioFile";
@@ -44,8 +44,9 @@ const fresh = (): TabState => ({ items: [], cursor: null, done: false, loading: 
 
 /**
  * `page` (redesign, FINAL Gallery): the panel fills the Messages workspace —
- * Back to chat, a title, tabs, the agent scope — and media show as cards with
- * Save and Go to message. Without it the panel renders exactly as before.
+ * Back to chat, a title, tabs, the agent scope. Media is a thumbnail grid:
+ * a tap opens the viewer, which swipes through the gallery and
+ * has Save and Show in chat. Files and Links stay lists.
  */
 export default function MediaPanel({ bot, mobile, page = false }: { bot: string; mobile: boolean; page?: boolean }) {
   const { user } = useAppState();
@@ -198,10 +199,17 @@ export default function MediaPanel({ bot, mobile, page = false }: { bot: string;
 
         {page && (
           <div className="mp-summary" aria-live="polite">
+            {/* Never "0 items" while the first page is still on its way. */}
             <span>
-              {current.items.length} {current.items.length === 1 ? "item" : "items"}
-              {current.done ? "" : " so far"}
-              {allAgents ? " across your team" : ` with ${BOT_LABELS[scope] ?? scope}`}
+              {!current.items.length && !current.done ? (
+                "Loading…"
+              ) : (
+                <>
+                  {current.items.length} {current.items.length === 1 ? "item" : "items"}
+                  {current.done ? "" : " so far"}
+                  {allAgents ? " across your team" : ` with ${BOT_LABELS[scope] ?? scope}`}
+                </>
+              )}
             </span>
             <small>In your conversations</small>
           </div>
@@ -209,31 +217,9 @@ export default function MediaPanel({ bot, mobile, page = false }: { bot: string;
         <div className="mp-body" role="tabpanel" data-tab={tab}>
           {tab === "media" && current.items.length > 0 && (
             <div className="mp-grid">
-              {current.items.map((item, i) =>
-                page ? (
-                  <div className="mp-card" key={item.key}>
-                    <MediaTile item={item} onOpen={() => setViewerAt(i)} />
-                    <div className="mp-card-text">
-                      <span className="mp-row-name">{item.media?.originalName}</span>
-                      <span className="mp-row-meta">{who(item, allAgents)}</span>
-                    </div>
-                    <div className="mp-card-actions">
-                      {item.media && (
-                        <a className="mp-card-btn" href={downloadUrl(item.media.id)} download={item.media.originalName}>
-                          Save
-                        </a>
-                      )}
-                      {item.messageId && (
-                        <button type="button" className="mp-card-btn" onClick={() => void reveal(item)}>
-                          Go to message
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                ) : (
-                  <MediaTile key={item.key} item={item} onOpen={() => setViewerAt(i)} />
-                ),
-              )}
+              {current.items.map((item, i) => (
+                <MediaTile key={item.key} item={item} onOpen={() => setViewerAt(i)} />
+              ))}
             </div>
           )}
           {tab === "files" &&
@@ -283,10 +269,10 @@ function who(item: PanelItem, allAgents: boolean): string {
 function MediaTile({ item, onOpen }: { item: PanelItem; onOpen: () => void }) {
   const m = item.media;
   if (!m) return null;
-  const thumb = m.thumbnail ? `${mediaUrl(m.id)}/thumb` : item.kind === "image" ? mediaUrl(m.id) : null;
+  const thumb = m.thumbnail || item.kind === "image" ? thumbSrc(m) : null;
   return (
-    <button type="button" className="mp-tile" onClick={onOpen} aria-label={`${m.originalName}, from ${item.sender}`} data-key={item.key}>
-      {thumb ? <img src={thumb} alt="" loading="lazy" /> : <span className="mp-tile-blank mono-label">VIDEO</span>}
+    <button type="button" className="mp-tile" onClick={onOpen} aria-label={`${m.originalName}, from ${item.sender}`} title={m.originalName} data-key={item.key}>
+      {thumb ? <img src={thumb} alt="" loading="lazy" onLoad={item.kind === "image" ? (e) => sharpenOnLoad(e, m.id) : undefined} /> : <span className="mp-tile-blank mono-label">VIDEO</span>}
       {item.kind === "video" && (
         <span className="mp-tile-badge mono-label">
           <IconPlay />

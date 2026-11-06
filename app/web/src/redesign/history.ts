@@ -42,6 +42,18 @@ export function applyHash(hash: string): boolean {
   return true;
 }
 
+/** Phone: a conversation is open (WhatsApp-style) — it takes the whole screen; no top bar, dock or banners. */
+export function phoneChatOpen(s: ReturnType<typeof getState>): boolean {
+  return s.view === "messages" && s.mobileThreadOpen && !!s.activeBot && !s.settingsOpen;
+}
+
+/** Leave a phone conversation for the page before it (one Back); a cold open with nothing in-app behind it goes Home. */
+export function leaveChat(): void {
+  // Only entries this file pushed carry { ahi: 1 }, and each has an app page behind it.
+  if ((window.history.state as { ahi?: number } | null)?.ahi === 1) window.history.back();
+  else actions.setView("home");
+}
+
 let applying = false;
 
 /** Start syncing. Call once, after the session is known. Returns a stop function. */

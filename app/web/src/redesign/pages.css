@@ -117,7 +117,10 @@
 .rd-app.phone .rd-home-composer { margin-top: 24px; padding: 16px; }
 .rd-app.phone .rd-picker-role { display: none; }
 .rd-app.phone .rd-overview { margin-top: 36px; }
-.rd-app.phone .rd-overview-grid, .rd-app.phone .rd-today-grid { grid-template-columns: 1fr; }
+/* minmax(0, …): a bare 1fr track grows to its longest no-wrap line (a moving card's status), which
+   pushed the Home cards past the right edge. Home never scrolls sideways. */
+.rd-app.phone :is(.rd-overview-grid, .rd-today-grid, .rd-moving ul) { grid-template-columns: minmax(0, 1fr); }
+.rd-app.phone .rd-home { overflow-x: hidden; }
 .rd-app.phone .rd-today-grid { padding: 0 14px 28px; }
 .rd-app.phone .rd-focus h2 { font-size: 30px; }
 .rd-app.phone .rd-focus-foot { flex-direction: column; align-items: flex-start; }

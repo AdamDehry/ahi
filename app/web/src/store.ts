@@ -1,6 +1,6 @@
 import { codexLiveNudge } from "./lib/codexLive";
 import { useSyncExternalStore } from "react";
-import type { AttentionItem, ShipState } from "./lib/ship";
+import { dismissedKey, loadDismissed, saveDismissed, type AttentionItem, type ShipState } from "./lib/ship";
 import type { Bill, BillSettings, Clip, CostEntry, FileEntry, LocalMessage, McFile, McL2Entry, MessageEvent, ServerEvent, UserPublic } from "./lib/types";
 import { BOT_ORDER, isPrivate } from "./lib/types";
 import type { ConnectionStatus } from "./lib/ws";
@@ -185,8 +185,8 @@ export interface AppState {
   buildsNeedYou: number;
   buildsRev: number;
   /** The attention bar: what waits on him across every screen, and
-   *  the keys he dismissed this session (memory only — back on reload, and
-   *  a new occurrence has a new key). */
+   *  the keys he dismissed (kept per user on this device, so a dismissal
+   *  survives a refresh; a new occurrence has a new key). */
   attention: AttentionItem[];
   attentionDismissed: string[];
   /** The ship he is watching land: set by his Ship tap (or by opening a card
@@ -275,8 +275,17 @@ if (snap) {
     activeBot: snap.activeBot ?? null,
     drafts: snap.drafts ?? {},
     answerLinks: snap.answerLinks ?? {},
+    attentionDismissed: loadDismissed(snap.user.userId),
     hydratedFromCache: true,
   };
+}
+
+// A dismissal made in another tab of the same user lands here too (the storage event fires in the OTHER tabs).
+if (typeof window !== "undefined" && typeof window.addEventListener === "function") {
+  window.addEventListener("storage", (e) => {
+    const userId = state.user?.userId;
+    if (userId && e.key === dismissedKey(userId)) emit({ ...state, attentionDismissed: loadDismissed(userId) });
+  });
 }
 
 const listeners = new Set<() => void>();
@@ -423,7 +432,7 @@ function stampIsCurrent(stamp: AuthStamp): boolean {
 function userChange(user: UserPublic | null): Partial<AppState> {
   if ((user?.userId ?? null) === (state.user?.userId ?? null)) return {};
   authGeneration++;
-  return { bills: null, billSettings: null };
+  return { bills: null, billSettings: null, attentionDismissed: loadDismissed(user?.userId) };
 }
 
 // ── Actions ─────────────────────────────────────────────────────────
@@ -595,10 +604,14 @@ export const actions = {
     emit({ ...state, attention: items });
   },
 
-  /** "Not now" — for this session. A new occurrence (new key) comes back on its own. */
-  dismissAttention(key: string): void {
-    if (state.attentionDismissed.includes(key)) return;
-    emit({ ...state, attentionDismissed: [...state.attentionDismissed, key] });
+  /** "Not now" (the bar's ×, or seen in the bell) — remembered per user. A new occurrence (new key) comes back on its own. */
+  dismissAttention(...keys: string[]): void {
+    const fresh = keys.filter((k) => !state.attentionDismissed.includes(k));
+    if (!fresh.length) return;
+    // Merged with what is stored, so another open tab's dismissals are never written over (Codex review).
+    const attentionDismissed = [...new Set([...loadDismissed(state.user?.userId), ...state.attentionDismissed, ...fresh])];
+    saveDismissed(state.user?.userId, attentionDismissed);
+    emit({ ...state, attentionDismissed });
   },
 
   watchShip(w: { cardId: string; title: string } | null): void {

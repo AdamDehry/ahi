@@ -9,6 +9,7 @@
  * is "back" — because the server cannot speak while it is down.
  */
 import type { ConnectionStatus } from "./ws";
+import { readStoredList, writeStoredList } from "./cache";
 
 export type ShipPhase = "candidate" | "ready" | "approved" | "shipping" | "restarting" | "shipped" | "rolled_back" | "failed";
 export type RestartChoice = "wait" | "now";
@@ -63,6 +64,8 @@ interface AttentionCard {
   title: string;
   kicker: string;
   ask: string | null;
+  /** The needs_owner record that asked: one per question, so a dismissal holds until a NEW question. */
+  ask_record?: string | null;
   last_activity_at: string | null;
   opened_at: string;
   ship: ShipState | null;
@@ -81,11 +84,24 @@ export function attentionItems(needsYou: ReadonlyArray<AttentionCard>): Attentio
       const word = c.ship.phase === "failed" ? "Ship stopped" : "Rolled back";
       out.push({ key: `rb:${c.id}:${c.ship.result?.at ?? ""}`, kind: "rolled-back", cardId: c.id, title: c.title, line: `${word} — ${c.title}`, action: "See why" });
     } else if (c.kicker === "question" && c.ask) {
-      out.push({ key: `ask:${c.id}:${c.last_activity_at ?? c.opened_at}`, kind: "question", cardId: c.id, title: c.title, line: `Michael needs you — ${c.title}`, action: "Answer" });
+      // Keyed on the question itself, never last_activity_at: that moves on every runner event,
+      // which re-keyed the item and brought a dismissed bar back.
+      out.push({ key: `ask:${c.id}:${c.ask_record ?? c.ask}`, kind: "question", cardId: c.id, title: c.title, line: `Michael needs you — ${c.title}`, action: "Answer" });
     }
   }
   const rank = { ship: 0, "rolled-back": 1, question: 2 };
   return out.sort((a, b) => rank[a.kind] - rank[b.kind]);
+}
+
+/** Dismissed bar keys, per user, on this device — a dismissal survives a refresh. */
+export const dismissedKey = (userId: string) => `ahi-attn-dismissed:${userId}`;
+
+export function loadDismissed(userId: string | null | undefined): string[] {
+  return userId ? readStoredList(dismissedKey(userId)) : [];
+}
+
+export function saveDismissed(userId: string | null | undefined, keys: string[]): void {
+  if (userId) writeStoredList(dismissedKey(userId), keys, 200);
 }
 
 // ── the restart visual ─────────────────────────────────────────────────

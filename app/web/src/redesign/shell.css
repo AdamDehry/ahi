@@ -122,6 +122,13 @@
 .rd-phone-menu .rd-rail { position: absolute; inset: 0; width: auto; padding: 16px 24px 12px; }
 .rd-phone-menu .rd-nav-item { min-height: 42px; }
 
+/* An open conversation takes the whole screen (WhatsApp-style): no top bar, no dock,
+   the composer where the dock was. Every layer sized to the dock follows it through the variable. */
+:root:has(.rd-app.phone.chat-open) { --rd-dock-space: env(safe-area-inset-bottom, 0px); }
+.rd-app.phone.chat-open :is(.rd-top, .rd-dock) { display: none; }
+.rd-app.phone.chat-open .rd-canvas { top: env(safe-area-inset-top, 0px); left: 0; right: 0; border: 0; border-radius: 0; }
+:root:has(.rd-app.phone.chat-open) :is(.voice, .modal-layer) { top: env(safe-area-inset-top, 0px); }
+
 /* The existing phone screens live inside the canvas, not the viewport. */
 .rd-app.phone .mobile-shell { position: absolute; inset: 0; height: auto; border-radius: inherit; background: var(--bg); }
 .rd-app.phone .mobile-screen { background: var(--bg); }

@@ -14,19 +14,15 @@ import { BOT_LABELS } from "../lib/types";
 import { usePushPrefs } from "../lib/push";
 import { Icon, type IconName } from "./icons";
 import { goPage } from "./Shell";
+import { readStoredList, writeStoredList } from "../lib/cache";
 
 type Cat = "work" | "gmail" | "calendar";
-interface Row { key: string; cat: Cat; kicker: string; title: string; line: string; at: string | null; open: () => void; serverRead?: string }
+/** `attn`: the attention-bar key a build row stands for — seeing the row dismisses that bar, and a dismissed bar reads as seen. */
+interface Row { key: string; cat: Cat; kicker: string; title: string; line: string; at: string | null; open: () => void; serverRead?: string; attn?: string; dismissed?: boolean }
 
 const SEEN_KEY = "ahi-bell-seen";
-const readSeen = (): Set<string> => {
-  try {
-    return new Set(JSON.parse(localStorage.getItem(SEEN_KEY) ?? "[]") as string[]);
-  } catch {
-    return new Set();
-  }
-};
-const writeSeen = (s: Set<string>) => localStorage.setItem(SEEN_KEY, JSON.stringify([...s].slice(-500)));
+const readSeen = (): Set<string> => new Set(readStoredList(SEEN_KEY));
+const writeSeen = (s: Set<string>) => writeStoredList(SEEN_KEY, [...s], 500);
 
 /** The bell's rows (admin sources only), fetched once for both the dot and the open inbox (ChromeActions owns it). */
 export function useBellSources(open: boolean) {
@@ -68,7 +64,7 @@ export function useBellSources(open: boolean) {
       const p = prefs?.sources?.[src];
       return !p || (p.enabled && (!ev || p.events[ev] !== false));
     };
-    if (allow("builds", "approval")) for (const a of s.attention ?? []) out.push({ key: `att:${a.key}`, cat: "work", kicker: a.kind === "question" ? "Question" : "Builds", title: a.title, line: a.line, at: null, open: () => actions.openBuilds(a.cardId) });
+    if (allow("builds", "approval")) for (const a of s.attention ?? []) out.push({ key: `att:${a.key}`, cat: "work", kicker: a.kind === "question" ? "Question" : "Builds", title: a.title, line: a.line, at: null, open: () => actions.openBuilds(a.cardId), attn: a.key, dismissed: s.attentionDismissed.includes(a.key) });
     if (allow("review", "requests")) for (const r of review) out.push({ key: `rv:${r.id}`, cat: "work", kicker: "Review", title: r.title, line: r.cost_risk || "Ready for your look.", at: r.created, open: () => actions.openReview(r.id) });
     if (allow("calendar"))
       for (const a of sched)
@@ -79,7 +75,7 @@ export function useBellSources(open: boolean) {
       });
     if (allow("gmail")) for (const m of mail) out.push({ key: `gm:${m.account}:${m.id}`, cat: "gmail", kicker: "Gmail", title: m.subject, line: m.from, at: m.at, open: () => goPage("gmail") });
     return out;
-  }, [admin, prefs, s.attention, review, sched, mail]);
+  }, [admin, prefs, s.attention, s.attentionDismissed, review, sched, mail]);
   return { rows, prefs, refresh: () => setTick((n) => n + 1) };
 }
 
@@ -89,7 +85,7 @@ const CAT_LABEL: Record<Cat, string> = { work: "Your work", gmail: "Gmail", cale
 /** Unseen count for the bell's dot. */
 export function bellCount(rows: Row[]): number {
   const seen = readSeen();
-  return rows.filter((r) => !seen.has(r.key) && (r.cat !== "calendar" || r.serverRead)).length;
+  return rows.filter((r) => !seen.has(r.key) && !r.dismissed && (r.cat !== "calendar" || r.serverRead)).length;
 }
 
 export default function BellInbox({ rows, refresh, onClose }: { rows: Row[]; refresh: () => void; onClose: () => void }) {
@@ -97,7 +93,7 @@ export default function BellInbox({ rows, refresh, onClose }: { rows: Row[]; ref
   const [tab, setTab] = useState<"all" | "unread">("all");
   const [cat, setCat] = useState<Cat | "all">("all");
   const box = useRef<HTMLDivElement>(null);
-  const isUnread = useCallback((r: Row) => (r.cat === "calendar" ? !!r.serverRead && !seen.has(r.key) : !seen.has(r.key)), [seen]);
+  const isUnread = useCallback((r: Row) => (r.cat === "calendar" ? !!r.serverRead && !seen.has(r.key) : !seen.has(r.key) && !r.dismissed), [seen]);
   const unread = rows.filter(isUnread);
   const shown = rows.filter((r) => (cat === "all" || r.cat === cat) && (tab === "all" || isUnread(r)));
   useEffect(() => {
@@ -118,6 +114,7 @@ export default function BellInbox({ rows, refresh, onClose }: { rows: Row[]; ref
     list.forEach((r) => next.add(r.key));
     setSeen(next);
     writeSeen(next);
+    actions.dismissAttention(...list.map((r) => r.attn).filter((k): k is string => !!k));
     const ids = list.map((r) => r.serverRead).filter((x): x is string => !!x);
     if (ids.length && (await scheduleUi.markRead(ids))) refresh();
   };
