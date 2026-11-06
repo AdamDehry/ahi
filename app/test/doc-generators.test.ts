@@ -14,8 +14,8 @@ const ENV = Object.fromEntries(
   ["PATH", "PYTHONPATH", "PYTHONHOME", "VIRTUAL_ENV", "HOME", "USERPROFILE", "SystemRoot", "WINDIR", "TEMP", "TMP", "LANG"]
     .filter((k) => process.env[k] !== undefined).map((k) => [k, process.env[k]!]),
 );
-// The runs happen in a temp folder, so a relative PYTHONPATH entry must mean the same folder there.
-if (ENV.PYTHONPATH) ENV.PYTHONPATH = ENV.PYTHONPATH.split(delimiter).map((d) => (d ? resolve(d) : d)).join(delimiter);
+// The runs happen in a temp folder, so each relative or empty (= current folder) PYTHONPATH entry must mean the same folder there.
+if (ENV.PYTHONPATH) ENV.PYTHONPATH = ENV.PYTHONPATH.split(delimiter).map((d) => resolve(d)).join(delimiter);
 const py = (args: string[], opts: { cwd?: string; input?: string } = {}) => spawnSync("python3", args, { ...opts, encoding: "utf8", env: ENV });
 const hasPython = py(["--version"]).status === 0;
 const STUB = `
