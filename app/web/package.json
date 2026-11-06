@@ -1,7 +1,7 @@
 {
   "name": "ahi-web",
   "private": true,
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "AHI dashboard rebuild — fast chat skeleton (Step 2). Parallel to public/, consumes the existing gateway WS/API.",
   "type": "module",
   "scripts": {

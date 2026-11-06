@@ -46,6 +46,7 @@ The agents' souls and library live in the hidden system folder (`AHI_OS`). They'
 - AHI runs while AHI Setup is open. Close it and AHI stops; open it again and AHI starts.
 - **Staying up to date:** open **Settings → Updates**. AHI checks this project's latest release and tells you when a newer one is out. New and improved skills install with **Update skills** (anything they replace is kept in `AHI_OS/skills/_backup/`); a newer AHI itself comes as a new AHI Setup from the same release. Your folder and memory stay.
 - The agents run on Claude for now. Other providers can be connected in setup, and will be able to run agents in a later version.
+- **Supervised builds (Linux):** AHI Setup also installs the foreman, which lets Michael start, watch and close Tzali's and Avi's longer build sessions in the background. It needs `tmux`, `git` and `python3`; see `AHI_OS/foreman/README.md`. On a Mac or Windows it is not installed.
 
 ## For developers
 
@@ -55,6 +56,7 @@ app/onboarding/ AHI Setup (Electron): the installer, setup screens and the launc
 agents/         the agents' souls (copied into AHI_OS by setup)
 mission-control/ starter files for Michael's workspace
 skills/         the skills shelf: skills/<category>/<skill>/SKILL.md, plus MANIFEST.json
+foreman/        supervised build sessions (Linux; copied into AHI_OS by setup) — see foreman/README.md
 ```
 
 ### Skills

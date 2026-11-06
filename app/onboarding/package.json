@@ -148,6 +148,24 @@
     },
     "linux": {
       "syncDesktopName": true,
+      "extraResources": [
+        {
+          "from": "../../foreman",
+          "to": "ahi-seed/foreman",
+          "filter": [
+            "**/*",
+            "!builds/**",
+            "!locks/**",
+            "!state/**",
+            "!logs/**",
+            "!pending-wakes/**",
+            "!QUEUE.md",
+            "!ACTIVE-GATES.md",
+            "!*.log",
+            "!**/__pycache__/**"
+          ]
+        }
+      ],
       "target": [
         {
           "target": "AppImage",

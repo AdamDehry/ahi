@@ -127,7 +127,7 @@ class SetupService {
     await this.verifyProvider(this.state.brain);
     const config={schemaVersion:1,setupId:this.state.id,owner:this.state.owner,workspace:this.state.workspace,root:this.state.root,defaultBrain:this.state.brain,providers:this.state.providers,providerHomes:Object.fromEntries(await Promise.all(Object.keys(this.state.providers).map(async id=>[id,await this.providerHome(id)]))),voice:this.state.voice,remote:this.state.remote,pendingConnections:this.state.connections,agentHandoff:{status:'pending-runtime',brief:'Finish optional connections with the owner; keep Personal and Work separate and use the existing AHI memory system.'}};
     await atomic(path.join(await this.managed(),'setup-handoff.json'),config);
-    if(this.ahi){const made=await runtime.install({managed:await this.managed(),seed:this.ahi.seed,owner:this.state.owner});if(made.token)this.freshToken=made.token;}
+    if(this.ahi){const made=await runtime.install({managed:await this.managed(),seed:this.ahi.seed,owner:this.state.owner,serverDir:this.ahi.serverDir,port:this.ahi.port});if(made.token)this.freshToken=made.token;}
     this.state.completed=true;return this.save();
   });}
   /**

@@ -1,12 +1,14 @@
 // The AHI runtime, installed and started by AHI Setup: the step from "setup saved" to "AHI is open in your browser".
 // install() fills the hidden OS folder (<home>/AHI_OS) from the bundled seed: the agents' souls with the owner's name,
-// the neshama and foundation, mission control's templates, and empty documents / state / logs folders; it creates the
-// owner's sign-in once (a random token, shown to the owner once and never logged). start() runs the bundled AHI
-// server with every path inside that folder and waits until it answers. Nothing here leaves the machine.
+// the neshama and foundation, mission control's templates, empty documents / state / logs folders and, on Linux, the
+// foreman (supervised build sessions); it creates the owner's sign-in once (a random token, shown to the owner once
+// and never logged). start() runs the bundled AHI server with every path inside that folder and waits until it
+// answers. Nothing here leaves the machine.
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const crypto = require('node:crypto');
-const { spawn } = require('node:child_process');
+const { spawn, spawnSync } = require('node:child_process');
+const { existsSync } = require('node:fs');
 const { publicSkills } = require('./public-skills.cjs');
 
 const AGENTS = ['michael', 'tzali', 'avi', 'miriam'];
@@ -30,7 +32,7 @@ async function copyTree(from, to, transform) {
  * Fill <managed> (the hidden OS folder) from the seed. Never overwrites a file the owner or their agents changed.
  * Returns { token } the first time the owner's sign-in is made, else { token: null }.
  */
-async function install({ managed, seed, owner, timezone }) {
+async function install({ managed, seed, owner, timezone, serverDir, port, platform = process.platform }) {
   const name = String(owner || '').trim() || 'Owner';
   const tz = timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/New_York';
   // Template placeholders in the agent files. Anything the owner sets later, the agent asks for and records.
@@ -66,6 +68,11 @@ async function install({ managed, seed, owner, timezone }) {
     if ((await exists(readme)) && !(await exists(path.join(managed, 'skills', 'README.md')))) await fs.copyFile(readme, path.join(managed, 'skills', 'README.md'));
   }
   for (const dir of ['documents', 'state', 'logs', 'skills']) await fs.mkdir(path.join(managed, dir), { recursive: true, mode: 0o700 });
+  // The foreman (supervised build sessions) needs Linux with a systemd user session; elsewhere it is not installed.
+  if (platform === 'linux' && (await exists(path.join(seed, 'foreman', 'bin', 'fm_setup.sh')))) {
+    await copyTree(path.join(seed, 'foreman'), path.join(managed, 'foreman'));
+    setupForeman({ managed, serverDir, port });
+  }
 
   const usersFile = path.join(managed, 'state', 'users.json');
   if (await exists(usersFile)) return { token: null, usersFile };
@@ -75,12 +82,33 @@ async function install({ managed, seed, owner, timezone }) {
   return { token, usersFile };
 }
 
+/** The foreman's own paths. AHI_HOME is the owner's folder for the server; the foreman lives in AHI_OS. */
+function foremanEnv({ managed, serverDir, port }) {
+  return {
+    FM_AHI_HOME: managed,
+    FOREMAN_ROOT: path.join(managed, 'foreman'),
+    FM_USERS_JSON: path.join(managed, 'state', 'users.json'),
+    GATEWAY_URL: `http://127.0.0.1:${port || DEFAULT_PORT}`,
+    FOREMAN_ANSWERED_SCRIPT: path.join(managed, 'foreman', 'bin', 'build_answered.sh'),
+    ...(serverDir ? { FM_GATEWAY_DIR: serverDir } : {}),
+  };
+}
+
+/** Prepare the foreman: runtime folders, the owner's QUEUE.md and ACTIVE-GATES.md if absent. Never fatal: rerun
+ * AHI_OS/foreman/bin/fm_setup.sh by hand to see what it reports. */
+function setupForeman({ managed, serverDir, port }) {
+  spawnSync('bash', [path.join(managed, 'foreman', 'bin', 'fm_setup.sh')], {
+    env: { PATH: process.env.PATH, HOME: process.env.HOME, ...foremanEnv({ managed, serverDir, port }) },
+    stdio: 'ignore', timeout: 60000,
+  });
+}
+
 // Operating-system context the server's own child processes need (Windows cannot start programs or find its temp
 // folder without these). Copied when present; nothing else from Setup's environment is inherited.
 const OS_ENV = ['SystemRoot', 'WINDIR', 'COMSPEC', 'PATHEXT', 'TEMP', 'TMP', 'TMPDIR', 'LANG', 'LC_ALL'];
 
 /** The environment the AHI server runs with: every path inside the hidden OS folder; the brain's own sign-in home. */
-function serverEnv({ managed, root, port, claude, extra }) {
+function serverEnv({ managed, root, port, claude, extra, serverDir }) {
   return {
     ...Object.fromEntries(OS_ENV.filter((k) => process.env[k]).map((k) => [k, process.env[k]])),
     PATH: [claude?.binDir, path.dirname(process.execPath), process.env.PATH].filter(Boolean).join(path.delimiter),
@@ -99,6 +127,8 @@ function serverEnv({ managed, root, port, claude, extra }) {
     AHI_GATEWAY_LOCK_PATH: path.join(managed, 'logs', 'gateway.pid'),
     AHI_TURN_LOG_DIR: path.join(managed, 'logs'),
     ...(claude?.bin ? { AHI_CLAUDE_BIN: claude.bin } : {}),
+    ...(existsSync(path.join(managed, 'foreman', 'bin', 'lib.sh'))
+      ? { ...foremanEnv({ managed, serverDir, port }), ...(claude?.bin ? { AHI_FM_CLAUDE_BIN: claude.bin } : {}) } : {}),
     ...(extra || {}),
   };
 }
@@ -127,7 +157,7 @@ async function start({ node, serverDir, managed, root, port = DEFAULT_PORT, clau
   let child, failure = null;
   try {
     child = spawn(node, [path.join(serverDir, 'dist', 'index.js')], {
-      cwd: serverDir, env: serverEnv({ managed, root, port, claude, extra }), stdio: ['ignore', out.fd, out.fd], windowsHide: true,
+      cwd: serverDir, env: serverEnv({ managed, root, port, claude, extra, serverDir }), stdio: ['ignore', out.fd, out.fd], windowsHide: true,
     });
   } catch (e) { closeLog(); throw cannotStart(e); }
   // A missing or unlaunchable Node arrives as 'error', not as an exception: report it instead of crashing Setup.
@@ -144,4 +174,4 @@ async function start({ node, serverDir, managed, root, port = DEFAULT_PORT, clau
   throw Error('AHI did not answer within a minute. Its log is in AHI_OS/logs/ahi-server.log.');
 }
 
-module.exports = { install, start, serverEnv, homeId, AGENTS, DEFAULT_PORT };
+module.exports = { install, start, serverEnv, foremanEnv, homeId, AGENTS, DEFAULT_PORT };

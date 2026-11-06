@@ -4,7 +4,7 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const os = require('node:os');
 const http = require('node:http');
-const { install, serverEnv, start, homeId } = require('../src/ahi-runtime.cjs');
+const { install, serverEnv, foremanEnv, start, homeId } = require('../src/ahi-runtime.cjs');
 const { stagePublicSkills } = require('../src/public-skills.cjs');
 
 async function seed() {
@@ -51,6 +51,41 @@ test('the server runs with every path inside the hidden OS folder and the brain\
   assert.equal(env.AHI_GATEWAY_LOCK_PATH, os_('logs', 'gateway.pid'));
   assert.equal(env.AHI_TURN_LOG_DIR, os_('logs'));
   assert.ok(!Object.keys(env).some((k) => /API_KEY|TOKEN|SECRET/.test(k)), 'no provider secrets are passed by setup');
+});
+
+test('on Linux, install places the foreman in AHI_OS and seeds the owner\'s queue and gates; elsewhere it does not', { skip: process.platform !== 'linux' }, async (t) => {
+  const s = await seed(), managed = await fs.mkdtemp(path.join(os.tmpdir(), 'ahi-os-')), other = await fs.mkdtemp(path.join(os.tmpdir(), 'ahi-os-'));
+  t.after(() => Promise.all([s, managed, other].map((d) => fs.rm(d, { recursive: true, force: true }))));
+  await fs.cp(path.resolve(__dirname, '../../../foreman'), path.join(s, 'foreman'), { recursive: true });
+  await install({ managed, seed: s, owner: 'Dana', serverDir: '/opt/ahi-server', platform: 'linux' });
+  const fm = path.join(managed, 'foreman');
+  for (const f of ['bin/lib.sh', 'bin/fm_setup.sh', 'FOREMAN.md', 'QUEUE.md', 'ACTIVE-GATES.md']) assert.ok(await fs.stat(path.join(fm, f)), f);
+  assert.equal((await fs.stat(path.join(fm, 'bin', 'build_start.sh'))).mode & 0o100, 0o100, 'engine scripts stay runnable');
+  // An upgrade never overwrites the owner's rulings.
+  await fs.writeFile(path.join(fm, 'QUEUE.md'), 'the owner\'s queue\n');
+  await install({ managed, seed: s, owner: 'Dana', platform: 'linux' });
+  assert.equal(await fs.readFile(path.join(fm, 'QUEUE.md'), 'utf8'), 'the owner\'s queue\n');
+  await install({ managed: other, seed: s, owner: 'Dana', platform: 'darwin' });
+  await assert.rejects(fs.stat(path.join(other, 'foreman')));
+});
+
+test('the server tells the foreman where it lives only when the foreman is installed', async (t) => {
+  const managed = await fs.mkdtemp(path.join(os.tmpdir(), 'ahi-os-'));
+  t.after(() => fs.rm(managed, { recursive: true, force: true }));
+  const args = { managed, root: path.dirname(managed), port: 18790, serverDir: '/opt/ahi-server', claude: { bin: '/x/claude' } };
+  assert.ok(!Object.keys(serverEnv(args)).some((k) => k.startsWith('FM_') || k === 'FOREMAN_ROOT'));
+  await fs.mkdir(path.join(managed, 'foreman', 'bin'), { recursive: true });
+  await fs.writeFile(path.join(managed, 'foreman', 'bin', 'lib.sh'), '');
+  const env = serverEnv(args);
+  assert.equal(env.AHI_HOME, path.dirname(managed), 'the server keeps the owner\'s folder as AHI_HOME');
+  assert.equal(env.FM_AHI_HOME, managed);
+  assert.equal(env.FOREMAN_ROOT, path.join(managed, 'foreman'));
+  assert.equal(env.FM_USERS_JSON, path.join(managed, 'state', 'users.json'));
+  assert.equal(env.FM_GATEWAY_DIR, '/opt/ahi-server');
+  assert.equal(env.GATEWAY_URL, 'http://127.0.0.1:18790');
+  assert.equal(env.AHI_FM_CLAUDE_BIN, '/x/claude');
+  assert.deepEqual(Object.keys(foremanEnv({ managed })).sort(), ['FM_AHI_HOME', 'FM_USERS_JSON', 'FOREMAN_ANSWERED_SCRIPT', 'FOREMAN_ROOT', 'GATEWAY_URL']);
+  assert.ok(!Object.keys(env).some((k) => /API_KEY|TOKEN|SECRET/.test(k)), 'no secrets are passed');
 });
 
 test('voice keys go only to the server, with the voice turned on when it can both speak and hear', async (t) => {

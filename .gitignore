@@ -28,3 +28,13 @@ infra/sessions/messages/
 # Temp / scratch
 *.tmp
 *.bak
+
+# Foreman runtime state (created by foreman/bin/fm_setup.sh, never committed)
+foreman/builds/
+foreman/locks/
+foreman/state/
+foreman/logs/
+foreman/pending-wakes/
+foreman/*.log
+foreman/QUEUE.md
+foreman/ACTIVE-GATES.md
