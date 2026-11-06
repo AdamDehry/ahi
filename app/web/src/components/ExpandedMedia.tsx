@@ -48,6 +48,12 @@ export function swipeStep(dx: number, dy: number): -1 | 0 | 1 {
   return Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) ? (dx < 0 ? 1 : -1) : 0;
 }
 
+/** One step from the SHOWN position: an index past the end of a shrunk list counts as its last item. */
+export function stepIndex(index: number, d: number, count: number): number {
+  const last = count - 1;
+  return Math.min(last, Math.max(0, Math.min(index, last) + d));
+}
+
 export default function ExpandedMedia({
   items,
   startIndex,
@@ -70,7 +76,7 @@ export default function ExpandedMedia({
   // Clamped: a list that shrinks while open shows its last item instead of vanishing (Codex review).
   const at = Math.min(index, last);
   const current = items[at];
-  const step = (d: number) => setIndex((i) => Math.min(last, Math.max(0, i + d)));
+  const step = (d: number) => setIndex((i) => stepIndex(i, d, items.length));
 
   function close() {
     // Let the 160ms close run before the node leaves the tree.

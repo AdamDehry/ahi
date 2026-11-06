@@ -26,7 +26,7 @@ const mem = new Map<string, string>();
 (globalThis as Record<string, unknown>).location ??= (globalThis.window as unknown as { location: unknown }).location;
 
 const { sharpenOnLoad, thumbSrc } = await import("../web/src/lib/mediaFormat.js");
-const { swipeStep } = await import("../web/src/components/ExpandedMedia.js");
+const { stepIndex, swipeStep } = await import("../web/src/components/ExpandedMedia.js");
 const { default: MediaPanel } = await import("../web/src/components/MediaPanel.js");
 
 const css = (p: string) => readFileSync(resolve(import.meta.dirname, "../web/src", p), "utf8");
@@ -91,6 +91,14 @@ describe("(6) the viewer", () => {
     assert.equal(swipeStep(120, -10), -1);
     assert.equal(swipeStep(-40, 0), 0);
     assert.equal(swipeStep(-80, 200), 0);
+  });
+  it("after the list shrinks, Previous and Next step from the item shown, not from the old index", () => {
+    // Open on the 5th of 5, then the list drops to 2: the viewer shows the 2nd (the clamp).
+    assert.equal(stepIndex(4, -1, 2), 0, "Previous goes to the 1st, it does not stay put");
+    assert.equal(stepIndex(4, 1, 2), 1, "Next stays on the last");
+    assert.equal(stepIndex(1, -1, 3), 0);
+    assert.equal(stepIndex(0, -1, 3), 0, "never before the first");
+    assert.equal(stepIndex(2, 1, 3), 2, "never past the last");
   });
 });
 
