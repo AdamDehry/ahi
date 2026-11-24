@@ -115,6 +115,7 @@ The agents' souls and library live in the hidden system folder (`AHI_OS`). They'
 - After setup, the app *is* AHI: open it from the Start menu, the desktop or the dock and it starts quietly and opens signed in. Setup appears again only from the tray menu (**Setup…**).
 - Closing the window keeps AHI running in the tray (the menu bar on a Mac), so the browser and your phone keep working. AHI also starts when you log in; turn that off in the tray menu. **Quit AHI** in the tray menu really stops it.
 - If AHI can't start, the window says why in plain words, with **Retry**.
+- **English or Hebrew:** pick the language in **Settings → Language** (or on setup's first screen). In Hebrew the whole app reads right to left, and the agents answer in Hebrew unless you write to them in another language.
 - **Staying up to date:** open **Settings → Updates**. AHI tells you when a newer release is out. New and improved skills install with **Update skills** (anything they replace is kept in `AHI_OS/skills/_backup/`); a newer AHI itself comes as a new AHI Setup from the same release page. Your folder and memory stay.
 - The agents run on Claude for now. Other providers can be connected in setup, and will be able to run agents in a later version.
 

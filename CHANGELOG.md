@@ -1,5 +1,30 @@
 # Changelog
 
+## 0.2.5
+
+**AHI speaks Hebrew.** A new **Settings → Language** switches the whole of AHI between English and עברית at
+once, with no reload: chat, every page and setting, the sign-in, setup, and the desktop app's start screen, tray
+menu and messages. Setup's first screen offers the choice too, and starts in Hebrew when your computer's
+language is Hebrew. Your choice is saved with your account, so a new phone or browser opens in it.
+
+**Right to left, properly.** In Hebrew the menu sits on the right, back and forward arrows and the send button
+point the other way, and your messages and the agent's swap sides the way WhatsApp does. Names, numbers, links,
+code and file names keep reading left to right inside Hebrew sentences. In either language, every message
+reads in its own direction, paragraph by paragraph, and so does the message box as you type.
+
+**Agents answer in your language.** When you choose Hebrew, the agents answer in Hebrew, and switch when you
+write to them in another language. In English nothing changes.
+
+**Voice in Hebrew where your setup can.** Calls listen and speak in the language of the person calling. With an
+OpenAI key, calls understand spoken Hebrew (Cartesia's live listener hears English only). Google recognition
+listens in Hebrew. Cartesia speaks each reply in the language it is written in. Settings → Language tells you
+plainly what your voice setup can do in Hebrew; calls keep working either way.
+
+**Still in English:** some error messages that come from the server itself, remote-access pairing errors and the
+terminal sign-in prompt.
+
+**Skills.** New: rtl-language-switch (make an app switchable to Hebrew or another right-to-left language).
+
 ## 0.2.4
 
 **One app called AHI.** After setup, opening the app *is* opening AHI: it starts quietly and shows AHI in its
