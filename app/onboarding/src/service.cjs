@@ -12,8 +12,9 @@ const BRAIN='claude';
 const NEED_CLAUDE='AHI’s agents think with Claude today. Connect Claude to continue.';
 class SetupService {
   // ahi = { serverDir, seed, port }: the bundled AHI server and the hidden OS folder's seed (absent = setup handoff only).
-  constructor({dataDir,chooseFolder,openExternal,node=process.execPath,npmCli,runner=run,launchTerminal=terminal,keyring,fetcher=fetch,sandboxRoot,ahi}={}){
-    Object.assign(this,{dataDir,chooseFolder,openExternal,node,npmCli,runner,launchTerminal,keyring,fetcher,sandboxRoot,ahi});
+  // inWindow: the desktop app shows AHI in its own window (else Open AHI opens the browser).
+  constructor({dataDir,chooseFolder,openExternal,node=process.execPath,npmCli,runner=run,launchTerminal=terminal,keyring,fetcher=fetch,sandboxRoot,ahi,inWindow=false}={}){
+    Object.assign(this,{dataDir,chooseFolder,openExternal,node,npmCli,runner,launchTerminal,keyring,fetcher,sandboxRoot,ahi,inWindow});
     this.busy=new Set();
   }
   async init(){
@@ -23,7 +24,7 @@ class SetupService {
     else this.state={version:1,id:crypto.randomUUID(),step:'space',owner:'',workspace:'My AHI',root:null,selected:[],providers:{},brain:null,voice:{},remote:{stage:'later'},connections:[],completed:false};
     return this.snapshot();
   }
-  snapshot(){return structuredClone({...this.state,catalog:{providers,voices},platform:process.platform,ahiReady:!!this.ahi,ahiUrl:this.ahiUrl||null,...(this.freshToken?{token:this.freshToken}:{})});}
+  snapshot(){return structuredClone({...this.state,catalog:{providers,voices},platform:process.platform,ahiReady:!!this.ahi,ahiUrl:this.ahiUrl||null,inWindow:this.inWindow,...(this.freshToken?{token:this.freshToken}:{})});}
   async save(){const record=structuredClone(this.state);this.saveChain=(this.saveChain||Promise.resolve()).catch(()=>{}).then(()=>atomic(this.file,record));await this.saveChain;return this.snapshot();}
   async exclusive(key,fn){if(this.busy.has(key))throw Error('This operation is already running. Please wait.');this.busy.add(key);try{return await fn();}finally{this.busy.delete(key);}}
   async root(){if(!this.state.root)throw Error('Choose and prepare your AHI folder first.');const root=await realDirectory(this.state.root);const marker=JSON.parse(await fs.readFile(path.join(root,'AHI_OS','setup-owner.json'),'utf8'));if(marker.id!==this.state.id)throw Error('This AHI home belongs to a different setup.');return root;}
@@ -153,12 +154,8 @@ class SetupService {
     if(tts&&stt)env.VOICE_MODE_ENABLED='true';
     return env;
   }
-  /** Stop the AHI server this Setup started, if it is still running; resolves once it has exited. */
-  async stopAhi(){
-    const child=this.ahiChild;this.ahiChild=null;
-    if(!child||child.exitCode!==null||child.signalCode!==null)return;
-    await new Promise(done=>{child.once('exit',done);child.kill();});
-  }
+  /** Stop the AHI server this app started, if it is still running; resolves once it has exited. */
+  async stopAhi(){const child=this.ahiChild;this.ahiChild=null;await runtime.stop(child);}
   /** Start the bundled AHI server with the brain's own sign-in (Claude's provider home), then open it in the browser. */
   async openAhi(){const url=await this.ensureAhi();await this.openExternal(url);return this.snapshot();}
   /** Start the bundled AHI server (or adopt the one already running for this home); resolves to its local URL. */
@@ -178,10 +175,26 @@ class SetupService {
     // after AHI opened, remote access set up), restart it. Only a digest is kept, never the keys.
     const envId=crypto.createHash('sha256').update(JSON.stringify(extra)).digest('hex');
     if(this.ahiChild&&this.ahiEnvId!==envId)await this.stopAhi();
-    const s=await runtime.start({node:this.node,serverDir:this.ahi.serverDir,managed,root,port:this.ahi.port,claude,extra});
+    const start=()=>runtime.start({node:this.node,serverDir:this.ahi.serverDir,managed,root,port:this.ahi.port,claude,extra});
+    let s;
+    try{s=await start();}catch(e){
+      // Every failed start is on record, and one stale lock (a server killed without cleaning up) costs one retry.
+      await runtime.logLine(managed,`AHI could not start: ${e.message}`);
+      if(!await runtime.clearStaleLock(managed))throw e;
+      await runtime.logLine(managed,'Cleared a stale server lock; trying once more.');
+      try{s=await start();}catch(again){await runtime.logLine(managed,`AHI could not start: ${again.message}`);throw again;}
+    }
     if(s.child){this.ahiChild=s.child;this.ahiEnvId=envId;}this.ahiUrl=s.url;
     return s.url;
   });}
+  /** The owner's own sign-in key, read from this home's users file, so the AHI window opens signed in. Never logged,
+   * never shown, never sent anywhere but this computer's own AHI server. */
+  async ownerToken(){
+    try{const users=JSON.parse(await fs.readFile(path.join(await this.managed(),'state','users.json'),'utf8'));return users.find(u=>u.admin&&typeof u.token==='string')?.token||null;}catch{return null;}
+  }
+  /** Start AHI when the owner logs in: on unless they turned it off. */
+  get startAtLogin(){return this.state.startAtLogin!==false;}
+  async setStartAtLogin(on){this.state.startAtLogin=!!on;await this.save();}
   async invoke(method,arg){
     switch(method){
       case 'load':return this.snapshot();case 'patch':return this.patch(arg);case 'navigate':return this.navigate(arg);case 'folder':return this.prepareFolder();case 'install':return this.installTool(arg);case 'tool':return this.checkTool(arg);case 'login':return this.login(arg);case 'verify':return this.verifyProvider(arg);case 'voice':return this.saveVoice(arg);case 'complete':return this.complete();case 'open-ahi':return this.openAhi();case 'token-saved':this.freshToken=null;return this.snapshot();

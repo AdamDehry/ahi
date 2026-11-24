@@ -4,7 +4,7 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const os = require('node:os');
 const http = require('node:http');
-const { install, serverEnv, foremanEnv, start, homeId } = require('../src/ahi-runtime.cjs');
+const { install, serverEnv, foremanEnv, start, stop, homeId, clearStaleLock, lockHolderAlive } = require('../src/ahi-runtime.cjs');
 const { stagePublicSkills } = require('../src/public-skills.cjs');
 
 async function seed() {
@@ -192,4 +192,51 @@ test('a Node that cannot be launched is reported as a setup error, not a crash',
   t.after(() => fs.rm(managed, { recursive: true, force: true }));
   const probe = await fakeServer({}); const port = probe.address().port; await new Promise((r) => probe.close(r)); // a free port
   await assert.rejects(start({ node: path.join(managed, 'no-such-node'), serverDir: managed, managed, root: managed, port }), /could not start \(ENOENT\)/);
+});
+
+// A stand-in server: a Node script in <serverDir>/dist/index.js, run by the real start().
+async function stubServer(body) {
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'ahi os-')); // a space, like "My AI"
+  await fs.mkdir(path.join(dir, 'dist')); await fs.mkdir(path.join(dir, 'logs'));
+  await fs.writeFile(path.join(dir, 'dist', 'index.js'), body);
+  return dir;
+}
+const freePort = async () => { const p = await fakeServer({}); const port = p.address().port; await new Promise((r) => p.close(r)); return port; };
+
+test('the server is told where Claude\'s settings live, inside the hidden OS folder', () => {
+  assert.equal(serverEnv({ managed: '/h/My AI/AHI_OS', root: '/h/My AI' }).AHI_CLAUDE_SETTINGS, path.join('/h/My AI/AHI_OS', 'state', 'claude-settings.json'));
+});
+
+test('a server that gives up while starting is reported in plain words from its own log', async (t) => {
+  const dir = await stubServer('console.error("[singleton] ANOTHER GATEWAY RUNNING (pid=4242, ours=1), exiting"); process.exit(1);');
+  t.after(() => fs.rm(dir, { recursive: true, force: true }));
+  await assert.rejects(start({ node: process.execPath, serverDir: dir, managed: dir, root: dir, port: await freePort() }), /older copy of AHI is still running/);
+});
+
+test('stop asks the server to exit cleanly over IPC, and kills one that ignores it', async (t) => {
+  const { spawn } = require('node:child_process');
+  const polite = spawn(process.execPath, ['-e', 'process.on("message",m=>{if(m==="ahi:stop"){require("fs").writeFileSync(process.argv[1],"clean");process.exit(0);}});setInterval(()=>{},1000);', path.join(os.tmpdir(), `ahi-stop-${process.pid}`)], { stdio: ['ignore', 'ignore', 'ignore', 'ipc'] });
+  t.after(() => fs.rm(path.join(os.tmpdir(), `ahi-stop-${process.pid}`), { force: true }));
+  await stop(polite);
+  assert.equal(polite.exitCode, 0);
+  assert.equal(await fs.readFile(path.join(os.tmpdir(), `ahi-stop-${process.pid}`), 'utf8'), 'clean');
+  const stubborn = spawn(process.execPath, ['-e', 'process.on("message",()=>{});setInterval(()=>{},1000);'], { stdio: ['ignore', 'ignore', 'ignore', 'ipc'] });
+  await stop(stubborn, 300);
+  assert.ok(stubborn.signalCode || stubborn.exitCode !== null);
+});
+
+test('a lock left by a dead server is cleared; a live one is kept; on Windows a reused id that is not Node is stale', async (t) => {
+  const dir = await stubServer('');
+  t.after(() => fs.rm(dir, { recursive: true, force: true }));
+  const lock = path.join(dir, 'logs', 'gateway.pid');
+  const { spawnSync } = require('node:child_process');
+  const dead = spawnSync(process.execPath, ['-e', 'console.log(process.pid)'], { encoding: 'utf8' }).stdout.trim();
+  await fs.writeFile(lock, `${dead}\n`);
+  assert.equal(await clearStaleLock(dir), true);
+  await assert.rejects(fs.access(lock));
+  await fs.writeFile(lock, `${process.pid}\n`);
+  assert.equal(await clearStaleLock(dir), false);
+  assert.equal(await clearStaleLock(dir, { platform: 'win32', run: () => ({ status: 0, stdout: '"svchost.exe","' + process.pid + '","Services","0","9,000 K"\r\n' }) }), true);
+  assert.equal(lockHolderAlive(process.pid, { platform: 'win32', run: () => ({ status: 0, stdout: '"node.exe","1","Console","1","50,000 K"\r\n' }) }), true);
+  assert.equal(await clearStaleLock(dir), false, 'no lock left to clear');
 });

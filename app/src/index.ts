@@ -142,6 +142,9 @@ process.prependListener("SIGTERM", () => {
     console.error("[gateway] restart announcement failed (exiting anyway):", err);
   }
 });
+// AHI Setup runs this server as its child over an IPC channel and stops it with a message: on Windows a kill is
+// TerminateProcess, which skips the exit handlers above and leaves a stale lock. A stop is a quit, not a restart.
+if (process.send) process.on("message", (m) => { if (m === "ahi:stop") process.emit("SIGINT"); });
 
 // ── Crash-loop throttle ──────────────────────────────────────────────────────
 // First thing we do at startup: record the timestamp and check if we've been

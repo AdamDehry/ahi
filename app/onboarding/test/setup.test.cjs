@@ -62,3 +62,23 @@ test('a voice key saved after AHI is open restarts the AHI server this Setup sta
   assert.equal(first.exitCode,0,'the old server was stopped');assert.notEqual(s.ahiChild,first);assert.equal(starts.at(-1).OPENAI_API_KEY,'synthetic-voice-key-ONLY');
   assert.equal(JSON.stringify(s.snapshot()).includes('synthetic-voice-key-ONLY'),false);
 });
+test('a failed start is logged, and a stale lock costs exactly one retry',async t=>{
+  const runtime=require('../src/ahi-runtime.cjs'),real={start:runtime.start,clear:runtime.clearStaleLock};t.after(()=>Object.assign(runtime,{start:real.start,clearStaleLock:real.clear}));
+  const {s}=await prepared({ahi:{serverDir:'/x',seed:'/x',port:18789}});await s.verifyProvider('claude');s.state.completed=true;
+  let starts=0,stale=true;runtime.clearStaleLock=async()=>{const was=stale;stale=false;return was;};
+  runtime.start=async()=>{starts++;if(starts===1)throw Error('AHI stopped while starting.');return {url:'http://localhost:18789/',child:null};};
+  assert.equal(await s.ensureAhi(),'http://localhost:18789/');assert.equal(starts,2);
+  const log=await fs.readFile(path.join(await s.managed(),'logs','ahi-server.log'),'utf8');
+  assert.match(log,/\[desktop\] .* AHI could not start: AHI stopped while starting\./);assert.match(log,/Cleared a stale server lock/);
+  // No stale lock: the reason comes straight back, once, and is on record.
+  starts=0;runtime.start=async()=>{starts++;throw Error('Another program is already using port 18789.');};
+  await assert.rejects(s.ensureAhi(),/already using port/);assert.equal(starts,1);
+});
+test('the AHI window signs in with the owner key from this home, and start-at-login is on until turned off',async()=>{
+  const {s}=await prepared();assert.equal(await s.ownerToken(),null,'no home installed yet');
+  await fs.mkdir(path.join(await s.managed(),'state'),{recursive:true});
+  await fs.writeFile(path.join(await s.managed(),'state','users.json'),JSON.stringify([{token:'family-token',name:'Kid',admin:false},{token:'owner-token',name:'Alex',admin:true}]));
+  assert.equal(await s.ownerToken(),'owner-token');
+  assert.equal(s.startAtLogin,true);await s.setStartAtLogin(false);assert.equal(s.startAtLogin,false);
+  const again=new SetupService({dataDir:s.dataDir});await again.init();assert.equal(again.startAtLogin,false,'the choice is saved');
+});

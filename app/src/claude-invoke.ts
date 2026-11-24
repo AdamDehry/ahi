@@ -1,7 +1,7 @@
 import { AI_ROOT } from "./ai-root.js";
 import { spawn, type ChildProcessWithoutNullStreams } from "child_process";
 import { newFrameNonce, scrubScreenFrames, streamJsonUserMessage, type ScreenFrame } from "./voice/screen-frame.js";
-import { readFileSync, existsSync, writeFileSync, mkdirSync, readdirSync } from "fs";
+import { readFileSync, existsSync, mkdirSync, readdirSync } from "fs";
 import { delimiter, dirname, join, resolve } from "path";
 import { homedir } from "os";
 import type { SessionMap } from "./session-map.js";
@@ -10,6 +10,7 @@ import { logSession, transcriptPath } from "./session-logger.js";
 import { getRelevantContext } from "./retrieval.js";
 import { acquireGlobalSpawnSlot } from "./concurrency.js";
 import { claudeCommand } from "./claude-bin.js";
+import { writeClaudeSettings } from "./claude-settings.js";
 import { assembleStableSystemPrompt } from "./prompt-assembly.js";
 import { lookupByUserId, resolveUserId } from "./users.js";
 import { billsAgentHint } from "./bills.js";
@@ -34,10 +35,9 @@ import { unshieldChild } from "./lifecycle.js";
 // The runtime root (skills, documents) is AI_ROOT (ai-root.ts); the agents' generated documents go to
 // <AI_ROOT>/documents.
 
-// Generate .claude/settings.json at startup so permission-allowlist paths are
-// correct for this host. Runs synchronously before any subprocess is spawned.
-// On failure: warn and continue — the subprocess will use whatever settings.json
-// is already on disk (the Mac default from git is always valid on Mac).
+// Generate the Claude settings at startup (claude-settings.ts) so the hook and
+// permission paths are correct for this host. Runs synchronously before any
+// subprocess is spawned. On failure: warn and continue without them.
 // Not under the test runner (NODE_TEST_CONTEXT, inherited by the drivers tests
 // spawn): every suite run used to rewrite the CHECKOUT's settings.json, which
 // in a foreman build worktree silently strips the foreman's merged overlay —
@@ -65,49 +65,15 @@ const GATEWAY_ROOT = resolve(import.meta.dirname, "..");
 if (!(process.env.PATH ?? "").split(delimiter).includes(dirname(process.execPath))) {
   process.env.PATH = [dirname(process.execPath), process.env.PATH].filter(Boolean).join(delimiter);
 }
+// The --settings file each turn is handed when the settings could not go to this checkout's own .claude/
+// (claude-settings.ts); null = claude reads them from its cwd as before.
+let settingsFile: string | null = null;
 if (!process.env.NODE_TEST_CONTEXT && foremanOwnsSettings(GATEWAY_ROOT)) {
   console.log("[gateway] foreman build checkout — leaving .claude/settings.json as the foreman wrote it");
 } else if (!process.env.NODE_TEST_CONTEXT) try {
-  const settingsDir = resolve(GATEWAY_ROOT, ".claude");
-  mkdirSync(settingsDir, { recursive: true });
-  writeFileSync(
-    resolve(settingsDir, "settings.json"),
-    JSON.stringify(
-      {
-        hooks: {
-          UserPromptSubmit: [
-            {
-              hooks: [
-                {
-                  type: "command",
-                  // Node, not a shell script: one hook for Mac, Windows and Linux. An absolute path with
-                  // forward slashes after a bare `node` parses the same in bash, cmd and PowerShell.
-                  command: `node "${resolve(GATEWAY_ROOT, "hooks/ahi-retrieval.mjs").replace(/\\/g, "/")}"`,
-                  timeout: 10,
-                },
-              ],
-            },
-          ],
-        },
-        permissions: {
-          allow: [
-            `Bash(python3 ${AI_ROOT}/skills/**:*)`,
-            `Bash(python ${AI_ROOT}/skills/**:*)`,
-            `Bash(python3 ${AI_ROOT}/skills/miriam/*:*)`,
-            `Bash(python ${AI_ROOT}/skills/miriam/*:*)`,
-            `Bash(python3 ${AI_ROOT}/skills/vision/*:*)`,
-            `Bash(python ${AI_ROOT}/skills/vision/*:*)`,
-            `Write(${AI_ROOT}/documents/**)`,
-            `Write(${AI_ROOT}/skills/**)`,
-          ],
-        },
-      },
-      null,
-      2,
-    ) + "\n",
-  );
+  settingsFile = writeClaudeSettings({ gatewayRoot: GATEWAY_ROOT, aiRoot: AI_ROOT });
 } catch (err) {
-  console.warn("[gateway] Failed to generate .claude/settings.json:", err);
+  console.warn("[gateway] Failed to generate the Claude settings (no memory hook or skill permissions this run):", err);
 }
 
 export interface InvokeOptions {
@@ -891,6 +857,7 @@ async function invokeAgentTurn(
     // without loosening the default rails for smaller agents.
     "--max-budget-usd", configuredBudgetUsd(botName).toFixed(2),
   ];
+  if (settingsFile) args.push("--settings", settingsFile);
   const effortLevel = normalizeEffort(effort);
   if (effortLevel) args.push("--effort", effortLevel);
   // A turn carrying screen frames sends one stream-json user message (image

@@ -124,7 +124,9 @@ function serverEnv({ managed, root, port, claude, extra, serverDir }) {
     AHI_USERS_FILE: path.join(managed, 'state', 'users.json'),
     AHI_GATEWAY_STATE_DIR: path.join(managed, 'state'),
     AHI_GATEWAY_BUSINESS_DIR: path.join(managed, 'state', 'business'),
-    AHI_GATEWAY_LOCK_PATH: path.join(managed, 'logs', 'gateway.pid'),
+    AHI_GATEWAY_LOCK_PATH: lockPath(managed),
+    // The app's own folder is read-only (Program Files, an AppImage, a signed Mac bundle): Claude's settings live here.
+    AHI_CLAUDE_SETTINGS: path.join(managed, 'state', 'claude-settings.json'),
     AHI_TURN_LOG_DIR: path.join(managed, 'logs'),
     ...(claude?.bin ? { AHI_CLAUDE_BIN: claude.bin } : {}),
     ...(existsSync(path.join(managed, 'foreman', 'bin', 'lib.sh'))
@@ -144,34 +146,86 @@ async function health(port) {
   } catch { return null; }
 }
 
+const lockPath = (managed) => path.join(managed, 'logs', 'gateway.pid');
+const serverLog = (managed) => path.join(managed, 'logs', 'ahi-server.log');
+
+/** Is the process holding the server lock still an AHI server? Windows reuses process ids quickly, so there a live
+ * id only counts if it is still a Node process. */
+function lockHolderAlive(pid, { platform = process.platform, run = spawnSync } = {}) {
+  if (!Number.isInteger(pid) || pid <= 0) return false;
+  try { process.kill(pid, 0); } catch (e) { if (e.code !== 'EPERM') return false; }
+  if (platform !== 'win32') return true;
+  const r = run('tasklist', ['/FI', `PID eq ${pid}`, '/FO', 'CSV', '/NH'], { encoding: 'utf8', windowsHide: true, timeout: 10000 });
+  return r.status !== 0 || /^"node(\.exe)?"/im.test(r.stdout || ''); // can't tell → assume it is
+}
+
+/** Remove the server lock if its holder is gone (a server killed without its exit handlers). True if removed. */
+async function clearStaleLock(managed, opts) {
+  const file = lockPath(managed);
+  let pid;
+  try { pid = parseInt(await fs.readFile(file, 'utf8'), 10); } catch { return false; }
+  if (lockHolderAlive(pid, opts)) return false;
+  await fs.rm(file, { force: true });
+  return true;
+}
+
+/** One plain-English line in the server's log, so a failed start is on record even when the server never ran. */
+async function logLine(managed, line) {
+  try { await fs.mkdir(path.dirname(serverLog(managed)), { recursive: true }); await fs.appendFile(serverLog(managed), `[desktop] ${new Date().toISOString()} ${line}\n`); } catch {}
+}
+
+/** Why a server that exited while starting gave up, in words the owner can act on (from its own log lines). */
+function exitReason(logged) {
+  if (/ANOTHER GATEWAY RUNNING/.test(logged)) return 'An older copy of AHI is still running in the background. Restart your computer (or end the old "node" process in Task Manager), then press Retry.';
+  if (/EADDRINUSE/.test(logged)) return 'Another program is using AHI\'s port. Close it, or restart your computer, then press Retry.';
+  return 'AHI stopped while starting. Its log is in AHI_OS/logs/ahi-server.log.';
+}
+
 /** Start the AHI server (unless THIS home's server already answers on the port) and wait for it. Returns { url, child|null }. */
 async function start({ node, serverDir, managed, root, port = DEFAULT_PORT, claude, extra, log }) {
   const url = `http://localhost:${port}/`;
   const home = homeId(managed);
   const running = await health(port);
   if (running?.home === home) return { url, child: null };
-  if (running) throw Error(`Another program is already using port ${port}. Close it, or start AHI Setup with AHI_PORT set to a free port.`);
-  const cannotStart = (e) => Error(`AHI could not start (${e.code || e.name}). Reinstall AHI Setup and try again.`);
-  const out = await fs.open(path.join(managed, 'logs', 'ahi-server.log'), 'a');
+  if (running) throw Error(`Another program is already using port ${port}, which AHI needs. Close it or restart your computer, then press Retry.`);
+  const cannotStart = (e) => Error(`AHI could not start (${e.code || e.name}). Reinstall AHI and try again.`);
+  const logFile = serverLog(managed);
+  const before = await fs.stat(logFile).then((s) => s.size, () => 0);
+  const out = await fs.open(logFile, 'a');
   const closeLog = () => out.close().catch(() => {}); // a second close is a no-op rejection
   let child, failure = null;
   try {
+    // The IPC channel is how stop() asks for a clean exit (Windows has no SIGTERM).
     child = spawn(node, [path.join(serverDir, 'dist', 'index.js')], {
-      cwd: serverDir, env: serverEnv({ managed, root, port, claude, extra, serverDir }), stdio: ['ignore', out.fd, out.fd], windowsHide: true,
+      cwd: serverDir, env: serverEnv({ managed, root, port, claude, extra, serverDir }), stdio: ['ignore', out.fd, out.fd, 'ipc'], windowsHide: true,
     });
   } catch (e) { closeLog(); throw cannotStart(e); }
-  // A missing or unlaunchable Node arrives as 'error', not as an exception: report it instead of crashing Setup.
+  // A missing or unlaunchable Node arrives as 'error', not as an exception: report it instead of crashing the app.
   child.once('error', (e) => { failure = e; closeLog(); });
   child.once('exit', closeLog);
   for (let i = 0; i < 120; i++) {
     if (failure) throw cannotStart(failure);
-    if (child.exitCode !== null) throw Error('AHI stopped while starting. Its log is in AHI_OS/logs/ahi-server.log.');
+    if (child.exitCode !== null) {
+      const logged = await fs.readFile(logFile, 'utf8').then((t) => t.slice(before), () => '');
+      throw Error(exitReason(logged));
+    }
     const h = await health(port);
     if (h?.home === home) { log?.(`AHI is running on ${url}`); return { url, child }; }
     await new Promise((r) => setTimeout(r, 500));
   }
-  child.kill();
+  await stop(child);
   throw Error('AHI did not answer within a minute. Its log is in AHI_OS/logs/ahi-server.log.');
 }
 
-module.exports = { install, start, serverEnv, foremanEnv, homeId, AGENTS, DEFAULT_PORT };
+/** Stop a server this app started: ask it to exit cleanly (it removes its lock), and kill it if it has not within
+ * the grace period. Resolves once it has exited. */
+async function stop(child, graceMs = 10000) {
+  if (!child || child.exitCode !== null || child.signalCode !== null) return;
+  const exited = new Promise((done) => child.once('exit', done));
+  try { if (child.connected) child.send('ahi:stop'); else child.kill(); } catch { child.kill(); }
+  const timer = setTimeout(() => child.kill('SIGKILL'), graceMs);
+  await exited;
+  clearTimeout(timer);
+}
+
+module.exports = { install, start, stop, clearStaleLock, lockHolderAlive, logLine, serverEnv, foremanEnv, homeId, AGENTS, DEFAULT_PORT };

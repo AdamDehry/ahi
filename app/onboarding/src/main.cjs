@@ -1,14 +1,121 @@
-const {app,BrowserWindow,ipcMain,dialog,shell}=require('electron');
+const {app,BrowserWindow,Menu,Tray,desktopCapturer,dialog,ipcMain,nativeImage,session,shell}=require('electron');
+const fs=require('node:fs');
 const path=require('node:path');
+const {pathToFileURL}=require('node:url');
 const {SetupService}=require('./service.cjs');
 const {RemoteSetup}=require('./remote.cjs');
-let win,service,remote;
+const {allowedCall,signIn,linuxAutostart}=require('./desktop.cjs');
+let win,winKind,tray,service,remote,starting=null,quitting=false,stopped=false,trayHintShown=false;
 const headless=app.commandLine.hasSwitch('headless-setup')||process.argv.includes('--headless-setup');
 if(headless){app.commandLine.appendSwitch('ozone-platform','headless');app.disableHardwareAcceleration();}
 // Native smoke tests can opt into a workdir-owned home; packaged apps never use fixtures.
 const sandbox=!app.isPackaged&&process.env.AHI_SETUP_TEST_ROOT;
-if(sandbox)app.setPath('userData',path.join(sandbox,'desktop-data'));
-app.whenReady().then(async()=>{
+// The product is called AHI now; its saved setup stays in the folder "AHI Setup" always used.
+app.setPath('userData',sandbox?path.join(sandbox,'desktop-data'):path.join(app.getPath('appData'),'AHI Setup'));
+// Started by the login item: bring AHI up without a window (the window opens from the tray, or on a failure).
+const hiddenStart=process.argv.includes('--hidden')||(process.platform==='darwin'&&app.getLoginItemSettings().wasOpenedAtLogin);
+const setupUrl=pathToFileURL(path.join(__dirname,'../ui/index.html')).href,startUrl=pathToFileURL(path.join(__dirname,'../ui/start.html')).href;
+const logFile=()=>path.join(app.getPath('userData'),'ahi.log');
+const logLine=line=>{try{fs.appendFileSync(logFile(),`${new Date().toISOString()} ${line}\n`);}catch{}};
+// One AHI per computer: a second launch (Start menu, login item, a double click) shows the one already running.
+const primary=headless||app.requestSingleInstanceLock();
+if(!primary)app.quit();
+else app.on('second-instance',()=>showMain());
+
+/** The AHI window's own browser session: persistent (it stays signed in), and only AHI's own origin may use the
+ * microphone, notifications, the clipboard or a screen share. */
+let ahiOrigin=null;
+function ahiSession(origin){
+  const ses=session.fromPartition('persist:ahi');
+  if(ahiOrigin===origin)return ses;ahiOrigin=origin;
+  const allowed=new Set(['media','notifications','clipboard-sanitized-write','fullscreen','display-capture']);
+  const ours=url=>{try{return new URL(url).origin===origin;}catch{return false;}};
+  ses.setPermissionRequestHandler((wc,permission,callback,details)=>callback(allowed.has(permission)&&ours(details.requestingUrl||wc.getURL())));
+  ses.setPermissionCheckHandler((_wc,permission,requestingOrigin)=>allowed.has(permission)&&ours(requestingOrigin));
+  // "Look at my screen" on a call: the system's own picker where there is one, else the whole main screen.
+  ses.setDisplayMediaRequestHandler((request,callback)=>{
+    if(!ours(request.securityOrigin))return callback({});
+    desktopCapturer.getSources({types:['screen']}).then(([screen])=>callback(screen?{video:screen}:{}),()=>callback({}));
+  },{useSystemPicker:true});
+  return ses;
+}
+
+/** Replace the one window with a new page: the setup screens, the start screen, or AHI itself. */
+function openWindow(kind,url){
+  const old=win;
+  const webPreferences=kind==='ahi'
+    // AHI's own pages are a website: no bridge to this app at all.
+    ?{partition:'persist:ahi',contextIsolation:true,nodeIntegration:false,sandbox:true,webSecurity:true}
+    :{preload:path.join(__dirname,'preload.cjs'),contextIsolation:true,nodeIntegration:false,sandbox:true,webSecurity:true};
+  win=new BrowserWindow({width:1240,height:900,minWidth:820,minHeight:680,backgroundColor:'#0c1917',title:'AHI',autoHideMenuBar:true,show:!(hiddenStart&&!old&&kind!=='setup'),webPreferences});winKind=kind;
+  if(kind==='ahi'){
+    const origin=new URL(url).origin;ahiSession(origin);
+    const external=u=>{if(/^https?:/i.test(u))shell.openExternal(u);};
+    win.webContents.setWindowOpenHandler(({url:u})=>{try{if(new URL(u).origin===origin)return {action:'allow',overrideBrowserWindowOptions:{autoHideMenuBar:true}};}catch{}external(u);return {action:'deny'};});
+    win.webContents.on('will-navigate',(event,u)=>{try{if(new URL(u).origin===origin)return;}catch{}event.preventDefault();external(u);});
+  }else{
+    win.webContents.setWindowOpenHandler(()=>({action:'deny'}));
+    win.webContents.on('will-navigate',event=>event.preventDefault());
+    win.webContents.session.setPermissionRequestHandler((_webContents,_permission,callback)=>callback(false));
+  }
+  // Closing the window keeps AHI running (tray on Windows and Linux, the dock on a Mac); Quit AHI really quits.
+  const w=win;w.on('close',event=>{
+    if(quitting)return;
+    event.preventDefault();w.hide();
+    if(tray&&!trayHintShown&&process.platform==='win32'){trayHintShown=true;tray.displayBalloon({title:'AHI is still running',content:'Open it again from here. To stop AHI, right-click this icon and choose Quit AHI.'});}
+  });
+  if(old&&!old.isDestroyed())old.destroy();
+  return win.loadURL(url);
+}
+function showMain(){
+  if(win&&!win.isDestroyed()){if(win.isMinimized())win.restore();win.show();win.focus();return;}
+  if(service?.state.completed)openWindow('start',startUrl);else openWindow('setup',setupUrl);
+}
+
+/** Start the AHI server (one attempt at a time) and sign the window in; resolves to AHI's address. */
+function startAhi(){
+  return starting??=(async()=>{
+    try{
+      const url=await service.ensureAhi();
+      await signIn((u,o)=>ahiSession(new URL(url).origin).fetch(u,o),url,await service.ownerToken()).catch(e=>logLine(`Signing the window in failed: ${e.message}`));
+      // If the server stops by itself later, say so and offer Retry (a deliberate restart replaces ahiChild first).
+      const child=service.ahiChild;
+      child?.once('exit',code=>{if(quitting||service.ahiChild!==child)return;logLine(`AHI stopped unexpectedly (exit ${code}).`);if(winKind==='ahi')openWindow('start',startUrl);});
+      return url;
+    }catch(error){logLine(`AHI could not start: ${error.message}`);throw error;}
+    finally{starting=null;}
+  })();
+}
+/** Started at login: AHI comes up with its window hidden; a failure shows the start screen (which retries once and
+ * then gives the reason and Retry). */
+async function startHidden(){
+  try{await openWindow('ahi',await startAhi());}
+  catch{await openWindow('start',startUrl);win.show();}
+}
+
+async function applyLoginItem(){
+  if(!app.isPackaged||!service)return;
+  const on=service.state.completed&&service.startAtLogin;
+  try{
+    if(process.platform==='linux')await linuxAutostart(on);
+    else app.setLoginItemSettings({openAtLogin:on,args:['--hidden']});
+  }catch(e){logLine(`Could not change start-at-login: ${e.message}`);}
+}
+function buildTray(){
+  const icon=nativeImage.createFromPath(path.join(__dirname,'../ui/icon.png')).resize({width:process.platform==='darwin'?18:32});
+  tray??=new Tray(icon);tray.setToolTip('AHI');
+  tray.setContextMenu(Menu.buildFromTemplate([
+    {label:'Open AHI',click:showMain},
+    {label:'Setup…',click:()=>openWindow('setup',setupUrl).then(()=>win.show())},
+    {type:'separator'},
+    {label:'Start AHI when I log in',type:'checkbox',checked:service.startAtLogin,click:async item=>{await service.setStartAtLogin(item.checked);await applyLoginItem();}},
+    {type:'separator'},
+    {label:'Quit AHI',click:()=>app.quit()},
+  ]));
+  if(process.platform!=='darwin')tray.on('click',showMain);
+}
+
+if(primary)app.whenReady().then(async()=>{
   const dataDir=app.getPath('userData');
   const keyring={set:async(account,value)=>{
     const {AsyncEntry}=require('@napi-rs/keyring');
@@ -24,27 +131,39 @@ app.whenReady().then(async()=>{
     const child=require('node:child_process').spawn(runtimeNode,[runner,dataDir],{stdio:'inherit',env:{...process.env,...(!app.isPackaged?{AHI_SETUP_NATIVE_BINDING:require.resolve('@napi-rs/keyring')}:{})}});
     const keepAlive=setInterval(()=>{},1000);child.once('error',()=>app.quit());child.once('exit',()=>app.quit());app.on('before-quit',()=>{clearInterval(keepAlive);child.kill();});process.once('SIGTERM',()=>{child.kill();app.quit();});process.once('SIGINT',()=>{child.kill();app.quit();});return;
   }
-  service=new SetupService({dataDir,node:runtimeNode,npmCli:app.isPackaged?path.join(process.resourcesPath,'app.asar.unpacked/node_modules/npm/bin/npm-cli.js'):undefined,keyring,sandboxRoot:sandbox,
+  service=new SetupService({dataDir,node:runtimeNode,npmCli:app.isPackaged?path.join(process.resourcesPath,'app.asar.unpacked/node_modules/npm/bin/npm-cli.js'):undefined,keyring,sandboxRoot:sandbox,inWindow:true,
     chooseFolder:async()=>{const picked=await dialog.showOpenDialog(win,{title:'Choose where AHI will live',properties:['openDirectory','createDirectory']});return picked.canceled?null:picked.filePaths[0];},
     openExternal:url=>shell.openExternal(url),
     // The bundled AHI server and the hidden OS folder's seed: packaged resources, or this repo while developing.
-    ahi:{serverDir:app.isPackaged?path.join(process.resourcesPath,'ahi-server'):path.resolve(__dirname,'../..'),seed:app.isPackaged?path.join(process.resourcesPath,'ahi-seed'):path.resolve(__dirname,'../../..'),port:Number(process.env.AHI_PORT)||18789}});
+    ahi:{serverDir:app.isPackaged?path.join(process.resourcesPath,'ahi-server'):(sandbox&&process.env.AHI_SETUP_TEST_SERVER_DIR)||path.resolve(__dirname,'../..'),seed:app.isPackaged?path.join(process.resourcesPath,'ahi-seed'):path.resolve(__dirname,'../../..'),port:Number(process.env.AHI_PORT)||18789}});
   await service.init();remote=new RemoteSetup(service);
-  // Already set up: start AHI and open it straight away (the window stays as AHI's home base).
-  if(service.state.completed&&!headless)service.openAhi().catch(()=>{});
-  const ui=path.join(__dirname,'../ui/index.html');
   ipcMain.handle('setup:invoke',async(event,method,arg)=>{
-    if(event.sender!==win.webContents||event.senderFrame!==win.webContents.mainFrame||event.senderFrame.url!==require('node:url').pathToFileURL(ui).href)throw Error('Untrusted setup window.');
+    const url=event.senderFrame?.url;
+    if(event.sender!==win?.webContents||event.senderFrame!==win.webContents.mainFrame||!allowedCall(url,method,{setupUrl,startUrl}))throw Error('Untrusted setup window.');
     try{
-      const result=method==='remote-install'?await remote.install():method==='remote-login'?await remote.login():method==='remote-create'?await remote.create():method==='remote-route'?await remote.route(arg):method==='remote-start'?await remote.start():method==='remote-stop'?await remote.stop():await service.invoke(method,arg);
+      let result;
+      // AHI opens here, in this window, not in a browser tab.
+      if(method==='open-ahi'||method==='start'){await startAhi();setImmediate(()=>openWindow('ahi',service.ahiUrl).catch(e=>logLine(`AHI window failed: ${e.message}`)));result=service.snapshot();}
+      else if(method==='setup'){setImmediate(()=>openWindow('setup',setupUrl));result={};}
+      else result=method==='remote-install'?await remote.install():method==='remote-login'?await remote.login():method==='remote-create'?await remote.create():method==='remote-route'?await remote.route(arg):method==='remote-start'?await remote.start():method==='remote-stop'?await remote.stop():await service.invoke(method,arg);
+      if(method==='complete')await applyLoginItem();
       return {ok:true,value:result};
     }catch(error){return {ok:false,error:error.message};}
   });
-  win=new BrowserWindow({width:1240,height:900,minWidth:820,minHeight:680,backgroundColor:'#0c1917',title:'AHI · Make yourself at home',autoHideMenuBar:true,webPreferences:{preload:path.join(__dirname,'preload.cjs'),contextIsolation:true,nodeIntegration:false,sandbox:true,webSecurity:true}});
-  win.webContents.setWindowOpenHandler(()=>({action:'deny'}));
-  win.webContents.on('will-navigate',event=>event.preventDefault());
-  win.webContents.session.setPermissionRequestHandler((_webContents,_permission,callback)=>callback(false));
-  await win.loadFile(ui);
-}).catch(error=>{if(headless)process.stderr.write(`AHI Setup server could not start. Check application folder access and that port 4189 is free. Error class: ${error.code||error.name}\n`);else dialog.showErrorBox('AHI Setup could not open','Your saved setup has been kept. Check folder access, then reopen the app.');app.quit();});
-app.on('window-all-closed',()=>app.quit());
-app.on('before-quit',()=>{if(remote?.child)remote.child.kill();if(service?.ahiChild)service.ahiChild.kill();});
+  // No display (a server running the app headless): no tray to show, and GTK would abort trying.
+  if(app.commandLine.getSwitchValue('ozone-platform')!=='headless')buildTray();
+  await applyLoginItem();
+  app.on('activate',showMain); // the Mac dock icon
+  // Set up already: AHI itself (the start screen starts it, then hands over). First run: the setup screens.
+  if(!service.state.completed)await openWindow('setup',setupUrl);else if(hiddenStart)await startHidden();else await openWindow('start',startUrl);
+}).catch(error=>{logLine(`AHI could not open: ${error.stack||error.message}`);if(headless)process.stderr.write(`AHI Setup server could not start. Check application folder access and that port 4189 is free. Error class: ${error.code||error.name}\n`);else dialog.showErrorBox('AHI could not open','Your saved setup has been kept. Check folder access, then reopen the app.');quitting=true;app.quit();});
+// Closing the window keeps AHI running, so the last window closing is not a quit.
+app.on('window-all-closed',()=>{if(headless)app.quit();});
+// A real quit stops the server cleanly first (it removes its own lock), then lets the app exit.
+app.on('before-quit',event=>{
+  quitting=true;
+  if(stopped||!service?.ahiChild){if(remote?.child)remote.child.kill();return;}
+  event.preventDefault();
+  if(remote?.child)remote.child.kill();
+  service.stopAhi().catch(()=>{}).finally(()=>{stopped=true;app.quit();});
+});

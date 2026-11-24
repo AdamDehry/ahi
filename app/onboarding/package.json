@@ -2,7 +2,7 @@
   "name": "ahi-setup",
   "version": "0.2.3",
   "private": true,
-  "description": "The guided installer for your own AHI home",
+  "description": "AHI: your own AI home, with the guided setup that makes it",
   "author": "AHI",
   "license": "UNLICENSED",
   "main": "src/main.cjs",
@@ -30,7 +30,7 @@
   },
   "build": {
     "appId": "org.ahi.setup",
-    "productName": "AHI Setup",
+    "productName": "AHI",
     "icon": "build/icon.png",
     "artifactName": "AHI-Setup-${version}-${os}-${arch}.${ext}",
     "directories": {
@@ -118,7 +118,8 @@
     "electronFuses": {
       "runAsNode": false,
       "enableNodeOptionsEnvironmentVariable": false,
-      "enableNodeCliInspectArguments": false
+      "enableNodeCliInspectArguments": false,
+      "enableCookieEncryption": true
     },
     "npmRebuild": false,
     "mac": {
@@ -128,7 +129,10 @@
         }
       ],
       "category": "public.app-category.productivity",
-      "hardenedRuntime": true
+      "hardenedRuntime": true,
+      "extendInfo": {
+        "NSMicrophoneUsageDescription": "AHI listens when you talk with your agents."
+      }
     },
     "win": {
       "target": [
@@ -144,7 +148,11 @@
       "oneClick": false,
       "perMachine": false,
       "allowToChangeInstallationDirectory": true,
-      "deleteAppDataOnUninstall": false
+      "deleteAppDataOnUninstall": false,
+      "shortcutName": "AHI",
+      "createStartMenuShortcut": true,
+      "createDesktopShortcut": "always",
+      "include": "build/installer.nsh"
     },
     "linux": {
       "syncDesktopName": true,
@@ -174,7 +182,8 @@
           ]
         }
       ],
-      "category": "Utility"
+      "category": "Utility",
+      "executableName": "ahi-setup"
     }
   },
   "desktopName": "ahi-setup.desktop",

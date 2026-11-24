@@ -7,7 +7,7 @@ async function main(){
   const root=path.resolve(__dirname,`../.tmp/native-${Date.now()}`);await fs.mkdir(path.join(root,'desktop-data'),{recursive:true});await fs.mkdir(path.join(root,'home'));
   const executablePath=require('electron');
   const args=[path.resolve(__dirname,'..'),...(process.platform==='linux'?['--no-sandbox','--ozone-platform=headless','--disable-gpu']:[])];
-  const env={...cleanEnv(path.join(root,'home')),AHI_SETUP_TEST_ROOT:root,LD_LIBRARY_PATH:process.env.LD_LIBRARY_PATH||'',TMPDIR:path.resolve(__dirname,'../.tmp')};
+  const env={...cleanEnv(path.join(root,'home')),AHI_SETUP_TEST_ROOT:root,LD_LIBRARY_PATH:process.env.LD_LIBRARY_PATH||'',TMPDIR:require('node:os').tmpdir()}; // short: the app's one-instance lock is a socket in here
   const electron=await _electron.launch({executablePath,args,env,timeout:25000});
   try{
     const page=await electron.firstWindow({timeout:15000});await page.waitForSelector('#owner');

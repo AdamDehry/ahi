@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+  <meta name="theme-color" content="#101b1a"><title>AHI</title>
+  <link rel="stylesheet" href="styles.css"><script src="start.js" defer></script>
+</head>
+<body>
+  <!-- Shown while AHI starts, and when it could not: the reason in plain words, Retry, and the way back to setup. -->
+  <div class="setup-frame">
+    <header class="setup-masthead"><span class="wordmark">ahi<span>.</span></span></header>
+    <main class="setup-main start-main">
+      <section class="page" aria-live="polite">
+        <div class="eyebrow" id="start-kicker">ONE MOMENT</div>
+        <h1 id="start-title">Starting AHI…</h1>
+        <p class="intro" id="start-reason">Your agents will be right with you.</p>
+        <div class="actions" id="start-actions" hidden>
+          <button class="primary" id="retry">Retry</button>
+          <button class="text" id="setup">Open setup</button>
+        </div>
+      </section>
+    </main>
+    <footer><span>AHI · Artificial Harmonious Intelligence</span></footer>
+  </div>
+</body>
+</html>
