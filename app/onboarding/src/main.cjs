@@ -8,6 +8,10 @@ const {allowedCall,signIn,linuxAutostart}=require('./desktop.cjs');
 let win,winKind,tray,service,remote,starting=null,startAbort=null,stopping=null,stopped=false,quitting=false,trayHintShown=false;
 const headless=app.commandLine.hasSwitch('headless-setup')||process.argv.includes('--headless-setup');
 if(headless){app.commandLine.appendSwitch('ozone-platform','headless');app.disableHardwareAcceleration();}
+// The server is proven on 127.0.0.1 (ahi-runtime serves()); "localhost" could also mean ::1, where some other program
+// may listen. So in this app "localhost" IS 127.0.0.1: the key, the cookies and the window all go where the proof ran.
+// The address stays "localhost" (not the bare IP) because passkeys are bound to it and are never allowed on an IP.
+app.commandLine.appendSwitch('host-resolver-rules','MAP localhost 127.0.0.1');
 // Native smoke tests can opt into a workdir-owned home; packaged apps never use fixtures.
 const sandbox=!app.isPackaged&&process.env.AHI_SETUP_TEST_ROOT;
 // The product is called AHI now; its saved setup stays in the folder "AHI Setup" always used.

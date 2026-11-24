@@ -1,7 +1,8 @@
 // The desktop app as the owner meets it after setup, end to end in real Electron against a stand-in AHI server:
 // an impostor on AHI's port (it knows the public home id, not the owner's key) is refused with a reason and Retry and
 // never sees the key; a stale lock is cleared; a start while the window is closed to the tray stays in the tray; AHI
-// opens in the window signed in by the server's own cookie, with no bridge to the app; closing keeps AHI running;
+// opens in the window signed in by the server's own cookie, with no bridge to the app, and nothing reaches a listener
+// on the IPv6 loopback; closing keeps AHI running;
 // Quit stops the server cleanly — also when it comes in the middle of a slow start.
 // Needs an Electron binary and `npm run stage:runtime` (or a node at runtime/<os>/<arch>/node).
 const fs=require('node:fs/promises');
@@ -70,6 +71,10 @@ async function main(){
     ok('the failure is written to the app log and the server log');
 
     await new Promise(r=>impostor.close(r));
+    // Another impostor on the IPv6 loopback at the same port: "localhost" could reach it, the app's proof (127.0.0.1)
+    // never would. Nothing — key, cookie, page — may go there.
+    const seen6=[];const impostor6=http.createServer((q,r)=>{seen6.push(q.url);r.end('<h1 id="who">impostor</h1>');});
+    await new Promise((r,j)=>impostor6.once('error',j).listen(port,'::1',r));
     // Closed to the tray, then started (as the tray, a crash restart or the login item would): it stays in the tray.
     await electron.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].close());
     const next=electron.waitForEvent('window',{predicate:p=>p.url().startsWith(`http://localhost:${port}`),timeout:30000});
@@ -79,6 +84,10 @@ async function main(){
     ok('a start while the window is closed to the tray opens AHI still in the tray');
     assert.equal(await ahi.locator('#who').textContent(),'signed in');
     ok('AHI opens in the window, signed in by the server\'s own cookie');
+    assert.equal(await electron.evaluate(({app})=>app.commandLine.getSwitchValue('host-resolver-rules')),'MAP localhost 127.0.0.1');
+    await ahi.reload();assert.equal(await ahi.locator('#who').textContent(),'signed in');
+    assert.deepEqual(seen6,[],'nothing reached the IPv6 impostor');impostor6.close();
+    ok('a listener on the IPv6 loopback at AHI\'s port gets nothing: the key, cookies and window go where the proof ran');
     assert.equal(await ahi.evaluate(()=>typeof window.ahi),'undefined');ok('AHI\'s pages get no bridge to the app');
     assert.notEqual(Number(await fs.readFile(lock,'utf8')),Number(dead));
     ok('the stale lock from a killed server was cleared and the start retried (the stand-in took the lock)');
