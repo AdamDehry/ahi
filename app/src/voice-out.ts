@@ -10,6 +10,7 @@ import { loadCartesiaConfig } from "./config.js";
 import { gatewayStateRoot } from "./multi-user-paths.js";
 import { logSayText, sayText } from "./voice/say-text.js";
 import { unshieldChild } from "./lifecycle.js";
+import { cartesiaLanguage, isMostlyHebrew } from "./speech-language.js";
 
 // Last-resort Cartesia config, used ONLY when a caller passes no `cartesia`
 // (e.g. an ad-hoc script). Every real call site threads BotConfig.cartesia,
@@ -587,7 +588,7 @@ async function synthesizeCartesia(text: string, cartesia: CartesiaConfig): Promi
       model_id: cartesia.model,
       transcript: text,
       voice: { mode: "id", id: cartesia.voiceId },
-      language: cartesia.language,
+      language: cartesiaLanguage(cartesia.language, text),
       speed: cartesia.speed,
       output_format: {
         container: "raw",
@@ -701,11 +702,7 @@ async function synthesizeChunk(text: string, provider: TTSProvider, ctx: ChunkCt
 }
 
 function detectLanguage(text: string): string {
-  const hebrewChars = text.match(/[\u0590-\u05FF]/g);
-  if (hebrewChars && hebrewChars.length > text.length * 0.3) {
-    return "he-IL";
-  }
-  return "en-US";
+  return isMostlyHebrew(text) ? "he-IL" : "en-US";
 }
 
 function getChunkSize(provider: TTSProvider, lang: string): number {

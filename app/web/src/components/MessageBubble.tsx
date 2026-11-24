@@ -12,9 +12,10 @@ import SessionRecordCard, { type VoiceSessionMeta } from "./voice/SessionRecordC
 import SearchCard from "./search/SearchCard";
 import StudioCard from "./studio/StudioCard";
 import { useMessageActions } from "./useMessageActions";
+import { locale, t as translate, useT, type Key } from "../i18n";
 
 function formatTime(ts: string): string {
-  return new Date(ts).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  return new Date(ts).toLocaleTimeString(locale(), { hour: "numeric", minute: "2-digit" });
 }
 
 // ── Sent-message collapse (3e#2) — SENT messages only. The owner's pasted
@@ -26,6 +27,7 @@ const CLAMP_LINES = 10; // keep in sync with --sent-clamp-lines
 const expandedSent = new Set<string>();
 
 function SentText({ id, text }: { id: string; text: string }) {
+  const t = useT();
   const ref = useRef<HTMLDivElement>(null);
   const [expanded, setExpanded] = useState(expandedSent.has(id));
   const [clampable, setClampable] = useState(false);
@@ -53,11 +55,12 @@ function SentText({ id, text }: { id: string; text: string }) {
       <div
         ref={ref}
         className={`msg-text${collapsed ? " collapsed" : ""}`}
+        dir="auto"
         dangerouslySetInnerHTML={{ __html: renderMarkdown(text) }}
       />
       {clampable && (
         <button type="button" className="msg-expand-toggle mono-label" onClick={toggle} aria-expanded={expanded}>
-          {expanded ? "READ LESS" : "READ MORE"}
+          {expanded ? t("chat.readLess") : t("chat.readMore")}
         </button>
       )}
     </>
@@ -79,6 +82,7 @@ const MessageBubble = memo(function MessageBubble({
   msg: LocalMessage;
   onOpenVoiceSession?: (record: VoiceSessionMeta) => void;
 }) {
+  const t = useT();
   const isUser = msg.direction === "in";
   // Right-click / long-press → Copy · Share · Save audio.
   const { bind: actionProps, menu } = useMessageActions(msg);
@@ -149,7 +153,7 @@ const MessageBubble = memo(function MessageBubble({
           className={`bubble-user${status}${isVoice ? " has-voice" : ""}${cargo ? " has-cargo" : ""}${crossing}`}
           onClick={msg.failed ? retry : undefined}
           role={msg.failed ? "button" : undefined}
-          title={msg.failed ? "Tap to retry" : undefined}
+          title={msg.failed ? t("chat.tapToRetry") : undefined}
           {...actionProps}
         >
           {cargo ? (
@@ -165,10 +169,10 @@ const MessageBubble = memo(function MessageBubble({
         {/* Step 5 #2: the agent-time treatment under the owner's own bubble —
             text, voice, and media sends alike. Status spans stay. */}
         <span className="user-time mono-label">{formatTime(msg.timestamp)}</span>
-        {msg.pending && <span className="bubble-status mono-label">SENDING</span>}
-        {msg.failed && <span className="bubble-status failed mono-label">NOT SENT — TAP TO RETRY</span>}
-        {(msg.cancelled || msg.meta?.turnStatus === "cancelled") && <span className="bubble-status cancelled mono-label">MESSAGE CANCELED</span>}
-        {(msg.steered || msg.meta?.turnStatus === "steered") && <span className="bubble-status cancelled mono-label">RESPONSE STEERED</span>}
+        {msg.pending && <span className="bubble-status mono-label">{t("chat.sendingCaps")}</span>}
+        {msg.failed && <span className="bubble-status failed mono-label">{t("chat.notSent")}</span>}
+        {(msg.cancelled || msg.meta?.turnStatus === "cancelled") && <span className="bubble-status cancelled mono-label">{t("chat.messageCanceled")}</span>}
+        {(msg.steered || msg.meta?.turnStatus === "steered") && <span className="bubble-status cancelled mono-label">{t("chat.responseSteered")}</span>}
         {menu}
       </div>
     );
@@ -200,14 +204,22 @@ const MessageBubble = memo(function MessageBubble({
   );
 });
 
+const CONTENT_CHIP: Record<string, Key> = {
+  text: "media.typeText",
+  voice: "media.typeVoice",
+  photo: "media.typePhoto",
+  document: "media.typeDocument",
+};
+
 /** The type chip by what the message actually carries: an mp3 is AUDIO, not
  *  a DOCUMENT (contentType stays coarse for the Telegram bridge and corpus). */
 function chipLabel(msg: LocalMessage): string {
   const list = msg.mediaList && msg.mediaList.length ? msg.mediaList : msg.media ? [msg.media] : [];
-  if (list.length > 1) return `${list.length} FILES`;
-  if (list[0]?.type === "audio") return "AUDIO";
-  if (list[0]?.type === "video") return "VIDEO";
-  return msg.contentType.toUpperCase();
+  if (list.length > 1) return translate("media.filesChip", { n: list.length });
+  if (list[0]?.type === "audio") return translate("media.typeAudio");
+  if (list[0]?.type === "video") return translate("media.typeVideo");
+  const key = CONTENT_CHIP[msg.contentType];
+  return key ? translate(key) : msg.contentType.toUpperCase();
 }
 
 /**
@@ -216,25 +228,28 @@ function chipLabel(msg: LocalMessage): string {
  * same tally the panel opens with (B8). Nothing else is re-parsed.
  */
 function AgentText({ text, fromDesk }: { text: string; fromDesk: boolean }) {
+  const t = useT();
   const split = fromDesk ? splitBuildsBlock(text) : null;
-  if (!split) return <div className="msg-text" dangerouslySetInnerHTML={{ __html: renderMarkdown(text) }} />;
+  if (!split) return <div className="msg-text" dir="auto" dangerouslySetInnerHTML={{ __html: renderMarkdown(text) }} />;
   const { before, block, after } = split;
   const oldest = block.oldestDays;
   return (
     <>
-      {before && <div className="msg-text" dangerouslySetInnerHTML={{ __html: renderMarkdown(before) }} />}
+      {before && <div className="msg-text" dir="auto" dangerouslySetInnerHTML={{ __html: renderMarkdown(before) }} />}
       <DigestCard
         cells={[
-          { value: block.open, label: "Open", tone: block.open ? "" : "zero" },
-          { value: block.needYou, label: "Need you", tone: block.needYou ? "you" : "zero" },
-          oldest === null ? { value: "—", label: "Oldest", tone: "zero" } : { value: oldest || "<1", unit: "D", label: "Oldest", tone: oldest >= 7 ? "old" : "" },
+          { value: block.open, label: t("chat.digestOpen"), tone: block.open ? "" : "zero" },
+          { value: block.needYou, label: t("chat.digestNeedYou"), tone: block.needYou ? "you" : "zero" },
+          oldest === null
+            ? { value: "—", label: t("chat.digestOldest"), tone: "zero" }
+            : { value: oldest || "<1", unit: t("chat.digestDaysUnit"), label: t("chat.digestOldest"), tone: oldest >= 7 ? "old" : "" },
         ]}
         needsYou={block.names}
         more={block.more}
         toClose={block.toClose ? { count: block.toClose, oldest: null } : null}
         onOpen={() => actions.openBuilds()}
       />
-      {after && <div className="msg-text" dangerouslySetInnerHTML={{ __html: renderMarkdown(after) }} />}
+      {after && <div className="msg-text" dir="auto" dangerouslySetInnerHTML={{ __html: renderMarkdown(after) }} />}
     </>
   );
 }

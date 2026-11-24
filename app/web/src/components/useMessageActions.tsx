@@ -15,6 +15,7 @@ import {
 } from "../lib/messageActions";
 import { showToast } from "../lib/toast";
 import ContextMenu from "./ContextMenu";
+import { t, useT } from "../i18n";
 
 export const LONG_PRESS_MS = 500;
 /** Finger travel that turns a press into a scroll (or a selection drag). */
@@ -49,24 +50,24 @@ export function messageMenuItems(msg: LocalMessage, touch = false, el: Element |
   const text = copyableText(msg);
   if (text) {
     items.push({
-      label: voice ? "Copy transcript" : "Copy",
-      onSelect: () => void copyText(text).then((ok) => showToast(ok ? "Copied" : "Couldn't copy")),
+      label: voice ? t("media.copyTranscript") : t("common.copy"),
+      onSelect: () => void copyText(text).then((ok) => showToast(ok ? t("common.copied") : t("chat.couldNotCopy"))),
     });
   }
   if (voice) {
     const base = voiceNoteBase(msg);
-    items.push({ label: "Share audio", onSelect: () => void shareVoice(voice, base) });
-    items.push({ label: "Save audio", onSelect: () => void saveVoice(voice, base) });
+    items.push({ label: t("media.shareAudio"), onSelect: () => void shareVoice(voice, base) });
+    items.push({ label: t("media.saveAudio"), onSelect: () => void saveVoice(voice, base) });
   } else if (text) {
-    items.push({ label: "Share", onSelect: () => void shareText(text) });
-    if (touch && el) items.push({ label: "Select text", onSelect: () => void selectBubbleText(el) });
+    items.push({ label: t("chat.share"), onSelect: () => void shareText(text) });
+    if (touch && el) items.push({ label: t("chat.selectText"), onSelect: () => void selectBubbleText(el) });
   }
   // Files: the original file, under its own name.
   const files = filesOf(msg);
   if (files.length) {
     const one = files.length === 1;
-    items.push({ label: one ? "Share file" : `Share ${files.length} files`, onSelect: () => void shareFiles(files) });
-    items.push({ label: one ? "Save file" : `Save ${files.length} files`, onSelect: () => void saveFiles(files) });
+    items.push({ label: one ? t("media.shareFile") : t("media.shareFiles", { n: files.length }), onSelect: () => void shareFiles(files) });
+    items.push({ label: one ? t("media.saveFile") : t("media.saveFiles", { n: files.length }), onSelect: () => void saveFiles(files) });
   }
   return items;
 }
@@ -91,6 +92,7 @@ function onLink(target: EventTarget | null): boolean {
  * `menu` beside it.
  */
 export function useMessageActions(msg: LocalMessage) {
+  useT(); // the menu's labels follow the language
   const [menu, setMenu] = useState<{ x: number; y: number; touch: boolean; el: HTMLElement } | null>(null);
   const press = useRef<{ id: number; x: number; y: number; timer: ReturnType<typeof setTimeout> } | null>(null);
   // Set when a long-press opened the menu: the release's click (play,

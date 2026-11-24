@@ -25,12 +25,13 @@ import { PageHeader, PageTabs } from "./pages";
 import { AhiFolderView, AhiTreeNav, DocPreviewModal, useAhiTree, type DocEntry } from "./AhiTree";
 import { perMonth } from "../views/Bills";
 import { money } from "../lib/vault";
+import { locale, tn, useLang, useT, type Key } from "../i18n";
 
-const FOLDERS: Array<{ view: View; label: string; admin?: boolean }> = [
-  { view: "documents", label: "All documents" },
-  { view: "files", label: "Uploads" },
-  { view: "clipboard", label: "Clips" },
-  { view: "mission-control", label: "Mission control" },
+const FOLDERS: Array<{ view: View; label: Key; admin?: boolean }> = [
+  { view: "documents", label: "shell.tab.allDocuments" },
+  { view: "files", label: "shell.tab.uploads" },
+  { view: "clipboard", label: "shell.tab.clips" },
+  { view: "mission-control", label: "shell.tab.missionControl" },
 ];
 
 function displayName(name: string): string {
@@ -38,6 +39,8 @@ function displayName(name: string): string {
 }
 
 function AllDocuments() {
+  const t = useT();
+  const lang = useLang();
   const { filesList, clips, mcFiles } = useAppState();
   const [q, setQ] = useState("");
   // One effect per list, so one list arriving doesn't refetch the others still in flight.
@@ -45,37 +48,38 @@ function AllDocuments() {
   useEffect(() => void (clips === null && fetchClips().then(actions.setClips)), [clips]);
   useEffect(() => void (mcFiles === null && fetchMc().then(actions.setMcFiles)), [mcFiles]);
   const items = useMemo(() => {
-    const out: Array<{ key: string; title: string; where: string; access: string; open: () => void }> = [];
+    const out: Array<{ key: string; title: string; where: string; access: Key; open: () => void }> = [];
     for (const f of filesList ?? []) {
       const cat = f.name.includes("/") ? f.name.split("/")[0] : "general";
-      out.push({ key: `f:${f.name}`, title: displayName(f.name), where: `Uploads / ${cat}`, access: "Can remove", open: () => (actions.setView("files"), actions.setToolFilter(cat)) });
+      out.push({ key: `f:${f.name}`, title: displayName(f.name), where: t("home.docs.uploadsPath", { cat }), access: "home.docs.canRemove", open: () => (actions.setView("files"), actions.setToolFilter(cat)) });
     }
-    for (const c of clips ?? []) out.push({ key: `c:${c.id}`, title: c.text.length > 80 ? `${c.text.slice(0, 80)}…` : c.text, where: "Clips", access: "Can remove", open: () => actions.setView("clipboard") });
-    for (const m of Object.values(mcFiles ?? {})) out.push({ key: `m:${m.name}`, title: m.label, where: `Mission control / ${m.name}`, access: "View only", open: () => actions.openMcCard(m.name) });
+    for (const c of clips ?? []) out.push({ key: `c:${c.id}`, title: c.text.length > 80 ? `${c.text.slice(0, 80)}…` : c.text, where: t("shell.tab.clips"), access: "home.docs.canRemove", open: () => actions.setView("clipboard") });
+    for (const m of Object.values(mcFiles ?? {})) out.push({ key: `m:${m.name}`, title: m.label, where: t("shell.search.missionControlPath", { name: m.name }), access: "home.docs.viewOnly", open: () => actions.openMcCard(m.name) });
     const needle = q.trim().toLowerCase();
     return needle ? out.filter((i) => `${i.title} ${i.where}`.toLowerCase().includes(needle)) : out;
-  }, [filesList, clips, mcFiles, q]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filesList, clips, mcFiles, q, lang]);
   const loading = filesList === null || clips === null || mcFiles === null;
   return (
     <div className="rd-docs-all">
       <div className="rd-docs-bar">
-        <span className="rd-quiet">{loading ? "Loading…" : `${items.length} document${items.length === 1 ? "" : "s"}`}</span>
+        <span className="rd-quiet">{loading ? t("common.loading") : tn("home.docs.count", items.length)}</span>
         <label className="rd-find">
           <Icon name="search" />
-          <input type="search" placeholder="Find a document…" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Find a document" />
+          <input type="search" dir="auto" placeholder={t("home.docs.findPlaceholder")} value={q} onChange={(e) => setQ(e.target.value)} aria-label={t("home.docs.find")} />
         </label>
       </div>
-      {!loading && !items.length && <p className="rd-quiet rd-empty-line">{q ? "Nothing matches that." : "No documents yet. Uploads, clips and mission-control cards show here."}</p>}
+      {!loading && !items.length && <p className="rd-quiet rd-empty-line">{q ? t("home.docs.noMatch") : t("home.docs.empty")}</p>}
       <ul className="rd-doc-list">
         {items.map((i) => (
           <li key={i.key}>
             <button type="button" onClick={i.open}>
               <span className="rd-doc-icon"><Icon name="folder" /></span>
               <span className="rd-doc-text">
-                {i.title}
-                <small>{i.where}</small>
+                <bdi dir="auto">{i.title}</bdi>
+                <small dir="auto">{i.where}</small>
               </span>
-              <span className={`rd-doc-access${i.access === "View only" ? " ro" : ""}`}>{i.access}</span>
+              <span className={`rd-doc-access${i.access === "home.docs.viewOnly" ? " ro" : ""}`}>{t(i.access)}</span>
               <Icon name="chevron-right" />
             </button>
           </li>
@@ -87,22 +91,27 @@ function AllDocuments() {
 
 /** One open document, full page (FINAL documents reader): back to Documents, where it lives, title, access, content. */
 function DocReader({ name, label, content, mtime }: { name: string; label: string; content: string; mtime?: number }) {
+  const t = useT();
+  const lang = useLang();
+  // English keeps the browser's own format, as before; other languages format in their locale.
+  const loc = lang === "en" ? [] : locale();
   const when = mtime ? new Date(mtime) : null;
-  const updated = when && !Number.isNaN(when.getTime()) ? `Updated ${when.toDateString() === new Date().toDateString() ? when.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : when.toLocaleDateString([], { month: "short", day: "numeric" })}` : "";
+  const updated = when && !Number.isNaN(when.getTime()) ? t("home.docs.updated", { when: when.toDateString() === new Date().toDateString() ? when.toLocaleTimeString(loc, { hour: "numeric", minute: "2-digit" }) : when.toLocaleDateString(loc, { month: "short", day: "numeric" }) }) : "";
   return (
     <div className="rd-page rd-page-scroll rd-docs rd-doc-reader" data-page="documents">
       <button type="button" className="rd-back-link" onClick={() => (actions.closeMcCard(), actions.setView("documents"))}>
-        <Icon name="arrow-left" /> Documents
+        <Icon name="arrow-left" /> {t("shell.nav.documents")}
       </button>
-      <div className="rd-eyebrow">MISSION CONTROL / {name}</div>
-      <h1 className="rd-title">{label}</h1>
-      <p className="rd-sub">{[updated, "Shared with your team", "View only"].filter(Boolean).join(" · ")}</p>
-      <article className="rd-doc-card msg-text" dangerouslySetInnerHTML={{ __html: renderMarkdown(content) }} />
+      <div className="rd-eyebrow">{t("home.docs.mcEyebrow", { name })}</div>
+      <h1 className="rd-title" dir="auto">{label}</h1>
+      <p className="rd-sub">{[updated, t("home.docs.sharedWithTeam"), t("home.docs.viewOnly")].filter(Boolean).join(" · ")}</p>
+      <article className="rd-doc-card msg-text" dir="auto" dangerouslySetInnerHTML={{ __html: renderMarkdown(content) }} />
     </div>
   );
 }
 
 export function DocumentsPage({ phone, body }: { phone: boolean; body: ReactNode }) {
+  const t = useT();
   const { view, filesList, clips, mcFiles, mcL2, user } = useAppState();
   // The real AHI folder system: owner only on the server; absent → the column is as before.
   const tree = useAhiTree(!!user?.admin);
@@ -132,14 +141,14 @@ export function DocumentsPage({ phone, body }: { phone: boolean; body: ReactNode
         <PageHeader page="documents" />
       </div>
       <div className="rd-page-body rd-docs-body">
-        <aside className="rd-folders" aria-label="Workspace folders">
+        <aside className="rd-folders" aria-label={t("home.docs.workspaceFolders")}>
           {tree.available && (
             <>
-              <div className="rd-eyebrow">WORKSPACE FOLDERS</div>
+              <div className="rd-eyebrow">{t("home.docs.workspaceFoldersCaps")}</div>
               <AhiTreeNav tree={tree} open={ahiOpen} expanded={expanded} onFolder={(e) => openFolder(e, true)} onFile={(e) => setPreview(e.path)} />
             </>
           )}
-          <div className="rd-eyebrow rd-folders-app">{tree.available ? "IN THE APP" : "WORKSPACE FOLDERS"}</div>
+          <div className="rd-eyebrow rd-folders-app">{tree.available ? t("home.docs.inTheApp") : t("home.docs.workspaceFoldersCaps")}</div>
           <nav>
             {FOLDERS.map((f) => {
               const here = ahiOpen === null && view === f.view;
@@ -158,7 +167,7 @@ export function DocumentsPage({ phone, body }: { phone: boolean; body: ReactNode
                     }}
                   >
                     <Icon name="folder" />
-                    <span>{f.label}</span>
+                    <span>{t(f.label)}</span>
                     {count(f.view) !== null && <span className="rd-folder-count">{count(f.view)}</span>}
                   </button>
                   {/* The open folder's own controls: categories (add / rename / delete), clip filters, cards. */}
@@ -172,7 +181,7 @@ export function DocumentsPage({ phone, body }: { phone: boolean; body: ReactNode
             })}
           </nav>
           <p className="rd-folder-note">
-            <Icon name="shield" /> {tree.available ? "Your AHI folders, as they are on the server. Hidden and credential files never show; nothing here moves or deletes." : "Only the workspace’s own folders appear here. What you can do follows each document’s access."}
+            <Icon name="shield" /> {tree.available ? t("home.docs.treeNote") : t("home.docs.appNote")}
           </p>
         </aside>
         <div className="rd-page-view">
@@ -199,6 +208,7 @@ const usd = (n: number) => money(n, 2);
 export const FinCatsSlot = createContext<ReactNode>(null);
 
 function Summary() {
+  const t = useT();
   const { costEntries, user } = useAppState();
   const admin = !!user?.admin;
   const [bills, setBills] = useState<Bill[] | null>(null);
@@ -210,41 +220,42 @@ function Summary() {
   const once = (bills ?? []).filter((b) => b.active && b.recurring === "once").reduce((n, b) => n + (b.amount ?? 0), 0);
   const ready = bills !== null && (!admin || costEntries !== null);
   return (
-    <section className="rd-fin-summary" aria-label="Monthly summary">
+    <section className="rd-fin-summary" aria-label={t("home.fin.summary")}>
       <div className="rd-fin-figures">
         <div>
-          <div className="rd-eyebrow">MONTHLY EQUIVALENT</div>
+          <div className="rd-eyebrow">{t("home.fin.monthlyEq")}</div>
           <div className="rd-fin-n">{ready ? usd(ops + home) : "—"}</div>
-          <small>{admin ? "Recurring costs + recurring bills" : "Your recurring bills"}</small>
+          <small>{admin ? t("home.fin.recurringBoth") : t("home.fin.recurringBills")}</small>
         </div>
         {admin && (
           <div>
-            <div className="rd-eyebrow">OPERATING COSTS</div>
+            <div className="rd-eyebrow">{t("home.fin.opCosts")}</div>
             <div className="rd-fin-n">{ready ? usd(ops) : "—"}</div>
-            <small>Active costs{usage ? " · usage estimated" : ""}</small>
+            <small>{usage ? t("home.fin.activeEstimated") : t("home.fin.active")}</small>
           </div>
         )}
         <div>
-          <div className="rd-eyebrow">PERSONAL BILLS</div>
+          <div className="rd-eyebrow">{t("home.fin.personalBills")}</div>
           <div className="rd-fin-n">{ready ? usd(home) : "—"}</div>
-          <small>Weekly and yearly normalized</small>
+          <small>{t("home.fin.normalized")}</small>
         </div>
       </div>
-      <div className="rd-fin-foot">{once > 0 ? `One-time bills: ${usd(once)} separately` : "No one-time bills"} · Figures are what you entered; nothing here confirms a payment.</div>
+      <div className="rd-fin-foot">{once > 0 ? t("home.fin.oneTime", { amount: usd(once) }) : t("home.fin.noOneTime")} · {t("home.fin.figuresNote")}</div>
     </section>
   );
 }
 
 export function FinancesPage({ body }: { body: ReactNode }) {
+  const t = useT();
   const { view } = useAppState();
   return (
     <div className="rd-page rd-page-scroll rd-fin" data-page="finances">
       <div className="rd-page-top">
         <header className="rd-page-head">
           <div>
-            <div className="rd-eyebrow">THE COST OF WORK AND LIFE</div>
-            <h1 className="rd-title">One clear picture.</h1>
-            <p className="rd-sub">Operating costs and personal bills, together when you need the whole picture.</p>
+            <div className="rd-eyebrow">{t("home.fin.eyebrow")}</div>
+            <h1 className="rd-title">{t("home.fin.title")}</h1>
+            <p className="rd-sub">{t("home.fin.sub")}</p>
           </div>
         </header>
         <Summary />

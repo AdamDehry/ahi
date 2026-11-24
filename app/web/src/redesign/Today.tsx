@@ -13,6 +13,7 @@ import { BOT_LABELS } from "../lib/types";
 import { Icon } from "./icons";
 import { AgentAvatar } from "./AgentRail";
 import { goPage } from "./Shell";
+import { locale, tn, useT, type Key } from "../i18n";
 
 function useSchedule() {
   const [view, setView] = useState<ScheduleView | null>(null);
@@ -33,20 +34,21 @@ function useSchedule() {
   return { view, failed, again: () => setRetry((n) => n + 1) };
 }
 
-function attentionAction(a: AttentionRow): { label: string; go: () => void } {
-  if (a.kind === "review") return { label: "Review", go: () => actions.openReview() };
+function attentionAction(a: AttentionRow): { label: Key; go: () => void } {
+  if (a.kind === "review") return { label: "home.today.reviewAction", go: () => actions.openReview() };
   if (a.kind === "question") {
     const bot = BOT_LABELS[a.who] ? a.who : "michael";
-    return { label: "Answer in thread", go: () => actions.answerInThread(bot, a.text) };
+    return { label: "home.today.answerInThread", go: () => actions.answerInThread(bot, a.text) };
   }
-  return { label: "See it", go: () => scheduleUi.open(a.block) };
+  return { label: "home.today.seeIt", go: () => scheduleUi.open(a.block) };
 }
 
 function dayTitle(view: ScheduleView): string {
-  return new Intl.DateTimeFormat("en-US", { weekday: "long", month: "long", day: "numeric", timeZone: view.zone }).format(new Date(view.now)).toUpperCase();
+  return new Intl.DateTimeFormat(locale(), { weekday: "long", month: "long", day: "numeric", timeZone: view.zone }).format(new Date(view.now)).toUpperCase();
 }
 
 export default function Today() {
+  const t = useT();
   const s = useAppState();
   const admin = !!s.user?.admin;
   const { view, failed, again } = useSchedule();
@@ -57,7 +59,7 @@ export default function Today() {
   const todayRest = blocks.filter((b) => b.status === "next" || b.status === "later");
   const restDate = todayRest.length ? view?.today ?? null : upcoming[0]?.date ?? null;
   const rest = todayRest.length ? todayRest : upcoming.filter((b) => b.date === restDate);
-  const restLabel = todayRest.length || !restDate ? "The rest of your day" : `Next up · ${dayLabel(restDate)}`;
+  const restLabel = todayRest.length || !restDate ? t("home.today.restOfDay") : t("home.today.nextUp", { day: dayLabel(restDate) });
   const note = view?.background.decisions[0] ?? null;
 
   return (
@@ -65,57 +67,57 @@ export default function Today() {
       <div className="rd-page-top">
         <header className="rd-page-head">
           <div>
-            <div className="rd-eyebrow">{view ? dayTitle(view) : "TODAY"}</div>
-            <h1 className="rd-title">A little clarity for your day.</h1>
-            <p className="rd-sub">Your time, your next decisions, and the work moving around you.</p>
+            <div className="rd-eyebrow">{view ? dayTitle(view) : t("shell.page.today.eyebrow")}</div>
+            <h1 className="rd-title">{t("shell.page.today.title")}</h1>
+            <p className="rd-sub">{t("shell.page.today.sub")}</p>
           </div>
           <div className="rd-page-actions">
             <button type="button" className="rd-btn" onClick={() => scheduleUi.open()}>
-              Open calendar
+              {t("home.today.openCalendar")}
             </button>
           </div>
         </header>
       </div>
       {failed && !view && (
         <div className="rd-inline-error" role="alert">
-          Couldn’t load your day. <button type="button" onClick={again}>Try again</button>
+          {t("home.today.couldntLoad")} <button type="button" onClick={again}>{t("common.tryAgain")}</button>
         </div>
       )}
-      {view?.error && <div className="rd-inline-note">Your week file has a problem, so the last good copy is showing: {view.error}</div>}
+      {view?.error && <div className="rd-inline-note">{t("home.today.weekFileProblem", { error: view.error })}</div>}
       {view && (
         <div className="rd-today-grid">
           <div className="rd-today-main">
             <article className="rd-card rd-focus">
               <div className="rd-card-top">
-                <span className="rd-eyebrow">YOUR FOCUS, RIGHT NOW</span>
-                {current && <span className="rd-pill">UNTIL {clock(current.end, view.zone)}</span>}
+                <span className="rd-eyebrow">{t("home.today.focusNow")}</span>
+                {current && <span className="rd-pill">{t("home.today.until", { time: clock(current.end, view.zone) })}</span>}
               </div>
               {current ? (
                 <>
-                  <h2>{current.title}.</h2>
-                  {current.detail && <p>{current.detail}</p>}
+                  <h2><bdi dir="auto">{current.title}</bdi>.</h2>
+                  {current.detail && <p dir="auto">{current.detail}</p>}
                   {view.current?.lines.slice(0, 2).map((l) => (
-                    <p key={l.id} className="rd-focus-line">{l.text}</p>
+                    <p key={l.id} className="rd-focus-line" dir="auto">{l.text}</p>
                   ))}
                   <div className="rd-focus-foot">
                     <button type="button" className="rd-btn rd-btn-accent" onClick={() => scheduleUi.open(current.id)}>
-                      Open your briefing <Icon name="arrow-right" />
+                      {t("home.today.openBriefing")} <Icon name="arrow-right" />
                     </button>
-                    <span className="rd-quiet">{BOT_LABELS.michael} is keeping the rest moving.</span>
+                    <span className="rd-quiet">{t("home.today.keepingMoving", { name: BOT_LABELS.michael })}</span>
                   </div>
                 </>
               ) : (
                 <>
-                  <h2>Nothing scheduled right now.</h2>
-                  <p>{view.next ? `Next: ${view.blocks[view.next]?.title} at ${clock(view.blocks[view.next]!.start, view.zone)}.` : "The rest of the day is open."}</p>
+                  <h2>{t("home.today.nothingScheduled")}</h2>
+                  <p>{view.next ? t("home.today.nextAt", { title: view.blocks[view.next]?.title ?? "", time: clock(view.blocks[view.next]!.start, view.zone) }) : t("home.today.restOpen")}</p>
                 </>
               )}
             </article>
 
             <section className="rd-attention">
               <div className="rd-section-head">
-                <h2>A moment of your attention</h2>
-                <span className="rd-pill">{view.attention.length} {view.attention.length === 1 ? "thing" : "things"}</span>
+                <h2>{t("home.today.attentionTitle")}</h2>
+                <span className="rd-pill">{tn("home.today.things", view.attention.length)}</span>
               </div>
               {view.attention.length ? (
                 <ul className="rd-list-card">
@@ -125,27 +127,27 @@ export default function Today() {
                       <li key={a.id} className={a.urgent ? "urgent" : ""}>
                         <Icon name={a.kind === "review" ? "shield" : a.kind === "question" ? "spark" : "messages"} />
                         <span>
-                          {a.text}
+                          <bdi dir="auto">{a.text}</bdi>
                           <small>{BOT_LABELS[a.who] ?? a.who}</small>
                         </span>
                         <button type="button" className="rd-btn" onClick={act.go}>
-                          {act.label}
+                          {t(act.label)}
                         </button>
                       </li>
                     );
                   })}
                 </ul>
               ) : (
-                <p className="rd-quiet rd-empty-line">Nothing needs you right now.</p>
+                <p className="rd-quiet rd-empty-line">{t("shell.bell.nothingNeedsYou")}</p>
               )}
             </section>
 
             <section className="rd-moving-quiet">
               <div className="rd-section-head">
-                <h2>Quietly moving for you</h2>
+                <h2>{t("home.today.quietlyMoving")}</h2>
                 {admin && (
                   <button type="button" onClick={() => goPage("work")}>
-                    Your work <Icon name="arrow-right" />
+                    {t("shell.nav.work")} <Icon name="arrow-right" />
                   </button>
                 )}
               </div>
@@ -155,14 +157,14 @@ export default function Today() {
                     <li key={w.build}>
                       <AgentAvatar bot={BOT_LABELS[w.agent] ? w.agent : "michael"} size="sm" />
                       <span>
-                        {w.title}
-                        <small>{w.now}</small>
+                        <bdi dir="auto">{w.title}</bdi>
+                        <small dir="auto">{w.now}</small>
                       </span>
                     </li>
                   ))}
                 </ul>
               ) : (
-                <p className="rd-quiet rd-empty-line">Nothing running in the background.</p>
+                <p className="rd-quiet rd-empty-line">{t("home.today.nothingBackground")}</p>
               )}
             </section>
           </div>
@@ -171,7 +173,7 @@ export default function Today() {
             <article className="rd-card rd-rest">
               <div className="rd-card-top">
                 <h3>{restLabel}</h3>
-                <button type="button" className="rd-chat-control" aria-label="Open calendar" onClick={() => scheduleUi.open()}>
+                <button type="button" className="rd-chat-control" aria-label={t("home.today.openCalendar")} onClick={() => scheduleUi.open()}>
                   <Icon name="calendar" />
                 </button>
               </div>
@@ -185,9 +187,9 @@ export default function Today() {
                           <small>{/(AM|PM)$/i.exec(clock(b.start, view.zone))?.[1] ?? ""}</small>
                         </span>
                         <span className="rd-block">
-                          {b.title}
-                          {b.detail && <small>{b.detail}</small>}
-                          {b.sacred && <small>Protected</small>}
+                          <bdi dir="auto">{b.title}</bdi>
+                          {b.detail && <small dir="auto">{b.detail}</small>}
+                          {b.sacred && <small>{t("home.today.protected")}</small>}
                         </span>
                         <Icon name="chevron-right" />
                       </button>
@@ -195,16 +197,16 @@ export default function Today() {
                   ))}
                 </ul>
               ) : (
-                <p className="rd-quiet">That’s the day.</p>
+                <p className="rd-quiet">{t("home.today.thatsTheDay")}</p>
               )}
-              <div className="rd-card-foot rd-quiet">Protected time stays protected.</div>
+              <div className="rd-card-foot rd-quiet">{t("home.today.protectedStays")}</div>
             </article>
             {note && (
               <div className="rd-note">
-                <div className="rd-eyebrow">A NOTE FROM {(BOT_LABELS.michael ?? "Michael").toUpperCase()}</div>
-                <p>{note.decision}</p>
+                <div className="rd-eyebrow">{t("home.today.noteFrom", { name: (BOT_LABELS.michael ?? "Michael").toUpperCase() })}</div>
+                <p dir="auto">{note.decision}</p>
                 <button type="button" className="rd-link-action" onClick={() => scheduleUi.open()}>
-                  See my decisions ↗
+                  {t("home.today.seeDecisions")}
                 </button>
               </div>
             )}

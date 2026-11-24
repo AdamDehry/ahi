@@ -1,4 +1,5 @@
 import { useEffect, useSyncExternalStore } from "react";
+import { t } from "../i18n";
 /**
  * push.ts — client side of Web Push (Step 8).
  *
@@ -86,15 +87,15 @@ export async function isSubscribed(): Promise<boolean> {
 export async function subscribeThisDevice(): Promise<string | null> {
   if (pushSupport() !== "ok") {
     return pushSupport() === "needs-install"
-      ? "Install the app to your Home Screen first (Share → Add to Home Screen)."
-      : "This browser does not support push notifications.";
+      ? t("chat.pushNeedsInstall")
+      : t("chat.pushUnsupported");
   }
   const permission = await Notification.requestPermission();
   if (permission !== "granted") {
-    return "Notification permission was not granted. Enable it in the phone's settings for this app.";
+    return t("chat.pushDenied");
   }
   const keyRes = await fetch("/app/push/vapid-public-key");
-  if (!keyRes.ok) return "The gateway has no push keys configured.";
+  if (!keyRes.ok) return t("chat.pushNoKeys");
   const { key } = (await keyRes.json()) as { key: string };
 
   const reg = await navigator.serviceWorker.ready;
@@ -106,7 +107,7 @@ export async function subscribeThisDevice(): Promise<string | null> {
         applicationServerKey: urlBase64ToUint8Array(key),
       });
     } catch (err) {
-      return `Subscription failed: ${(err as Error).message}`;
+      return t("chat.pushSubscribeFailed", { error: (err as Error).message });
     }
   }
   const res = await fetch("/app/push/subscribe", {
@@ -114,7 +115,7 @@ export async function subscribeThisDevice(): Promise<string | null> {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ subscription: sub.toJSON() }),
   });
-  if (!res.ok) return "The gateway rejected the subscription.";
+  if (!res.ok) return t("chat.pushRejected");
   return null;
 }
 

@@ -34,6 +34,8 @@ import {
 import { getEntries as getCostEntries, addPersonalEntry, updatePersonalEntry, deletePersonalEntry, listCostCategories, createCostCategory, renameCostCategory, deleteCostCategory } from "./operating-costs.js";
 import type { BotInstance } from "./telegram.js";
 import { lookupByToken, userCanAccessAgent, toPublic, type UserConfig } from "./users.js";
+import { isLanguage, setUserLanguage, userLanguage } from "./ui-prefs.js";
+import { voiceSttProviderFor } from "./voice/stt-select.js";
 import { takeSentinelFiles } from "./chat-files/sentinel.js";
 import { addBill, deleteBill, readBills, saveBillSettings, setBillsChangeListener, updateBill } from "./bills.js";
 import { vapidPublicKey, pushConfigured, addSubscription, removeSubscription, getPushSettings, savePushSettings, TONES } from "./push.js";
@@ -806,6 +808,27 @@ export function createDashboard(instances: BotInstance[], gatewayConfig: Gateway
     const user = resolveUser(c);
     if (!user) return c.json({ error: "Unauthorized" }, 401);
     return c.json({ user: toPublic(user) });
+  });
+
+  // --- Interface preferences (each user's own: Settings → Language) ---
+  //
+  // `hebrewVoice` says in plain terms what this install's voice setup does with
+  // Hebrew, for the lead agent the user talks to, so Settings can tell them
+  // before a call rather than during one.
+  dash.get("/ui/prefs", (c) => {
+    const user = resolveUser(c);
+    if (!user) return c.json({ error: "Unauthorized" }, 401);
+    const lead = instances.find((i) => user.agents.includes(i.config.name))?.config;
+    return c.json({ language: userLanguage(user.userId) ?? null, hebrewVoice: lead ? hebrewVoiceFor(lead) : "none" });
+  });
+
+  dash.post("/ui/prefs", async (c) => {
+    const user = resolveUser(c);
+    if (!user) return c.json({ error: "Unauthorized" }, 401);
+    const body = await c.req.json<{ language?: unknown }>().catch(() => null);
+    if (!isLanguage(body?.language)) return c.json({ error: "Unknown language" }, 400);
+    setUserLanguage(user.userId, body.language);
+    return c.json({ ok: true, language: body.language });
   });
 
   // --- Logout ---
@@ -2705,4 +2728,15 @@ export function createDashboard(instances: BotInstance[], gatewayConfig: Gateway
   });
 
   return dash;
+}
+
+/**
+ * Hebrew through this agent's voice: it HEARS Hebrew when calls can listen through OpenAI (chosen over
+ * Cartesia's English-only live model for a Hebrew owner, voice/stt-select.ts) or Google, and voice notes
+ * are transcribed by OpenAI; it SPEAKS Hebrew with OpenAI, Google and Cartesia voices.
+ */
+export function hebrewVoiceFor(cfg: Pick<BotConfig, "name" | "ttsProvider">, env: NodeJS.ProcessEnv = process.env): "full" | "hears" | "speaks" | "none" {
+  const hears = !!env.OPENAI_API_KEY || voiceSttProviderFor(cfg.name) === "google";
+  const speaks = ["openai", "google", "chirp", "cartesia"].includes(cfg.ttsProvider);
+  return hears && speaks ? "full" : hears ? "hears" : speaks ? "speaks" : "none";
 }

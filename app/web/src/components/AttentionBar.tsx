@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { actions, useAppState } from "../store";
 import { clock, liveShip, type AttentionItem } from "../lib/ship";
 import { IconClose } from "./icons";
+import { t, useT } from "../i18n";
 
 /**
  * The attention bar: a slim line at the top of EVERY screen,
@@ -18,6 +19,7 @@ import { IconClose } from "./icons";
  * opens the card.
  */
 export default function AttentionBar({ mobile = false }: { mobile?: boolean }) {
+  useT();
   const { attention, attentionDismissed, shipWatch, shipLive, connection, restartingAt, gatewayShaBefore, gatewayShaNow, user } = useAppState();
   const [now, setNow] = useState(() => Date.now());
   const live = shipLive ? liveShip({ ship: shipLive, connection, restartingAt, shaBefore: gatewayShaBefore, shaNow: gatewayShaNow, now }) : null;
@@ -26,8 +28,8 @@ export default function AttentionBar({ mobile = false }: { mobile?: boolean }) {
   // A clock only while a ship is moving — the elapsed figure is the visual.
   useEffect(() => {
     if (!ticking) return;
-    const t = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(t);
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
   }, [ticking]);
 
   if (!user?.admin) return null;
@@ -48,7 +50,7 @@ export default function AttentionBar({ mobile = false }: { mobile?: boolean }) {
             {r.action && <span className="attn-action mono-label">{r.action}</span>}
           </button>
           {r.onDismiss && (
-            <button type="button" className="attn-x" aria-label="Not now" onClick={r.onDismiss}>
+            <button type="button" className="attn-x" aria-label={t("chat.notNow")} onClick={r.onDismiss}>
               <IconClose />
             </button>
           )}
@@ -85,19 +87,19 @@ function shipRow(title: string, live: ReturnType<typeof liveShip> & object, card
   const done = () => actions.watchShip(null);
   switch (live.phase) {
     case "back":
-      return { key: "ship-live", tone: "back", dot: "ok", line: `Shipped ${title} · back on ${live.sha ?? "the new build"}`, action: null, onOpen: open, onDismiss: done };
+      return { key: "ship-live", tone: "back", dot: "ok", line: t("chat.attnShipped", { title, sha: live.sha ?? t("chat.attnNewBuild") }), action: null, onOpen: open, onDismiss: done };
     case "rolled_back":
-      return { key: "ship-live", tone: "trouble", dot: "warn", line: `Rolled back — ${title} is on ${live.sha ?? "the previous build"}`, action: "See why", onOpen: open, onDismiss: done };
+      return { key: "ship-live", tone: "trouble", dot: "warn", line: t("chat.attnRolledBack", { title, sha: live.sha ?? t("chat.attnPreviousBuild") }), action: t("chat.seeWhy"), onOpen: open, onDismiss: done };
     case "failed":
-      return { key: "ship-live", tone: "trouble", dot: "warn", line: `Ship stopped — ${title}`, action: "See why", onOpen: open, onDismiss: done };
+      return { key: "ship-live", tone: "trouble", dot: "warn", line: t("chat.attnShipStopped", { title }), action: t("chat.seeWhy"), onOpen: open, onDismiss: done };
     case "restarting":
-      return { key: "ship-live", tone: "live", dot: "pulse", line: `Shipping ${title} · restarting · ${clock(live.elapsedMs)} dark`, action: null, onOpen: open, onDismiss: null };
+      return { key: "ship-live", tone: "live", dot: "pulse", line: t("chat.attnRestarting", { title, clock: clock(live.elapsedMs) }), action: null, onOpen: open, onDismiss: null };
     case "reconnecting":
-      return { key: "ship-live", tone: "live", dot: "pulse", line: `Shipping ${title} · coming back`, action: null, onOpen: open, onDismiss: null };
+      return { key: "ship-live", tone: "live", dot: "pulse", line: t("chat.attnComingBack", { title }), action: null, onOpen: open, onDismiss: null };
     case "building":
     case "shipping":
-      return { key: "ship-live", tone: "live", dot: "pulse", line: `Shipping ${title} · ${live.label.toLowerCase()} · ${clock(live.elapsedMs)}`, action: null, onOpen: open, onDismiss: null };
+      return { key: "ship-live", tone: "live", dot: "pulse", line: t("chat.attnStage", { title, stage: live.label.toLowerCase(), clock: clock(live.elapsedMs) }), action: null, onOpen: open, onDismiss: null };
     default:
-      return { key: "ship-live", tone: "live", dot: "pulse", line: `Shipping ${title} · waking Michael · ${clock(live.elapsedMs)}`, action: null, onOpen: open, onDismiss: null };
+      return { key: "ship-live", tone: "live", dot: "pulse", line: t("chat.attnWaking", { title, clock: clock(live.elapsedMs) }), action: null, onOpen: open, onDismiss: null };
   }
 }

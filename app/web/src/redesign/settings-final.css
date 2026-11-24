@@ -7,7 +7,7 @@
 .rs-page .rs-heading>p,.rs-page .rs-content>header>p { color:var(--text-mute);font-size:12px;line-height:1.8 }
 .rs-page .rs-layout { display:grid;grid-template-columns:170px minmax(0,1fr);gap:45px }
 .rs-page .rs-navigation { display:flex;flex-direction:column;align-self:start;gap:5px;position:sticky;top:20px }
-.rs-page .rs-navigation>button { display:flex;align-items:center;gap:12px;text-align:left;border-radius:10px;padding:13px 14px;color:var(--text-mute);font-size:12px;white-space:nowrap }
+.rs-page .rs-navigation>button { display:flex;align-items:center;gap:12px;text-align:start;border-radius:10px;padding:13px 14px;color:var(--text-mute);font-size:12px;white-space:nowrap }
 .rs-page .rs-navigation>button[aria-current=page] { color:var(--text);background:var(--raised) }
 .rs-page .rs-navigation svg { width:17px;height:17px;flex-shrink:0 }
 .rs-page .rs-navigation>small { font-size:9px;color:var(--text-mute);padding:22px 14px }
@@ -28,7 +28,7 @@
 .rs-page .rs-note { font-size:10px;color:var(--text-mute);line-height:1.9;margin:16px 0 }
 .rs-page .rs-footer { display:flex;gap:12px;justify-content:space-between;flex-wrap:wrap;color:var(--text-mute);font-size:9px;padding:22px 0;margin-top:16px }
 .rs-page .rs-theme-grid { display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px }
-.rs-page .rs-theme { border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--surface);text-align:left;padding:9px;min-width:0 }
+.rs-page .rs-theme { border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--surface);text-align:start;padding:9px;min-width:0 }
 .rs-page .rs-theme[aria-pressed=true] { border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) }
 .rs-page .rs-theme-preview { display:flex;height:110px;border:1px solid #7d8a8430;border-radius:8px;overflow:hidden;background:#f3f1eb }
 .rs-page .rs-theme-preview>i { width:27%;background:#315955;display:block }
@@ -66,8 +66,8 @@
 .rs-page .rs-section-title { margin:32px 0 15px }
 .rs-page .rs-section-title p { color:var(--text-mute);font-size:11px;line-height:1.8;margin-top:6px }
 .rs-page .rs-source { border:1px solid var(--line);border-radius:12px;background:var(--surface);margin-bottom:10px;overflow:hidden }
-.rs-page .rs-source>header { display:flex;align-items:center;padding-right:18px;gap:14px }
-.rs-page .rs-source-open { display:flex;align-items:center;text-align:left;gap:13px;padding:18px;min-width:0;flex:1 }
+.rs-page .rs-source>header { display:flex;align-items:center;padding-inline-end:18px;gap:14px }
+.rs-page .rs-source-open { display:flex;align-items:center;text-align:start;gap:13px;padding:18px;min-width:0;flex:1 }
 .rs-page .rs-source-icon { display:grid;place-items:center;flex-shrink:0;width:25px;color:var(--text-mute) }
 .rs-page .rs-source-icon>svg,.rs-page .rs-source-icon>img { width:21px;height:21px;object-fit:contain }
 .rs-page .rs-source-open>span:nth-child(2) { flex:1;min-width:0 }
@@ -76,7 +76,7 @@
 .rs-page .rs-event-count { font-size:9px;color:var(--text-mute);white-space:nowrap }
 .rs-page .rs-source-open>svg { width:13px;height:13px;color:var(--text-mute);flex-shrink:0;transition:transform .15s }
 .rs-page .rs-source-open[aria-expanded=true]>svg { transform:rotate(180deg) }
-.rs-page .rs-source-events { padding:0 20px 5px 55px;border-top:1px solid var(--line) }
+.rs-page .rs-source-events { padding-block:0 5px; padding-inline:55px 20px;border-top:1px solid var(--line) }
 .rs-page .rs-source-events .rs-row { min-height:62px;padding:15px 0 }
 .rs-page .rs-source-events strong { font-size:11px;font-weight:400 }
 .rs-page .rs-agent-inline,.rs-page .rs-key-name { display:flex;align-items:center;gap:10px }
@@ -136,15 +136,15 @@
 .rs-page .rs-row>.vault-button { font-size:10px;padding:9px 10px }
 .rs-page .rs-shortcuts .rs-row { align-items:flex-start;flex-direction:column }
 .rs-page .rs-account-shortcut { gap:12px;flex-wrap:wrap }
-.rs-page .rs-account-shortcut>.vault-button { margin-left:auto }
+.rs-page .rs-account-shortcut>.vault-button { margin-inline-start:auto }
 .rs-page .rs-agent { padding:18px }
 .rs-page .rs-agent-controls { grid-template-columns:1fr }
 .rs-page .rs-select select,.rs-page .rs-quiet input { font-size:16px }
-.rs-page .rs-source>header { padding-right:13px;gap:7px }
+.rs-page .rs-source>header { padding-inline-end:13px;gap:7px }
 .rs-page .rs-source-open { padding:17px 12px;gap:10px }
 .rs-page .rs-source-open small { font-size:9px }
 .rs-page .rs-event-count { display:none }
-.rs-page .rs-source-events { padding-left:18px;padding-right:15px }
+.rs-page .rs-source-events { padding-inline-start:18px;padding-inline-end:15px }
 .rs-page .rs-security-note { padding:20px;gap:13px }
 .rs-page .rs-enrollment { align-items:flex-start;flex-direction:column;gap:15px }
 .rs-page .rs-account-card { padding:21px;gap:15px }
@@ -152,8 +152,8 @@
 .rs-page .rs-footer { font-size:8px }
 }
 .rs-page .rs-switch { position:relative;width:44px;height:44px;min-width:44px;padding:0;border:0;background:transparent }
-.rs-page .rs-switch:before { content:'';position:absolute;left:3px;top:10px;width:38px;height:23px;border:1px solid var(--line);border-radius:20px;background:var(--raised);box-sizing:border-box }
-.rs-page .rs-switch i { position:absolute;left:7px;top:14px }
+.rs-page .rs-switch:before { content:'';position:absolute;inset-inline-start:3px;top:10px;width:38px;height:23px;border:1px solid var(--line);border-radius:20px;background:var(--raised);box-sizing:border-box }
+.rs-page .rs-switch i { position:absolute;inset-inline-start:7px;top:14px }
 .rs-page .rs-switch[aria-checked=true] { background:transparent;border:0 }
 .rs-page .rs-switch[aria-checked=true]:before { background:var(--accent);border-color:var(--accent) }
 .rs-page .rs-content { container-type:inline-size;container-name:settings-content }
@@ -184,20 +184,20 @@
    79px outer gutters both sides at every width; the Settings block (header + nav + content) capped at 1140px and
    centred, so very wide windows grow both gutters evenly; nav 170px, 45px to the content; the content's heading
    sits level with the first nav button. Desktop only (the phone keeps its own stacked layout). */
-.rd-app:not(.phone) .rd-page[data-page="settings"] > :is(.rd-page-top, .rd-page-body) { box-sizing: border-box; width: 100%; max-width: calc(1140px + 156px); margin-inline: auto; padding-left: 78px; padding-right: 78px; } /* 78 + the canvas border = the reference 79 */
+.rd-app:not(.phone) .rd-page[data-page="settings"] > :is(.rd-page-top, .rd-page-body) { box-sizing: border-box; width: 100%; max-width: calc(1140px + 156px); margin-inline: auto; padding-inline-start: 78px; padding-inline-end: 78px; } /* 78 + the canvas border = the reference 79 */
 .rd-app:not(.phone) .rd-page[data-page="settings"] > .rd-page-body { padding-top: 17px; font-size: 14px; }
 .rd-app:not(.phone) .rd-page[data-page="settings"] .rs-page :is(.rs-theme-grid > button, .rd-settings-nav button) { line-height: normal; }
 .rd-app:not(.phone) .rd-page[data-page="settings"] .rs-page .rs-theme-grid > button { font-size: 14px; }
 .rd-app:not(.phone) .rd-page[data-page="settings"] .rd-settings-nav { width: 170px; padding: 0; gap: 5px; position: sticky; top: 20px; align-self: start; }
 .rd-app:not(.phone) .rd-page[data-page="settings"] .rd-settings-nav button { min-height: 0; padding: 13px 14px; }
-.rd-app:not(.phone) .rd-page[data-page="settings"] .rs-page { max-width: none; padding: 0 0 40px 45px; }
+.rd-app:not(.phone) .rd-page[data-page="settings"] .rs-page { max-width: none; padding-block: 0 40px; padding-inline: 45px 0; }
 .rd-app.phone .rd-page[data-page="settings"] .rs-page { padding: 0 0 30px; max-width: none; }
 /* Sound row: the tone picker beside its switch ("specific sounds"), sized like the reference's selects. */
 .rs-page .rs-row-tail { display: flex; align-items: center; gap: 14px; flex: none; }
-.rs-page .rs-tone { min-height: 36px; padding: 7px 30px 7px 11px; border: 1px solid var(--line); border-radius: 9px; background: var(--bg); color: var(--text); font: inherit; font-size: 11px; }
+.rs-page .rs-tone { min-height: 36px; padding-block: 7px 7px; padding-inline: 11px 30px; border: 1px solid var(--line); border-radius: 9px; background: var(--bg); color: var(--text); font: inherit; font-size: 11px; }
 .rs-page .rs-tone:disabled { opacity: .5; }
 /* Reference agent card extras (setup-runtime.css) and exact type for the inline avatars and buttons. */
-.rs-page .identity-edit-link { display: block; min-height: 30px; padding: 7px 0 0; border: 0; background: none; font-size: 10px; color: var(--accent); text-align: left; }
+.rs-page .identity-edit-link { display: block; min-height: 30px; padding: 7px 0 0; border: 0; background: none; font-size: 10px; color: var(--accent); text-align: start; }
 .rs-page .identity-edit-link:hover { text-decoration: underline; }
 .rs-page .vault-button { line-height: 1.4; }
 .rs-page .rs-agent-inline .rd-avatar { width: 26px; height: 26px; font-size: 9px; line-height: 1.7; }

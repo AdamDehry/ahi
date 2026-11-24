@@ -9,6 +9,7 @@ import AudioFile from "./AudioFile";
 import { IconClose, IconDownload, IconFiles, IconLink, IconPlay, IconShowInChat } from "./icons";
 import { Icon } from "../redesign/icons";
 import { railOrder } from "../redesign/agents";
+import { t as translate, tn, useT, type Key } from "../i18n";
 
 /* ============================================================
    MediaPanel — the chat's Media / Files / Links (10/13; brings back the
@@ -20,16 +21,16 @@ import { railOrder } from "../redesign/agents";
    save the original file, or Show in chat.
    ============================================================ */
 
-const TABS: Array<{ key: PanelTab; label: string; name: string }> = [
-  { key: "media", label: "MEDIA", name: "Media" },
-  { key: "files", label: "FILES", name: "Files" },
-  { key: "links", label: "LINKS", name: "Links" },
+const TABS: Array<{ key: PanelTab; label: Key; name: Key }> = [
+  { key: "media", label: "media.tabMediaCaps", name: "media.tabMedia" },
+  { key: "files", label: "media.tabFilesCaps", name: "media.tabFiles" },
+  { key: "links", label: "media.tabLinksCaps", name: "media.tabLinks" },
 ];
 
-const EMPTY: Record<PanelTab, string> = {
-  media: "NO PHOTOS OR VIDEOS YET",
-  files: "NO FILES YET",
-  links: "NO LINKS YET",
+const EMPTY: Record<PanelTab, Key> = {
+  media: "media.emptyMedia",
+  files: "media.emptyFiles",
+  links: "media.emptyLinks",
 };
 
 interface TabState {
@@ -49,6 +50,7 @@ const fresh = (): TabState => ({ items: [], cursor: null, done: false, loading: 
  * has Save and Show in chat. Files and Links stay lists.
  */
 export default function MediaPanel({ bot, mobile, page = false }: { bot: string; mobile: boolean; page?: boolean }) {
+  const t = useT();
   const { user } = useAppState();
   const multiAgent = (user?.agents.length ?? 0) > 1;
   const [tab, setTab] = useState<PanelTab>("media");
@@ -134,7 +136,7 @@ export default function MediaPanel({ bot, mobile, page = false }: { bot: string;
     async (item: PanelItem) => {
       setViewerAt(null);
       const ok = await showInChat(item, mobile || page);
-      if (!ok) showToast("That message isn't in the chat history anymore");
+      if (!ok) showToast(translate("media.notInHistory"));
     },
     [mobile],
   );
@@ -149,14 +151,14 @@ export default function MediaPanel({ bot, mobile, page = false }: { bot: string;
   return (
     <>
       {mobile && !page && <div className="mp-scrim" onClick={() => actions.toggleMediaPanel(false)} />}
-      <aside className={`media-panel${page ? " is-page" : mobile ? " is-sheet" : ""}`} role="dialog" aria-label="Media, files and links">
+      <aside className={`media-panel${page ? " is-page" : mobile ? " is-sheet" : ""}`} role="dialog" aria-label={t("media.panelLabel")}>
         {page && (
           <div className="mp-page-head">
             <button type="button" className="mp-back" onClick={() => actions.toggleMediaPanel(false)}>
-              <span aria-hidden="true">←</span> Back to chat
+              <span aria-hidden="true">{t("media.backArrow")}</span> {t("media.backToChat")}
             </button>
-            <h1 className="rd-title">Shared with your team<span className="rd-title-dot">.</span></h1>
-            <p className="rd-sub">Everything you’ve exchanged, with the conversation close by.</p>
+            <h1 className="rd-title">{t("media.sharedTitle")}<span className="rd-title-dot">.</span></h1>
+            <p className="rd-sub">{t("media.sharedSub")}</p>
           </div>
         )}
         {page ? (
@@ -165,32 +167,32 @@ export default function MediaPanel({ bot, mobile, page = false }: { bot: string;
         <header className="mp-head">
           {mobile && <span className="mp-grabber" aria-hidden="true" />}
           <div className="mp-title-row">
-            <span className="mp-title">{allAgents ? "All agents" : label}</span>
+            <span className="mp-title">{allAgents ? t("media.allAgents") : label}</span>
             {multiAgent && (
-              <div className="mp-scope" role="group" aria-label="Scope">
+              <div className="mp-scope" role="group" aria-label={t("media.scope")}>
                 <button type="button" className={!allAgents ? "on" : ""} aria-pressed={!allAgents} onClick={() => setPicked(null)}>
                   {label}
                 </button>
                 <button type="button" className={allAgents ? "on" : ""} aria-pressed={allAgents} onClick={() => setPicked("all")}>
-                  All agents
+                  {t("media.allAgents")}
                 </button>
               </div>
             )}
-            <button type="button" className="topbar-btn mp-close" aria-label="Close media" onClick={() => actions.toggleMediaPanel(false)}>
+            <button type="button" className="topbar-btn mp-close" aria-label={t("media.closeMedia")} onClick={() => actions.toggleMediaPanel(false)}>
               <IconClose />
             </button>
           </div>
           <nav className="mp-tabs" role="tablist">
-            {TABS.map((t) => (
+            {TABS.map((tb) => (
               <button
-                key={t.key}
+                key={tb.key}
                 type="button"
                 role="tab"
-                aria-selected={tab === t.key}
-                className={`mp-tab mono-label${tab === t.key ? " on" : ""}`}
-                onClick={() => setTab(t.key)}
+                aria-selected={tab === tb.key}
+                className={`mp-tab mono-label${tab === tb.key ? " on" : ""}`}
+                onClick={() => setTab(tb.key)}
               >
-                {t.label}
+                {t(tb.label)}
               </button>
             ))}
           </nav>
@@ -202,16 +204,14 @@ export default function MediaPanel({ bot, mobile, page = false }: { bot: string;
             {/* Never "0 items" while the first page is still on its way. */}
             <span>
               {!current.items.length && !current.done ? (
-                "Loading…"
+                t("common.loading")
+              ) : allAgents ? (
+                tn(current.done ? "media.summaryTeam" : "media.summaryTeamSoFar", current.items.length)
               ) : (
-                <>
-                  {current.items.length} {current.items.length === 1 ? "item" : "items"}
-                  {current.done ? "" : " so far"}
-                  {allAgents ? " across your team" : ` with ${BOT_LABELS[scope] ?? scope}`}
-                </>
+                tn(current.done ? "media.summaryAgent" : "media.summaryAgentSoFar", current.items.length, { name: BOT_LABELS[scope] ?? scope })
               )}
             </span>
-            <small>In your conversations</small>
+            <small>{t("media.inConversations")}</small>
           </div>
         )}
         <div className="mp-body" role="tabpanel" data-tab={tab}>
@@ -227,16 +227,16 @@ export default function MediaPanel({ bot, mobile, page = false }: { bot: string;
           {tab === "links" &&
             current.items.map((item) => <LinkRow key={item.key} item={item} allAgents={allAgents} onReveal={() => void reveal(item)} />)}
 
-          {current.done && current.items.length === 0 && <div className="mp-empty mono-label">{needle ? `Nothing shared matches “${query.trim()}”.` : EMPTY[tab]}</div>}
+          {current.done && current.items.length === 0 && <div className="mp-empty mono-label">{needle ? t("media.nothingMatches", { q: query.trim() }) : t(EMPTY[tab])}</div>}
           {current.error && (
             <button type="button" className="mp-more mono-label" onClick={() => void loadMore()}>
-              COULDN'T LOAD — TAP TO RETRY
+              {t("media.couldNotLoadRetry")}
             </button>
           )}
           {!current.done && !current.error && (
             <div ref={sentinel} className="mp-more mono-label">
-              {current.loading ? "LOADING…" : (
-                <button type="button" onClick={() => void loadMore()}>LOAD MORE</button>
+              {current.loading ? t("media.loadingCaps") : (
+                <button type="button" onClick={() => void loadMore()}>{t("media.loadMore")}</button>
               )}
             </div>
           )}
@@ -262,17 +262,18 @@ function who(item: PanelItem, allAgents: boolean): string {
   const date = shortDate(item.timestamp);
   const agent = BOT_LABELS[item.bot] ?? item.bot;
   // In "All agents", an item from the owner says which chat it went to.
-  const sender = item.direction === "in" && allAgents ? `${item.sender} → ${agent}` : item.sender;
+  const sender = item.direction === "in" && allAgents ? translate("media.senderTo", { sender: item.sender, agent }) : item.sender;
   return [sender, date].filter(Boolean).join(" · ");
 }
 
 function MediaTile({ item, onOpen }: { item: PanelItem; onOpen: () => void }) {
+  const t = useT();
   const m = item.media;
   if (!m) return null;
   const thumb = m.thumbnail || item.kind === "image" ? thumbSrc(m) : null;
   return (
-    <button type="button" className="mp-tile" onClick={onOpen} aria-label={`${m.originalName}, from ${item.sender}`} title={m.originalName} data-key={item.key}>
-      {thumb ? <img src={thumb} alt="" loading="lazy" onLoad={item.kind === "image" ? (e) => sharpenOnLoad(e, m.id) : undefined} /> : <span className="mp-tile-blank mono-label">VIDEO</span>}
+    <button type="button" className="mp-tile" onClick={onOpen} aria-label={t("media.tileLabel", { name: m.originalName, sender: item.sender })} title={m.originalName} data-key={item.key}>
+      {thumb ? <img src={thumb} alt="" loading="lazy" onLoad={item.kind === "image" ? (e) => sharpenOnLoad(e, m.id) : undefined} /> : <span className="mp-tile-blank mono-label">{t("media.typeVideo")}</span>}
       {item.kind === "video" && (
         <span className="mp-tile-badge mono-label">
           <IconPlay />
@@ -285,6 +286,7 @@ function MediaTile({ item, onOpen }: { item: PanelItem; onOpen: () => void }) {
 }
 
 function RowActions({ item, onReveal, save = true }: { item: PanelItem; onReveal: () => void; save?: boolean }) {
+  const t = useT();
   return (
     <div className="mp-actions">
       {save && item.media && (
@@ -292,14 +294,14 @@ function RowActions({ item, onReveal, save = true }: { item: PanelItem; onReveal
           className="mp-act"
           href={downloadUrl(item.media.id)}
           download={item.media.originalName}
-          aria-label={`Save ${item.media.originalName}`}
-          title="Save"
+          aria-label={t("media.saveName", { name: item.media.originalName })}
+          title={t("common.save")}
         >
           <IconDownload />
         </a>
       )}
       {item.messageId && (
-        <button type="button" className="mp-act" onClick={onReveal} aria-label="Show in chat" title="Show in chat">
+        <button type="button" className="mp-act" onClick={onReveal} aria-label={t("media.showInChat")} title={t("media.showInChat")}>
           <IconShowInChat />
         </button>
       )}
@@ -308,6 +310,7 @@ function RowActions({ item, onReveal, save = true }: { item: PanelItem; onReveal
 }
 
 function FileRow({ item, allAgents, onReveal }: { item: PanelItem; allAgents: boolean; onReveal: () => void }) {
+  const t = useT();
   const m = item.media;
   if (!m) return null;
   if (item.kind === "audio") {
@@ -322,7 +325,7 @@ function FileRow({ item, allAgents, onReveal }: { item: PanelItem; allAgents: bo
       </div>
     );
   }
-  const ext = m.originalName.includes(".") ? m.originalName.split(".").pop()!.toUpperCase().slice(0, 4) : "FILE";
+  const ext = m.originalName.includes(".") ? m.originalName.split(".").pop()!.toUpperCase().slice(0, 4) : t("media.fileChip");
   return (
     <div className="mp-row" data-key={item.key}>
       <a className="mp-row-main" href={mediaUrl(m.id)} target="_blank" rel="noopener noreferrer">
@@ -331,7 +334,7 @@ function FileRow({ item, allAgents, onReveal }: { item: PanelItem; allAgents: bo
           <span className="tool-chip">{ext}</span>
         </span>
         <span className="mp-row-text">
-          <span className="mp-row-name">{m.originalName}</span>
+          <span className="mp-row-name" dir="auto">{m.originalName}</span>
           <span className="mp-row-meta">
             {formatSize(m.size)} · {who(item, allAgents)}
           </span>
@@ -343,6 +346,7 @@ function FileRow({ item, allAgents, onReveal }: { item: PanelItem; allAgents: bo
 }
 
 function LinkRow({ item, allAgents, onReveal }: { item: PanelItem; allAgents: boolean; onReveal: () => void }) {
+  useT();
   if (!item.url) return null;
   return (
     <div className="mp-row" data-key={item.key}>
@@ -351,8 +355,8 @@ function LinkRow({ item, allAgents, onReveal }: { item: PanelItem; allAgents: bo
           <IconLink />
         </span>
         <span className="mp-row-text">
-          <span className="mp-row-name">{item.title ?? item.url}</span>
-          {item.snippet && item.snippet !== item.url && <span className="mp-row-snippet">{item.snippet}</span>}
+          <span className="mp-row-name" dir="auto">{item.title ?? item.url}</span>
+          {item.snippet && item.snippet !== item.url && <span className="mp-row-snippet" dir="auto">{item.snippet}</span>}
           <span className="mp-row-meta">{who(item, allAgents)}</span>
         </span>
       </a>
@@ -375,12 +379,13 @@ function PageToolbar(p: {
   query: string;
   setQuery: (q: string) => void;
 }) {
+  const t = useT();
   return (
     <header className="mp-toolbar">
-      <nav className="mp-tabs" role="tablist" aria-label="Shared content type">
-        {TABS.map((t) => (
-          <button key={t.key} type="button" role="tab" aria-selected={p.tab === t.key} className={`mp-tab${p.tab === t.key ? " on" : ""}`} onClick={() => p.setTab(t.key)}>
-            {t.name}
+      <nav className="mp-tabs" role="tablist" aria-label={t("media.sharedType")}>
+        {TABS.map((tb) => (
+          <button key={tb.key} type="button" role="tab" aria-selected={p.tab === tb.key} className={`mp-tab${p.tab === tb.key ? " on" : ""}`} onClick={() => p.setTab(tb.key)}>
+            {t(tb.name)}
           </button>
         ))}
       </nav>
@@ -388,8 +393,8 @@ function PageToolbar(p: {
         {p.agents.length > 1 && (
           <label className="mp-agent-filter">
             <Icon name="people" />
-            <select value={p.scope} onChange={(e) => p.setScope(e.target.value)} aria-label="Filter shared content by agent">
-              <option value="all">All agents</option>
+            <select value={p.scope} onChange={(e) => p.setScope(e.target.value)} aria-label={t("media.filterByAgent")}>
+              <option value="all">{t("media.allAgents")}</option>
               {p.agents.map((b) => (
                 <option key={b} value={b}>{BOT_LABELS[b] ?? b}</option>
               ))}
@@ -398,7 +403,7 @@ function PageToolbar(p: {
         )}
         <label className="mp-search">
           <Icon name="search" />
-          <input type="search" value={p.query} onChange={(e) => p.setQuery(e.target.value)} placeholder="Search shared content…" aria-label="Search shared content" />
+          <input type="search" dir="auto" value={p.query} onChange={(e) => p.setQuery(e.target.value)} placeholder={t("media.searchShared")} aria-label={t("media.searchSharedLabel")} />
         </label>
       </div>
     </header>

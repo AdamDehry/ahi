@@ -12,14 +12,14 @@
 .voice {
   --v-void: var(--bg); --v-void-2: var(--bg); --v-panel: var(--surface); --v-bubble: var(--raised);
   --v-hairline: var(--line); --v-ink: var(--text); --v-muted: var(--text-mute); --v-brass: var(--accent); --v-brass-flash: var(--accent);
-  top: var(--rd-top-h); left: var(--rd-rail-w); right: var(--rd-canvas-gap); bottom: var(--rd-canvas-gap);
+  top: var(--rd-top-h); inset-inline-start: var(--rd-rail-w); inset-inline-end: var(--rd-canvas-gap); bottom: var(--rd-canvas-gap);
   border: 1px solid var(--line); border-radius: var(--rd-canvas-radius); overflow: hidden;
   padding-inline: max(24px, calc((100% - 862px) / 2));
   background: var(--bg);
   font-family: var(--font-ui); animation: none;
 }
-:root:has(.rd-app.rail-collapsed) .voice { left: var(--rd-rail-w-collapsed); }
-:root:has(.rd-app.phone) .voice { top: calc(58px + env(safe-area-inset-top, 0px)); left: 5px; right: 5px; bottom: var(--rd-dock-space); border-radius: 14px; padding-inline: 14px; }
+:root:has(.rd-app.rail-collapsed) .voice { inset-inline-start: var(--rd-rail-w-collapsed); }
+:root:has(.rd-app.phone) .voice { top: calc(58px + env(safe-area-inset-top, 0px)); inset-inline-start: 5px; inset-inline-end: 5px; bottom: var(--rd-dock-space); border-radius: 14px; padding-inline: 14px; }
 .voice .mono, .voice .ctl-label, .voice .vh-label, .voice .vh-timer, .voice .center-note, .voice .share-banner, .voice .follow-pill, .voice .drop-send { font-family: var(--font-ui); letter-spacing: 0; }
 
 /* Header: a small down arrow (FINAL), live dot, name, state in FINAL's words, timer */
@@ -30,7 +30,7 @@
 .voice .vh-min svg { width: 18px; height: 18px; }
 .voice .voice-head strong { font-size: 16px; font-weight: 550; color: var(--text); }
 .voice .vh-label { font-size: 10px; color: var(--text-mute); text-transform: none; letter-spacing: .15px; display: inline-block; }
-.voice .vh-timer { margin-left: auto; font-size: 12px; color: var(--text-mute); font-variant-numeric: tabular-nums; }
+.voice .vh-timer { margin-inline-start: auto; font-size: 12px; color: var(--text-mute); font-variant-numeric: tabular-nums; }
 .voice .agent-dot.live { width: 6px; height: 6px; background: #5fb3c7; box-shadow: 0 0 8px #5fb3c7; }
 
 /* Banners and notes in plain words */
@@ -44,7 +44,7 @@
 
 /* Note field (drop a link, a note, an image into the call) */
 .voice .drop-bar { max-width: 862px; width: 100%; margin: 0 auto 18px; }
-.voice .drop-row { min-height: 47px; border: 1px solid var(--line); border-radius: 24px; background: color-mix(in srgb, var(--surface) 70%, transparent); padding: 0 6px 0 14px; }
+.voice .drop-row { min-height: 47px; border: 1px solid var(--line); border-radius: 24px; background: color-mix(in srgb, var(--surface) 70%, transparent); padding-block: 0 0; padding-inline: 14px 6px; }
 .voice .drop-text { font-size: 13px; color: var(--text); }
 .voice .drop-send { width: 32px; height: 32px; border-radius: 50%; padding: 0; font-size: 0; background: color-mix(in srgb, var(--accent) 22%, transparent); color: var(--accent); }
 .voice .drop-send::before { content: "↑"; font-size: 15px; }
@@ -68,12 +68,12 @@
 
 /* ── Return chip ──────────────────────────────────────────────────────── */
 .call-pill {
-  right: calc(var(--rd-canvas-gap) + 18px); bottom: calc(var(--rd-canvas-gap) + 18px);
-  min-height: 46px; padding: 6px 12px 6px 10px; gap: 10px; border-radius: 999px;
+  inset-inline-end: calc(var(--rd-canvas-gap) + 18px); bottom: calc(var(--rd-canvas-gap) + 18px);
+  min-height: 46px; padding-block: 6px 6px; padding-inline: 10px 12px; gap: 10px; border-radius: 999px;
   background: var(--surface); border: 1px solid var(--line); color: var(--text); font-family: var(--font-ui);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 14%, transparent), 0 10px 30px rgba(0, 0, 0, .3);
 }
-.call-pill .cp-text { display: grid; gap: 1px; text-align: left; font-family: var(--font-ui); letter-spacing: 0; }
+.call-pill .cp-text { display: grid; gap: 1px; text-align: start; font-family: var(--font-ui); letter-spacing: 0; }
 .call-pill .cp-name { font-size: 12px; font-weight: 550; color: var(--text); }
 .call-pill .cp-label, .call-pill .cp-timer { display: inline; font-size: 9px; color: var(--text-mute); text-transform: none; }
 .call-pill .cp-timer::before { content: " · "; }
@@ -82,12 +82,12 @@
 .call-pill .cp-go { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; color: var(--text-mute); }
 /* In Messages: centred above the composer, its row reserved so history never hides under it. */
 body:has(.rd-messages .composer-row) .call-pill, body:has(.rd-app.phone .composer-row) .call-pill {
-  right: auto; left: calc(var(--rd-rail-w) + 68px + (100vw - var(--rd-rail-w) - 68px - var(--rd-canvas-gap)) / 2); translate: -50% 0;
+  inset-inline-end: auto; inset-inline-start: calc(var(--rd-rail-w) + 68px + (100vw - var(--rd-rail-w) - 68px - var(--rd-canvas-gap)) / 2); translate: -50% 0;
   bottom: calc(var(--rd-canvas-gap) + 112px);
 }
-body:has(.rd-app.rail-collapsed .rd-messages .composer-row) .call-pill { left: calc(var(--rd-rail-w-collapsed) + 68px + (100vw - var(--rd-rail-w-collapsed) - 68px - var(--rd-canvas-gap)) / 2); }
+body:has(.rd-app.rail-collapsed .rd-messages .composer-row) .call-pill { inset-inline-start: calc(var(--rd-rail-w-collapsed) + 68px + (100vw - var(--rd-rail-w-collapsed) - 68px - var(--rd-canvas-gap)) / 2); }
 body:has(.call-pill) .rd-messages .composer-row, body:has(.call-pill) .rd-app.phone .composer-row { padding-top: 70px; }
-body:has(.rd-app.phone .composer-row) .call-pill { left: 50%; bottom: calc(var(--rd-dock-space) + 96px); }
+body:has(.rd-app.phone .composer-row) .call-pill { inset-inline-start: 50%; bottom: calc(var(--rd-dock-space) + 96px); }
 body:has(.rd-app.phone) .call-pill:not(:is(body:has(.composer-row) *)) { bottom: calc(var(--rd-dock-space) + 12px); }
 @media (prefers-reduced-motion: reduce) { .call-pill .cp-ring { animation: none; } }
 

@@ -7,20 +7,22 @@
  */
 import { actions, useAppState } from "../store";
 import { connectionDisplay } from "../lib/connection";
-import { BOT_LABELS, BOT_SUBTITLES } from "../lib/types";
+import { BOT_LABELS, botSubtitle } from "../lib/types";
+import { useT } from "../i18n";
 import { Icon } from "./icons";
 import { IconMedia } from "../components/icons";
 import { AgentAvatar } from "./AgentRail";
 import { leaveChat } from "./history";
 
 export default function ChatHeader({ bot, phone = false }: { bot: string; phone?: boolean }) {
+  const t = useT();
   const s = useAppState();
   const { label, dot } = connectionDisplay(s.connection, s.restartingAt);
   const online = dot === "open";
   return (
     <header className={`rd-chat-header${phone ? " phone" : ""}`}>
       {phone && (
-        <button type="button" className="rd-chat-control rd-chat-back" aria-label="Back" onClick={leaveChat}>
+        <button type="button" className="rd-chat-control rd-chat-back" aria-label={t("common.back")} onClick={leaveChat}>
           <Icon name="arrow-left" />
         </button>
       )}
@@ -30,19 +32,19 @@ export default function ChatHeader({ bot, phone = false }: { bot: string; phone?
           <div className="rd-chat-name">{BOT_LABELS[bot] ?? bot}</div>
           <div className="rd-chat-role">
             <span className={`rd-status-dot ${dot}`} aria-hidden="true" />
-            {online ? BOT_SUBTITLES[bot] ?? "Agent" : <span className="rd-status-word">{label.toLowerCase()}</span>}
+            {online ? botSubtitle(bot) || t("chat.agentFallbackRole") : <span className="rd-status-word">{label.toLowerCase()}</span>}
           </div>
         </div>
       </div>
       {phone && (
-        <button type="button" className="rd-chat-control" aria-label="Choose an agent" onClick={actions.popMobile}>
+        <button type="button" className="rd-chat-control" aria-label={t("chat.chooseAgent")} onClick={actions.popMobile}>
           <Icon name="search" />
         </button>
       )}
       <button
         type="button"
         className={`rd-chat-control${s.mediaPanelOpen ? " on" : ""}`}
-        aria-label="Media, files and links"
+        aria-label={t("media.panelLabel")}
         aria-pressed={s.mediaPanelOpen}
         onClick={() => actions.toggleMediaPanel()}
       >

@@ -35,6 +35,7 @@ import RedesignBody from "./redesign/Body";
 import ChatHeader from "./redesign/ChatHeader";
 import { phoneChatOpen, startHistorySync } from "./redesign/history";
 import { isHashRoute } from "./redesign/nav";
+import { isRtl, tn, useT } from "./i18n";
 
 /**
  * "#builds" → the board, "#builds/<id>" → that card; "#whatsapp" → the
@@ -66,8 +67,8 @@ function useIsMobile(): boolean {
 }
 
 /**
- * Edge-swipe-back (design 1·7): a drag starting within 20px of the left
- * edge pops ONE level. At the root the gesture is absorbed with a small
+ * Edge-swipe-back (design 1·7): a drag starting within 20px of the leading
+ * edge (the left; the right in Hebrew) pops ONE level. At the root the gesture is absorbed with a small
  * rubber-band — an in-app back-swipe must NEVER exit the app (which is
  * also why we implement it ourselves instead of relying on browser
  * history gestures).
@@ -76,10 +77,13 @@ function useEdgeSwipeBack(onBack: (() => void) | null) {
   const [dragX, setDragX] = useState(0);
   const tracking = useRef(false);
   const startX = useRef(0);
+  /** -1 in right to left: the swipe starts at the right edge and the screen slides left. */
+  const sign = useRef(1);
 
   const onTouchStart = useCallback((e: React.TouchEvent) => {
     const x = e.touches[0].clientX;
-    if (x <= 20) {
+    sign.current = isRtl() ? -1 : 1;
+    if (sign.current === 1 ? x <= 20 : x >= window.innerWidth - 20) {
       tracking.current = true;
       startX.current = x;
     }
@@ -88,9 +92,9 @@ function useEdgeSwipeBack(onBack: (() => void) | null) {
   const onTouchMove = useCallback(
     (e: React.TouchEvent) => {
       if (!tracking.current) return;
-      const dx = Math.max(0, e.touches[0].clientX - startX.current);
+      const dx = Math.max(0, sign.current * (e.touches[0].clientX - startX.current));
       // Root level: absorb — rubber-band hint only.
-      setDragX(onBack ? dx : Math.min(24, dx / 4));
+      setDragX(sign.current * (onBack ? dx : Math.min(24, dx / 4)));
     },
     [onBack],
   );
@@ -99,7 +103,7 @@ function useEdgeSwipeBack(onBack: (() => void) | null) {
     if (!tracking.current) return;
     tracking.current = false;
     setDragX((dx) => {
-      if (onBack && dx > 80) onBack();
+      if (onBack && Math.abs(dx) > 80) onBack();
       return 0;
     });
   }, [onBack]);
@@ -130,6 +134,7 @@ function ChatPane({ bot }: { bot: string }) {
 }
 
 function MobileApp() {
+  const t = useT();
   const state = useAppState();
   const [menuOpen, setMenuOpen] = useState(false);
   const { view, activeBot, mobileThreadOpen } = state;
@@ -163,8 +168,12 @@ function MobileApp() {
 
   const fileCategoryTitle =
     state.toolFilter === "all"
-      ? "All"
-      : state.toolFilter.charAt(0).toUpperCase() + state.toolFilter.slice(1);
+      ? t("chat.all")
+      : state.toolFilter === "general"
+        ? t("chat.catGeneral")
+        : state.toolFilter === "uncategorized"
+          ? t("chat.catUncategorized")
+          : state.toolFilter.charAt(0).toUpperCase() + state.toolFilter.slice(1);
 
   return (
     <PhoneShell menuOpen={menuOpen} setMenuOpen={setMenuOpen}>
@@ -181,16 +190,16 @@ function MobileApp() {
               <button className="rv-nudge" onClick={() => actions.openReview()}>
                 <IconReview />
                 <span className="rv-nudge-text">
-                  {state.reviewWaiting} waiting for you
+                  {tn("chat.waitingForYou", state.reviewWaiting)}
                 </span>
-                <span className="mono-label">REVIEW</span>
+                <span className="mono-label">{t("chat.reviewTag")}</span>
               </button>
             )}
             {/* The full-width agent picker (FINAL phone): search, names, previews; choosing one opens it. */}
             <div className="rd-picker-head">
-              <span className="rd-eyebrow">MESSAGE</span>
+              <span className="rd-eyebrow">{t("chat.messageEyebrow")}</span>
               {activeBot && (
-                <button type="button" className="rd-chat-control" aria-label="Close agent picker" onClick={() => actions.openMobileThread(activeBot)}>
+                <button type="button" className="rd-chat-control" aria-label={t("chat.closeAgentPicker")} onClick={() => actions.openMobileThread(activeBot)}>
                   <IconBack />
                 </button>
               )}
@@ -211,12 +220,12 @@ function MobileApp() {
           {...handlers}
         >
           <header className="mobile-topbar">
-            <button className="topbar-btn" aria-label="Back" onClick={actions.popMobileFiles}>
+            <button className="topbar-btn" aria-label={t("common.back")} onClick={actions.popMobileFiles}>
               <IconBack />
             </button>
             <div className="mobile-title">{fileCategoryTitle}</div>
             {state.user?.admin && <ScheduleButton />}
-            <button className="topbar-btn" aria-label="Settings" onClick={() => actions.toggleSettings()}>
+            <button className="topbar-btn" aria-label={t("common.settings")} onClick={() => actions.toggleSettings()}>
               <IconGear />
             </button>
           </header>
@@ -248,10 +257,10 @@ function MobileApp() {
           {...handlers}
         >
           <header className="mobile-topbar">
-            <button className="topbar-btn" aria-label="Back" onClick={actions.closeReviewItem}>
+            <button className="topbar-btn" aria-label={t("common.back")} onClick={actions.closeReviewItem}>
               <IconBack />
             </button>
-            <div className="mobile-title">Review</div>
+            <div className="mobile-title">{t("chat.review")}</div>
             <span className="topbar-btn" aria-hidden="true" />
           </header>
           <ReviewDetail id={state.reviewItem} />
@@ -266,13 +275,13 @@ function MobileApp() {
           {...handlers}
         >
           <header className="mobile-topbar">
-            <button className="topbar-btn pf-back" aria-label="Back" onClick={actions.closeBuildItem}>
+            <button className="topbar-btn pf-back" aria-label={t("common.back")} onClick={actions.closeBuildItem}>
               <IconBack />
-              <span className="mono-label">Builds</span>
+              <span className="mono-label">{t("chat.builds")}</span>
             </button>
             <div className="mobile-title" />
             {state.user?.admin && <ScheduleButton />}
-            <button className="topbar-btn" aria-label="Settings" onClick={() => actions.toggleSettings()}>
+            <button className="topbar-btn" aria-label={t("common.settings")} onClick={() => actions.toggleSettings()}>
               <IconGear />
             </button>
           </header>
@@ -289,6 +298,7 @@ function MobileApp() {
 /** Mobile Settings — a pushed screen over wherever you were; back or an
  *  edge-swipe closes it and the prior context is exactly as you left it. */
 function MobileSettings() {
+  const t = useT();
   const close = () => actions.toggleSettings(false);
   const { dragX, handlers } = useEdgeSwipeBack(close);
   return (
@@ -298,10 +308,10 @@ function MobileSettings() {
       {...handlers}
     >
       <header className="mobile-topbar">
-        <button className="topbar-btn" aria-label="Back" onClick={close}>
+        <button className="topbar-btn" aria-label={t("common.back")} onClick={close}>
           <IconBack />
         </button>
-        <div className="mobile-title">Settings</div>
+        <div className="mobile-title">{t("common.settings")}</div>
         <span className="topbar-btn" aria-hidden="true" />
       </header>
       <Settings />

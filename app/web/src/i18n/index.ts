@@ -109,7 +109,7 @@ export function t(key: Key, params?: Params): string {
 }
 
 /** Keys that come in `_one` / `_other` pairs, named without the suffix. */
-export type PluralKey = Key extends infer K ? (K extends `${infer B}_other` ? (`${B}_one` extends Key ? B : never) : never) : never;
+export type PluralKey = { [K in Key]: K extends `${infer B}_other` ? (`${B}_one` extends Key ? B : never) : never }[Key];
 
 /** Count-dependent text: `key_one` when n is 1, `key_other` otherwise; `{n}` is the count. */
 export function tn(key: PluralKey, n: number, params?: Params): string {

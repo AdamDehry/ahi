@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import { SendGlyph } from "./send-glyph";
+import { useT } from "../i18n";
 
 /* ============================================================
    SendSlot — DESIGN LOCK v4, deck p.6 (frame 3A + glyph geometry cards),
@@ -93,6 +94,7 @@ export default function SendSlot({
   onStop: () => void;
   onEnterVoiceMode: () => void;
 }) {
+  const t = useT();
   const [launching, setLaunching] = useState(false);
   const timer = useRef<number | null>(null);
 
@@ -128,8 +130,8 @@ export default function SendSlot({
       }
       onClick={handleClick}
       aria-pressed={!running && !showsSend ? live : undefined}
-      aria-label={running && !hasDraft ? "Stop response" : running ? "Queue message" : showsSend ? "Send" : live ? "Leave voice mode" : "Enter voice mode"}
-      title={busy ? "Waiting for attachments to finish" : running && !hasDraft ? "Stop response" : running ? "Queue message" : showsSend ? "Send" : live ? "Leave voice mode" : "Voice mode"}
+      aria-label={running && !hasDraft ? t("chat.stopResponse") : running ? t("chat.queueMessage") : showsSend ? t("common.send") : live ? t("chat.leaveVoiceMode") : t("chat.enterVoiceMode")}
+      title={busy ? t("chat.waitingAttachments") : running && !hasDraft ? t("chat.stopResponse") : running ? t("chat.queueMessage") : showsSend ? t("common.send") : live ? t("chat.leaveVoiceMode") : t("chat.voiceMode")}
     >
       <span className="send-slot-glyphs">
         {running && !hasDraft ? <span className="stop-glyph" /> : <>{voiceAvailable && <VoiceGlyph />}<SendGlyph /></>}

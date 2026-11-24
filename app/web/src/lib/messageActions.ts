@@ -9,6 +9,7 @@
 import type { LocalMessage, MediaRef } from "./types";
 import { BOT_LABELS } from "./types";
 import { showToast } from "./toast";
+import { t } from "../i18n";
 
 /** the owner's zone. Filenames read like his clock, not the server's. */
 export const OWNER_TZ = "America/New_York";
@@ -53,7 +54,7 @@ export function ownerStamp(ts: string | number | Date, timeZone = OWNER_TZ): str
     minute: "2-digit",
     hour12: true,
   }).formatToParts(new Date(ts));
-  const get = (t: Intl.DateTimeFormatPartTypes) => parts.find((p) => p.type === t)?.value ?? "";
+  const get = (part: Intl.DateTimeFormatPartTypes) => parts.find((p) => p.type === part)?.value ?? "";
   return `${get("year")}-${get("month")}-${get("day")} ${get("hour")}-${get("minute")} ${get("dayPeriod").toUpperCase()}`;
 }
 
@@ -62,7 +63,9 @@ export function ownerStamp(ts: string | number | Date, timeZone = OWNER_TZ): str
  *  name; the owner's own note says whom it went to. */
 export function voiceNoteBase(msg: Pick<LocalMessage, "timestamp" | "bot" | "direction">): string {
   const label = BOT_LABELS[msg.bot] ?? msg.bot;
-  const who = msg.direction === "in" ? `voice note to ${label}` : `${label} voice note`;
+  // A FILENAME: the name goes in by plain replace, never t()'s params — those wrap it in bidi
+  // isolate marks, invisible characters that do not belong in a saved file's name.
+  const who = t(msg.direction === "in" ? "media.voiceNoteTo" : "media.agentVoiceNote").replace("{name}", label);
   return `${ownerStamp(msg.timestamp)} ${who}`;
 }
 
@@ -109,7 +112,7 @@ export async function shareText(text: string): Promise<void> {
       if (isAbort(err)) return;
     }
   }
-  showToast((await copyText(text)) ? "Copied" : "Couldn't copy");
+  showToast((await copyText(text)) ? t("common.copied") : t("chat.couldNotCopy"));
 }
 
 async function fetchFile(url: string, name: string, type: string): Promise<File> {
@@ -160,9 +163,9 @@ export async function saveVoice(media: MediaRef, base: string): Promise<void> {
   try {
     const file = await prefetchVoiceFile(media, base);
     downloadFile(file, file.name);
-    showToast("Saved");
+    showToast(t("common.saved"));
   } catch {
-    showToast("Couldn't save the audio");
+    showToast(t("media.couldNotSaveAudio"));
   }
 }
 
@@ -172,7 +175,7 @@ export async function shareVoice(media: MediaRef, base: string): Promise<void> {
   try {
     file = await prefetchVoiceFile(media, base);
   } catch {
-    showToast("Couldn't load the audio");
+    showToast(t("media.couldNotLoadAudio"));
     return;
   }
   const data = { files: [file], title: base };
@@ -186,7 +189,7 @@ export async function shareVoice(media: MediaRef, base: string): Promise<void> {
     }
   }
   downloadFile(file, file.name);
-  showToast("Saved");
+  showToast(t("common.saved"));
 }
 
 // ── Files: an mp3 Michael sent, a PDF, a photo ──────────────
@@ -222,7 +225,7 @@ export async function saveFiles(list: MediaRef[]): Promise<void> {
     // Chrome drops back-to-back programmatic downloads without a beat between.
     if (list.length > 1) await new Promise((r) => setTimeout(r, 400));
   }
-  showToast(list.length > 1 ? `Saving ${list.length} files` : "Saving");
+  showToast(list.length > 1 ? t("media.savingFiles", { n: list.length }) : t("media.saving"));
 }
 
 /** Share the original file(s); where files can't be shared, save them. */
@@ -231,7 +234,7 @@ export async function shareFiles(list: MediaRef[]): Promise<void> {
   try {
     files = await Promise.all(list.map((m) => fetchFile(mediaUrl(m.id), m.originalName, m.mime)));
   } catch {
-    showToast("Couldn't load the file");
+    showToast(t("media.couldNotLoadFile"));
     return;
   }
   const data = { files };

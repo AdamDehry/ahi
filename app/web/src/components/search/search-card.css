@@ -230,7 +230,7 @@
   letter-spacing: 0.02em;
 }
 .ahi-search-card .asc-date { flex: none; }
-.ahi-search-card .asc-date::before { content: "·"; margin-right: 7px; }
+.ahi-search-card .asc-date::before { content: "·"; margin-inline-end: 7px; }
 .ahi-search-card .asc-title {
   color: var(--asc-strong);
   font-weight: 600;

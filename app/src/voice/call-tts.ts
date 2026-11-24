@@ -12,6 +12,7 @@ import {
   stripAudioTags,
   upsample2x,
 } from "../voice-tts-eleven.js";
+import { cartesiaLanguage } from "../speech-language.js";
 
 /* ============================================================
    call-tts.ts — which voice a call speaks in, and the filler's audio.
@@ -190,7 +191,7 @@ export async function renderFillerPcm(
       model_id: c.model,
       transcript: text,
       voice: { mode: "id", id: c.voiceId },
-      language: c.language,
+      language: cartesiaLanguage(c.language, text),
       speed: c.speed,
       output_format: { container: "raw", encoding: "pcm_s16le", sample_rate: c.sampleRate },
     }),

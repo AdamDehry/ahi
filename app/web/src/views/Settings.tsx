@@ -14,6 +14,11 @@ import {
   savePushSettings,
   type PushSettings,
 } from "../lib/push";
+import { getLang, locale, useT, type Key } from "../i18n";
+
+/** English keeps the browser's own date format, as before; other languages format in their locale. */
+const dateLoc = (): string | string[] => (getLang() === "en" ? [] : locale());
+const THEME_LABEL: Record<ThemeMode, Key> = { light: "settings.theme.light", dark: "settings.theme.dark", system: "settings.theme.system" };
 
 /** NOTIFICATIONS (Step 8): subscribe THIS device to Web Push and manage
  *  the user's notification settings — per-agent on/off, sound, vibration,
@@ -22,6 +27,7 @@ import {
  *  ever reduce what the phone OS itself would do — OS per-app settings
  *  stay authoritative. */
 function NotificationsSection({ agents }: { agents: string[] }) {
+  const t = useT();
   const support = pushSupport();
   const [subscribed, setSubscribed] = useState(false);
   const [settings, setSettings] = useState<PushSettings | null>(null);
@@ -73,20 +79,20 @@ function NotificationsSection({ agents }: { agents: string[] }) {
   return (
     <section className="settings-section">
       <div className="mono-label">
-        NOTIFICATIONS {saved && <span className="mono-label saved">SAVED</span>}
+        {t("settings.old.notifications")} {saved && <span className="mono-label saved">{t("settings.old.saved")}</span>}
       </div>
 
-      {!configured && <div className="settings-row"><span className="settings-hint">Push is not configured on the gateway (VAPID keys missing).</span></div>}
+      {!configured && <div className="settings-row"><span className="settings-hint">{t("settings.old.pushNotConfigured")}</span></div>}
 
       <div className="settings-row">
-        <span className="settings-bot-name">This device</span>
+        <span className="settings-bot-name">{t("settings.thisDevice")}</span>
         <button className="segment" onClick={() => void toggleDevice()} disabled={busy || support !== "ok"}>
-          {subscribed ? "Enabled — tap to disable" : "Enable notifications"}
+          {subscribed ? t("settings.old.enabledTap") : t("settings.old.enable")}
         </button>
       </div>
       {support === "needs-install" && (
         <div className="settings-row">
-          <span className="settings-hint">Install the app first: Share → Add to Home Screen. iOS only delivers push to installed apps.</span>
+          <span className="settings-hint">{t("settings.old.installFirst")}</span>
         </div>
       )}
       {note && <div className="settings-row"><span className="settings-hint">{note}</span></div>}
@@ -101,31 +107,31 @@ function NotificationsSection({ agents }: { agents: string[] }) {
                 type="checkbox"
                 checked={settings.perAgent[bot] !== false}
                 onChange={(e) => void patch({ perAgent: { [bot]: e.target.checked } })}
-                aria-label={`Notifications from ${BOT_LABELS[bot] ?? bot}`}
+                aria-label={t("settings.old.notificationsFrom", { name: BOT_LABELS[bot] ?? bot })}
               />
             </div>
           ))}
           <div className="settings-row">
-            <span className="settings-bot-name">Sound</span>
-            <input type="checkbox" checked={settings.sound} onChange={(e) => void patch({ sound: e.target.checked })} aria-label="Notification sound" />
+            <span className="settings-bot-name">{t("settings.sound")}</span>
+            <input type="checkbox" checked={settings.sound} onChange={(e) => void patch({ sound: e.target.checked })} aria-label={t("settings.notificationSound")} />
           </div>
           <div className="settings-row">
-            <span className="settings-bot-name">Vibration</span>
-            <input type="checkbox" checked={settings.vibration} onChange={(e) => void patch({ vibration: e.target.checked })} aria-label="Notification vibration" />
+            <span className="settings-bot-name">{t("settings.vibration")}</span>
+            <input type="checkbox" checked={settings.vibration} onChange={(e) => void patch({ vibration: e.target.checked })} aria-label={t("settings.notificationVibration")} />
           </div>
           <div className="settings-row">
-            <span className="settings-bot-name">Quiet hours</span>
+            <span className="settings-bot-name">{t("settings.quietHours")}</span>
             <input
               type="checkbox"
               checked={q?.enabled ?? false}
               onChange={(e) => q && void patch({ quietHours: { ...q, enabled: e.target.checked } })}
-              aria-label="Quiet hours"
+              aria-label={t("settings.quietHours")}
             />
             {q?.enabled && (
               <>
-                <input type="time" value={q.start} onChange={(e) => void patch({ quietHours: { ...q, start: e.target.value } })} aria-label="Quiet hours start" />
-                <span className="settings-hint">to</span>
-                <input type="time" value={q.end} onChange={(e) => void patch({ quietHours: { ...q, end: e.target.value } })} aria-label="Quiet hours end" />
+                <input type="time" value={q.start} onChange={(e) => void patch({ quietHours: { ...q, start: e.target.value } })} aria-label={t("settings.quiet.start")} />
+                <span className="settings-hint">{t("settings.old.to")}</span>
+                <input type="time" value={q.end} onChange={(e) => void patch({ quietHours: { ...q, end: e.target.value } })} aria-label={t("settings.quiet.end")} />
               </>
             )}
           </div>
@@ -141,6 +147,7 @@ function NotificationsSection({ agents }: { agents: string[] }) {
  *  fingerprint from one you already have — so a stolen login can't add its
  *  own. Removing one also asks for a fingerprint. */
 function PasskeysSection() {
+  const t = useT();
   const [list, setList] = useState<Passkey[] | null>(null);
   const [enrollUntil, setEnrollUntil] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -162,7 +169,7 @@ function PasskeysSection() {
     const r = await addThisDevice(list.length > 0, !!enrollUntil);
     setBusy(false);
     if (r.ok) {
-      setNote({ tone: "ok", text: `${r.value.passkey.label} added. RED items can now be approved with this fingerprint.` });
+      setNote({ tone: "ok", text: t("settings.old.passkeyAdded", { label: r.value.passkey.label }) });
       load();
     } else {
       setNote({ tone: "err", text: r.error });
@@ -176,19 +183,19 @@ function PasskeysSection() {
     const r = await removePasskey(p.id);
     setBusy(false);
     if (r.ok) {
-      setNote({ tone: "ok", text: `${p.label} removed.` });
+      setNote({ tone: "ok", text: t("settings.passkey.removed", { label: p.label }) });
       load();
     } else setNote({ tone: "err", text: r.error });
   }
 
-  const day = (iso: string) => new Date(iso).toLocaleDateString([], { month: "short", day: "numeric" });
+  const day = (iso: string) => new Date(iso).toLocaleDateString(dateLoc(), { month: "short", day: "numeric" });
   const closedFirst = list !== null && list.length === 0 && !enrollUntil;
 
   return (
     <section className="settings-section" id="settings-passkeys">
-      <div className="mono-label">PASSKEYS</div>
+      <div className="mono-label">{t("settings.old.passkeys")}</div>
       <div className="settings-row">
-        <span className="settings-hint">RED items — money, messages in your name, credentials — are approved with your fingerprint. The gateway checks it; the fingerprint never leaves the phone.</span>
+        <span className="settings-hint">{t("settings.old.redIntro")}</span>
       </div>
       {list === null ? (
         <div className="settings-row skeleton-card" />
@@ -197,35 +204,35 @@ function PasskeysSection() {
           <div key={p.id} className="settings-row passkey-row">
             <span className="passkey-glyph"><IconFingerprint size={18} /></span>
             <span className="settings-bot-name">
-              {p.label}
+              <bdi dir="auto">{p.label}</bdi>
               <span className="passkey-meta mono-label">
-                ADDED {day(p.created).toUpperCase()}
-                {p.last_used ? ` · USED ${day(p.last_used).toUpperCase()}` : " · NOT USED YET"}
+                {t("settings.old.added", { date: day(p.created).toUpperCase() })}
+                {p.last_used ? t("settings.old.used", { date: day(p.last_used).toUpperCase() }) : t("settings.old.notUsed")}
               </span>
             </span>
             <button className="segment passkey-remove" disabled={busy} onClick={() => void remove(p)}>
-              Remove
+              {t("common.remove")}
             </button>
           </div>
         ))
       )}
       {list !== null && list.length === 0 && (
         <div className="settings-row">
-          <span className="settings-hint">No passkey yet. Until there is one, RED items wait in Review and can't be approved in the app.</span>
+          <span className="settings-hint">{t("settings.old.noPasskey")}</span>
         </div>
       )}
       {!supported ? (
-        <div className="settings-row"><span className="settings-hint">This browser can't create passkeys. Use the installed app on your phone.</span></div>
+        <div className="settings-row"><span className="settings-hint">{t("settings.old.unsupported")}</span></div>
       ) : (
         <>
           <button className="passkey-add" disabled={busy || closedFirst || list === null} onClick={() => void add()}>
             <IconFingerprint size={18} />
-            {busy ? "Waiting for your fingerprint…" : list && list.length ? "Add this device" : "Add this phone's fingerprint"}
+            {busy ? t("settings.old.waitingFingerprint") : list && list.length ? t("settings.passkey.addThis") : t("settings.old.addPhone")}
           </button>
           {enrollUntil ? (
-            <div className="settings-row"><span className="settings-hint positive">Enrollment open until {new Date(enrollUntil).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}.</span></div>
+            <div className="settings-row"><span className="settings-hint positive">{t("settings.old.enrollUntil", { time: new Date(enrollUntil).toLocaleTimeString(dateLoc(), { hour: "numeric", minute: "2-digit" }) })}</span></div>
           ) : closedFirst ? (
-            <div className="settings-row"><span className="settings-hint">To add the first one, ask Michael to open enrollment. It stays open 15 minutes.</span></div>
+            <div className="settings-row"><span className="settings-hint">{t("settings.old.askMichael")}</span></div>
           ) : null}
         </>
       )}
@@ -261,6 +268,7 @@ export const MODEL_LABELS: Record<string, string> = {
  *  (model + voice, admin), ACCOUNT (quiet logout in warn, at the bottom).
  *  Theme + logout moved here from the chrome, per the design. */
 export default function Settings() {
+  const t = useT();
   const { user } = useAppState();
   const [mode, setMode] = useState<ThemeMode>(getThemeMode());
   const [settings, setSettings] = useState<SettingsPayload | null>(null);
@@ -296,8 +304,8 @@ export default function Settings() {
   return (
     <div className="settings-page">
       <section className="settings-section">
-        <div className="mono-label">APPEARANCE</div>
-        <div className="segmented" role="radiogroup" aria-label="Theme">
+        <div className="mono-label">{t("settings.old.appearance")}</div>
+        <div className="segmented" role="radiogroup" aria-label={t("settings.old.theme")}>
           {(["light", "dark", "system"] as ThemeMode[]).map((m) => (
             <button
               key={m}
@@ -306,14 +314,14 @@ export default function Settings() {
               className={`segment${mode === m ? " active" : ""}`}
               onClick={() => pickMode(m)}
             >
-              {m[0].toUpperCase() + m.slice(1)}
+              {t(THEME_LABEL[m])}
             </button>
           ))}
         </div>
       </section>
 
       <section className="settings-section">
-        <div className="mono-label">BOTS</div>
+        <div className="mono-label">{t("settings.old.bots")}</div>
         {user?.admin && settings ? (
           settings.bots.map((bot) => (
             <div key={bot.name} className="settings-row">
@@ -339,7 +347,7 @@ export default function Settings() {
                     </optgroup>
                   ))}
               </select>
-              {saved?.startsWith(bot.name) && <span className="mono-label saved">SAVED</span>}
+              {saved?.startsWith(bot.name) && <span className="mono-label saved">{t("settings.old.saved")}</span>}
             </div>
           ))
         ) : health ? (
@@ -348,7 +356,7 @@ export default function Settings() {
               <span className="agent-dot" data-bot={bot.name} />
               <span className="settings-bot-name">{BOT_LABELS[bot.name] ?? bot.name}</span>
               <span className="mono-label">{(MODEL_LABELS[bot.model] ?? bot.model).toUpperCase()}</span>
-              <span className="mono-label positive">ONLINE</span>
+              <span className="mono-label positive">{t("settings.old.online")}</span>
             </div>
           ))
         ) : (
@@ -361,13 +369,13 @@ export default function Settings() {
       {user?.admin && <PasskeysSection />}
 
       <section className="settings-section">
-        <div className="mono-label">ACCOUNT</div>
+        <div className="mono-label">{t("settings.old.account")}</div>
         <div className="settings-row">
-          <span className="settings-bot-name">{user?.name}</span>
-          <span className="mono-label">{user?.admin ? "ADMIN" : "MEMBER"}</span>
+          <span className="settings-bot-name" dir="auto">{user?.name}</span>
+          <span className="mono-label">{user?.admin ? t("settings.old.admin") : t("settings.old.member")}</span>
         </div>
         <button className="logout-btn" onClick={doLogout}>
-          Log out
+          {t("settings.account.logOut")}
         </button>
       </section>
     </div>

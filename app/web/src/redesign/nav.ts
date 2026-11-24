@@ -8,6 +8,7 @@
  */
 import type { View } from "../store";
 import type { IconName } from "./icons";
+import type { Key } from "../i18n";
 
 export type Page =
   | "home" | "today" | "messages" | "work" | "documents" | "finances" | "vault"
@@ -28,36 +29,37 @@ export function canOpen(view: View, admin: boolean): boolean {
   return admin || !ADMIN_VIEWS.has(view);
 }
 
-export interface Dest { page: Page; label: string; icon: IconName; view: View }
+/** `label` is a catalog key, translated where it is rendered. */
+export interface Dest { page: Page; label: Key; icon: IconName; view: View }
 
 /** Rail order, FINAL: primary four, then Your world, then the bottom group. */
 export const PRIMARY: Dest[] = [
-  { page: "home", label: "Home", icon: "home", view: "home" },
-  { page: "today", label: "Today", icon: "today", view: "today" },
-  { page: "messages", label: "Messages", icon: "messages", view: "messages" },
-  { page: "work", label: "Your work", icon: "layers", view: "builds" },
+  { page: "home", label: "shell.nav.home", icon: "home", view: "home" },
+  { page: "today", label: "shell.nav.today", icon: "today", view: "today" },
+  { page: "messages", label: "shell.nav.messages", icon: "messages", view: "messages" },
+  { page: "work", label: "shell.nav.work", icon: "layers", view: "builds" },
 ];
 export const WORLD: Dest[] = [
-  { page: "documents", label: "Documents", icon: "folder", view: "documents" },
-  { page: "finances", label: "Finances", icon: "wallet", view: "costs" },
-  { page: "vault", label: "Vault", icon: "shield", view: "vault" },
-  { page: "gmail", label: "Gmail", icon: "gmail", view: "gmail" },
+  { page: "documents", label: "shell.nav.documents", icon: "folder", view: "documents" },
+  { page: "finances", label: "shell.nav.finances", icon: "wallet", view: "costs" },
+  { page: "vault", label: "shell.nav.vault", icon: "shield", view: "vault" },
+  { page: "gmail", label: "shell.nav.gmail", icon: "gmail", view: "gmail" },
 ];
 export const BOTTOM: Dest[] = [
-  { page: "team", label: "Your team", icon: "people", view: "team" },
-  { page: "connections", label: "Connections", icon: "plug", view: "connections" },
+  { page: "team", label: "shell.nav.team", icon: "people", view: "team" },
+  { page: "connections", label: "shell.nav.connections", icon: "plug", view: "connections" },
 ];
 
 /** Tabs inside a page, in FINAL order. */
-export const TABS: Partial<Record<Page, Array<{ view: View; label: string }>>> = {
+export const TABS: Partial<Record<Page, Array<{ view: View; label: Key }>>> = {
   work: [
-    { view: "builds", label: "Builds" }, { view: "feed", label: "Feed" },
-    { view: "review", label: "Review" }, { view: "live", label: "Live sessions" },
+    { view: "builds", label: "shell.tab.builds" }, { view: "feed", label: "shell.tab.feed" },
+    { view: "review", label: "shell.tab.review" }, { view: "live", label: "shell.tab.live" },
   ],
-  finances: [{ view: "costs", label: "Operating costs" }, { view: "bills", label: "Personal bills" }],
+  finances: [{ view: "costs", label: "shell.tab.costs" }, { view: "bills", label: "shell.tab.bills" }],
   documents: [
-    { view: "documents", label: "All documents" }, { view: "files", label: "Uploads" },
-    { view: "clipboard", label: "Clips" }, { view: "mission-control", label: "Mission control" },
+    { view: "documents", label: "shell.tab.allDocuments" }, { view: "files", label: "shell.tab.uploads" },
+    { view: "clipboard", label: "shell.tab.clips" }, { view: "mission-control", label: "shell.tab.missionControl" },
   ],
 };
 
@@ -73,10 +75,11 @@ export function pageVisible(page: Page, admin: boolean): boolean {
   return page === "settings" || entryView(page, admin) !== null;
 }
 
-export const PAGE_TITLE: Record<Page, string> = {
-  home: "Home", today: "Today", messages: "Messages", work: "Your work", documents: "Documents",
-  finances: "Finances", vault: "Vault", whatsapp: "WhatsApp", gmail: "Gmail", team: "Your team",
-  connections: "Connections", settings: "Settings",
+/** Catalog keys, translated where they are shown. */
+export const PAGE_TITLE: Record<Page, Key> = {
+  home: "shell.nav.home", today: "shell.nav.today", messages: "shell.nav.messages", work: "shell.nav.work", documents: "shell.nav.documents",
+  finances: "shell.nav.finances", vault: "shell.nav.vault", whatsapp: "shell.nav.whatsapp", gmail: "shell.nav.gmail", team: "shell.nav.team",
+  connections: "shell.nav.connections", settings: "common.settings",
 };
 
 /* ── URL contract ──────────────────────────────────────────────────────── */

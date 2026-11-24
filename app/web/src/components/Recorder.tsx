@@ -3,6 +3,7 @@ import { uploadVoiceNote } from "../lib/api";
 import { drainVoiceOutbox, enqueueVoiceNote } from "../lib/voice-outbox";
 import { IconMic, IconTrash, IconSend, IconPause, IconPlay } from "./icons";
 import { claimCaptureSession, releaseCaptureSession, settleAudioSession } from "../lib/audiosession";
+import { t as translate, useT } from "../i18n";
 
 type Phase = "idle" | "recording" | "paused" | "sending";
 
@@ -53,6 +54,7 @@ function formatTimer(ms: number): string {
  * not take the note at all.
  */
 export default function Recorder({ bot, onPhase }: { bot: string; onPhase?: (recording: boolean) => void }) {
+  const t = useT();
   const [phase, setPhase] = useState<Phase>("idle");
   const [elapsed, setElapsed] = useState(0);
 
@@ -76,8 +78,8 @@ export default function Recorder({ bot, onPhase }: { bot: string; onPhase?: (rec
   // timer tick
   useEffect(() => {
     if (phase !== "recording") return;
-    const t = setInterval(() => setElapsed(Date.now() - startedAt.current - pausedTotal.current), 250);
-    return () => clearInterval(t);
+    const timer = setInterval(() => setElapsed(Date.now() - startedAt.current - pausedTotal.current), 250);
+    return () => clearInterval(timer);
   }, [phase]);
 
   function teardownAudio(): void {
@@ -89,7 +91,7 @@ export default function Recorder({ bot, onPhase }: { bot: string; onPhase?: (rec
       }
     }
     recorderRef.current = null;
-    mediaRef.current?.getTracks().forEach((t) => t.stop());
+    mediaRef.current?.getTracks().forEach((track) => track.stop());
     mediaRef.current = null;
     releaseCaptureSession(SESSION_OWNER);
   }
@@ -115,7 +117,7 @@ export default function Recorder({ bot, onPhase }: { bot: string; onPhase?: (rec
       });
     } catch {
       releaseCaptureSession(SESSION_OWNER);
-      alert("Microphone access is required for voice notes.");
+      alert(translate("media.micRequired"));
       return;
     }
     mediaRef.current = stream;
@@ -132,7 +134,7 @@ export default function Recorder({ bot, onPhase }: { bot: string; onPhase?: (rec
       // left here holds the phone in communication mode, and on iOS can
       // make the next capture (a call) fail to open the mic at all.
       teardownAudio();
-      alert(`Voice notes are not supported here (${(err as Error).name || "error"}).`);
+      alert(translate("media.notSupported", { reason: (err as Error).name || translate("media.errorWord") }));
       return;
     }
     recorderRef.current = recorder;
@@ -167,7 +169,7 @@ export default function Recorder({ bot, onPhase }: { bot: string; onPhase?: (rec
       // Release the mic BEFORE the upload starts — the phone must leave
       // communication-audio mode the instant the recording ends, not when
       // the network round-trip finishes.
-      mediaRef.current?.getTracks().forEach((t) => t.stop());
+      mediaRef.current?.getTracks().forEach((track) => track.stop());
       mediaRef.current = null;
       recorderRef.current = null;
       releaseCaptureSession(SESSION_OWNER);
@@ -195,7 +197,7 @@ export default function Recorder({ bot, onPhase }: { bot: string; onPhase?: (rec
       // alert if it fails. The outbox strip carries the warning that this
       // device has no safety net.
       const result = await uploadVoiceNote(bot, blob, durationSec, queued.id);
-      if (!result.ok) alert(`Voice note failed: ${result.error}`);
+      if (!result.ok) alert(translate("media.voiceNoteFailed", { error: result.error }));
       setPhaseBoth("idle");
     };
     try {
@@ -253,8 +255,8 @@ export default function Recorder({ bot, onPhase }: { bot: string; onPhase?: (rec
       <button
         type="button"
         className="composer-icon mic-live"
-        title="Record a voice note"
-        aria-label="Record voice note"
+        title={t("media.recordTitle")}
+        aria-label={t("media.recordLabel")}
         onClick={() => void start()}
       >
         <IconMic />
@@ -266,7 +268,7 @@ export default function Recorder({ bot, onPhase }: { bot: string; onPhase?: (rec
     return (
       <div className="recorder-strip" aria-live="polite">
         <span className="rec-dot transcribing" />
-        <span className="mono-label">SENDING VOICE NOTE…</span>
+        <span className="mono-label">{t("media.sendingVoiceNote")}</span>
       </div>
     );
   }
@@ -275,23 +277,23 @@ export default function Recorder({ bot, onPhase }: { bot: string; onPhase?: (rec
   // [delete] [dot Recording…] [timer] …spacer… [pause/resume] [send]
   return (
     <div className="recorder-strip" aria-live="polite">
-      <button type="button" className="composer-icon rec-cancel" onClick={cancel} aria-label="Delete recording" title="Delete">
+      <button type="button" className="composer-icon rec-cancel" onClick={cancel} aria-label={t("media.deleteRecording")} title={t("common.delete")}>
         <IconTrash />
       </button>
       <span className={`rec-dot${phase === "paused" ? " paused" : ""}`} />
-      <span className="rec-label">{phase === "paused" ? "Paused" : "Recording…"}</span>
+      <span className="rec-label">{phase === "paused" ? t("media.paused") : t("media.recording")}</span>
       <span className="mono-label rec-timer">{formatTimer(elapsed)}</span>
       <div className="rec-right">
         <button
           type="button"
           className="rec-icon-btn"
           onClick={togglePause}
-          aria-label={phase === "paused" ? "Resume recording" : "Pause recording"}
-          title={phase === "paused" ? "Resume" : "Pause"}
+          aria-label={phase === "paused" ? t("media.resumeRecording") : t("media.pauseRecording")}
+          title={phase === "paused" ? t("media.resume") : t("media.pause")}
         >
           {phase === "paused" ? <IconPlay /> : <IconPause />}
         </button>
-        <button type="button" className="send-circle" onClick={finish} aria-label="Send voice note">
+        <button type="button" className="send-circle" onClick={finish} aria-label={t("media.sendVoiceNote")}>
           <IconSend />
         </button>
       </div>

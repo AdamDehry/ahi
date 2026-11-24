@@ -92,7 +92,7 @@ const SentGrid = memo(function SentGrid({ items }: { items: MediaRef[] }) {
             <IconFiles />
           </span>
           {/* BIDI: filename plaintext so extensions never jump; size LTR. */}
-          <span className="sent-doc-name">{m.originalName}</span>
+          <span className="sent-doc-name" dir="auto">{m.originalName}</span>
           <span className="sent-doc-size mono-label">{formatSize(m.size)}</span>
         </a>
         ),

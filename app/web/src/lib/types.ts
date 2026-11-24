@@ -1,4 +1,5 @@
 import type { SentAnswer } from "./answers";
+import { t, type Key } from "../i18n";
 // The gateway contract — mirrors src/websocket.ts + src/dashboard.ts exactly.
 // See web/AUDIT.md §2 for the full write-up with file:line references.
 
@@ -311,12 +312,31 @@ export const BOT_LABELS: Record<string, string> = {
   avi: "Avi",
 };
 
-export const BOT_SUBTITLES: Record<string, string> = {
-  michael: "Strategist",
-  miriam: "Personal assistant",
-  zali: "Builder",
-  avi: "Visual conscience",
+/** Each agent's role line, as catalog keys (the names above stay Latin; the roles are words). */
+export const BOT_SUBTITLE_KEYS: Record<string, Key> = {
+  michael: "chat.roleMichael",
+  miriam: "chat.roleMiriam",
+  zali: "chat.roleZali",
+  avi: "chat.roleAvi",
 };
+
+/** An agent's role in the current language ("" for an agent with none). */
+export function botSubtitle(bot: string): string {
+  const key = BOT_SUBTITLE_KEYS[bot];
+  return key ? t(key) : "";
+}
+
+/**
+ * The same roles, read as plain strings: each lookup translates at the moment
+ * it is read (render time), so existing `BOT_SUBTITLES[bot] ?? ""` readers stay
+ * correct in every language. New code: botSubtitle(bot).
+ */
+export const BOT_SUBTITLES: Readonly<Record<string, string>> = Object.defineProperties(
+  {} as Record<string, string>,
+  Object.fromEntries(
+    Object.entries(BOT_SUBTITLE_KEYS).map(([bot, key]) => [bot, { enumerable: true, get: () => t(key) }]),
+  ),
+);
 
 /** Messages a private edge channel marks as never shown in the feed (none ship in this release). */
 export function isPrivate(msg: { bot: string; source?: string }): boolean {

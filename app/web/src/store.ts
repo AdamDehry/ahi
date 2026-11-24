@@ -6,7 +6,7 @@ import { BOT_ORDER, isPrivate } from "./lib/types";
 import type { ConnectionStatus } from "./lib/ws";
 import { loadSnapshot, saveSnapshot, type AnswerLink } from "./lib/cache";
 import { answersFor, MAX_ANSWERS, type SentAnswer } from "./lib/answers";
-import { setLang } from "./i18n";
+import { setLang, t, type Key } from "./i18n";
 
 export interface StreamState {
   streamId: string;
@@ -121,8 +121,8 @@ export interface AppState {
   voiceOutbox: VoiceOutboxItem[];
   /** Set when the voice queue could not be written or read. Recording still
    *  works (it falls back to send-from-memory) — this is the warning that
-   *  says the safety net is off. */
-  voiceOutboxWarning: string | null;
+   *  says the safety net is off. A catalog key: the strip translates it. */
+  voiceOutboxWarning: Key | null;
   /** Agents with voice mode enabled server-side (from the session event). */
   voiceBots: string[];
   /** Of those, the ones whose calls go over ElevenLabs (VOICE_CALL_ROLLBACK=elevenlabs since voice step 3). */
@@ -954,7 +954,7 @@ export const actions = {
     emit({ ...state, voiceOutbox });
   },
 
-  setVoiceOutboxWarning(voiceOutboxWarning: string | null): void {
+  setVoiceOutboxWarning(voiceOutboxWarning: Key | null): void {
     if (state.voiceOutboxWarning === voiceOutboxWarning) return;
     emit({ ...state, voiceOutboxWarning });
   },
@@ -1179,7 +1179,7 @@ export function handleServerEvent(ev: ServerEvent): void {
       if (e.error === "stopped" || e.error === "steered") {
         actions.cancelStream(e.streamId, e.botName, e.error === "stopped" ? "cancelled" : "steered");
       } else {
-        actions.streamEnd(e.streamId, undefined, e.error || "stream error");
+        actions.streamEnd(e.streamId, undefined, e.error || t("chat.streamError"));
       }
       break;
     }

@@ -20,16 +20,22 @@ import { Icon } from "./icons";
 import { AgentAvatar } from "./AgentRail";
 import { goPage } from "./Shell";
 import { railOrder } from "./agents";
+import { useT, type Key } from "../i18n";
 
-function greeting(zone: string | undefined): string {
+/** The time of day, as the pair of keys for the greeting alone and with a first name. (The en-US hour is parsed back, never shown.) */
+function greeting(zone: string | undefined): { plain: Key; named: Key } {
   const h = Number(new Intl.DateTimeFormat("en-US", { hour: "numeric", hour12: false, timeZone: zone || undefined }).format(new Date()));
-  return h < 12 ? "GOOD MORNING" : h < 17 ? "GOOD AFTERNOON" : "GOOD EVENING";
+  return h < 12
+    ? { plain: "home.morning", named: "home.morningName" }
+    : h < 17
+      ? { plain: "home.afternoon", named: "home.afternoonName" }
+      : { plain: "home.evening", named: "home.eveningName" };
 }
 
-const STARTERS: Array<{ icon: "sun" | "spark" | "pulse"; label: string; prompt: string }> = [
-  { icon: "sun", label: "Plan my day", prompt: "Help me plan the rest of my day." },
-  { icon: "spark", label: "Start something", prompt: "Let’s start something new." },
-  { icon: "pulse", label: "Catch me up", prompt: "Catch me up on what matters today." },
+const STARTERS: Array<{ icon: "sun" | "spark" | "pulse"; label: Key; prompt: Key }> = [
+  { icon: "sun", label: "home.starter.plan", prompt: "home.starter.planPrompt" },
+  { icon: "spark", label: "home.starter.start", prompt: "home.starter.startPrompt" },
+  { icon: "pulse", label: "home.starter.catchUp", prompt: "home.starter.catchUpPrompt" },
 ];
 
 /** Open an agent's conversation (phone: straight into it). */
@@ -55,6 +61,7 @@ function useWorkData(admin: boolean) {
 }
 
 export default function Home() {
+  const t = useT();
   const s = useAppState();
   const admin = !!s.user?.admin;
   const bots = railOrder(availableBots(s.user));
@@ -74,8 +81,8 @@ export default function Home() {
     return (
       <div className="rd-page rd-page-scroll rd-home" data-page="home">
         <section className="rd-home-hero">
-          <h1 className="rd-home-title">Welcome.</h1>
-          <p className="rd-sub">No agents are available to you yet. Whoever runs this workspace can add one for you.</p>
+          <h1 className="rd-home-title">{t("home.welcome")}</h1>
+          <p className="rd-sub">{t("home.noAgents")}</p>
         </section>
       </div>
     );
@@ -118,9 +125,9 @@ export default function Home() {
 
   const one: { title: string; body: string; tag: string; go: () => void; action: string } | null = (() => {
     const r = review?.[0];
-    if (r) return { title: r.title, body: r.cost_risk || "Ready for your okay.", tag: r.desk, go: () => actions.openReview(r.id), action: "Let’s review" };
+    if (r) return { title: r.title, body: r.cost_risk || t("home.readyForOkay"), tag: r.desk, go: () => actions.openReview(r.id), action: t("home.letsReview") };
     const q = builds?.sections.needs_you[0];
-    if (q) return { title: q.title, body: q.ask ?? q.now?.text ?? "One decision is waiting on you.", tag: "Your work", go: () => actions.openBuilds(q.id), action: "Open it" };
+    if (q) return { title: q.title, body: q.ask ?? q.now?.text ?? t("home.oneDecision"), tag: t("shell.nav.work"), go: () => actions.openBuilds(q.id), action: t("home.openIt") };
     return null;
   })();
   const moving: Card[] = builds ? [...builds.sections.moving, ...builds.sections.ready].slice(0, 3) : [];
@@ -128,9 +135,9 @@ export default function Home() {
   return (
     <div className="rd-page rd-page-scroll rd-home" data-page="home">
       <section className="rd-home-hero">
-        <div className="rd-eyebrow">{greeting(undefined)}{s.user?.name ? `, ${s.user.name.split(" ")[0].toUpperCase()}` : ""}</div>
-        <h1 className="rd-home-title">What can I take off your plate?</h1>
-        <p className="rd-sub">One conversation. Your whole world, working together.</p>
+        <div className="rd-eyebrow">{s.user?.name ? t(greeting(undefined).named, { name: s.user.name.split(" ")[0].toUpperCase() }) : t(greeting(undefined).plain)}</div>
+        <h1 className="rd-home-title">{t("shell.page.home.title")}</h1>
+        <p className="rd-sub">{t("shell.page.home.sub")}</p>
         <form
           className="rd-home-composer"
           onSubmit={(e) => {
@@ -138,13 +145,14 @@ export default function Home() {
             send();
           }}
         >
-          <label htmlFor="rd-home-request" className="sr-only">Ask {BOT_LABELS[agent] ?? agent} anything</label>
+          <label htmlFor="rd-home-request" className="sr-only">{t("home.askAnythingLabel", { name: BOT_LABELS[agent] ?? agent })}</label>
           <textarea
             id="rd-home-request"
             ref={area}
             rows={2}
             value={text}
-            placeholder="Ask anything, or tell me what you need…"
+            dir="auto"
+            placeholder={t("home.composerPlaceholder")}
             onChange={(e) => setText(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey) {
@@ -162,7 +170,7 @@ export default function Home() {
                 <Icon name="chevron" />
               </button>
               {picking && (
-                <ul className="rd-picker-menu" role="listbox" aria-label="Who to ask">
+                <ul className="rd-picker-menu" role="listbox" aria-label={t("home.whoToAsk")}>
                   {bots.map((b) => (
                     <li key={b}>
                       <button
@@ -185,15 +193,15 @@ export default function Home() {
               )}
             </div>
             <div className="rd-home-actions">
-              <button type="button" className="rd-chat-control" aria-label="Attach a file" onClick={() => handOff("attach")}>
+              <button type="button" className="rd-chat-control" aria-label={t("home.attachFile")} onClick={() => handOff("attach")}>
                 <Icon name="plus" />
               </button>
               {s.voiceBots.includes(agent) && (
-                <button type="button" className="rd-chat-control" aria-label={`Talk to ${BOT_LABELS[agent] ?? agent}`} onClick={() => handOff("voice")}>
+                <button type="button" className="rd-chat-control" aria-label={t("home.talkTo", { name: BOT_LABELS[agent] ?? agent })} onClick={() => handOff("voice")}>
                   <Icon name="wave" />
                 </button>
               )}
-              <button type="submit" className="rd-home-send" aria-label={`Send to ${BOT_LABELS[agent] ?? agent}`} disabled={!text.trim()}>
+              <button type="submit" className="rd-home-send" aria-label={t("home.sendTo", { name: BOT_LABELS[agent] ?? agent })} disabled={!text.trim()}>
                 <Icon name="arrow-up" />
               </button>
             </div>
@@ -205,12 +213,12 @@ export default function Home() {
               key={st.label}
               type="button"
               onClick={() => {
-                setText(st.prompt);
+                setText(t(st.prompt));
                 area.current?.focus();
               }}
             >
               <Icon name={st.icon} />
-              {st.label}
+              {t(st.label)}
             </button>
           ))}
         </div>
@@ -218,8 +226,8 @@ export default function Home() {
           <button type="button" className="rd-continue" onClick={() => openChat(lead)}>
             <AgentAvatar bot={lead} size="sm" />
             <span>
-              Continue with {BOT_LABELS[lead] ?? lead}
-              <small>Your ongoing conversation, always in one place.</small>
+              {t("home.continueWith", { name: BOT_LABELS[lead] ?? lead })}
+              <small>{t("home.continueSub")}</small>
             </span>
             <Icon name="arrow-right" />
           </button>
@@ -227,28 +235,28 @@ export default function Home() {
       </section>
 
       {admin && (
-        <section className="rd-overview" aria-label="Attention and work in motion">
+        <section className="rd-overview" aria-label={t("home.overviewLabel")}>
           <div className="rd-section-head">
             <h2>
-              <span className="rd-marker" />A little attention. A lot in motion.
+              <span className="rd-marker" />{t("home.overviewTitle")}
             </h2>
             <button type="button" onClick={() => goPage("work")}>
-              See all work <Icon name="arrow-right" />
+              {t("home.seeAllWork")} <Icon name="arrow-right" />
             </button>
           </div>
           <div className="rd-overview-grid">
             <article className="rd-card rd-one">
               <div className="rd-card-top">
-                <span className="rd-eyebrow rd-accent">• ONE FOR YOU</span>
-                {one && <span className="rd-card-tag">{one.tag}</span>}
+                <span className="rd-eyebrow rd-accent">{t("home.oneForYou")}</span>
+                {one && <span className="rd-card-tag" dir="auto">{one.tag}</span>}
               </div>
               {one ? (
                 <>
-                  <h3>{one.title}</h3>
-                  <p>{one.body}</p>
+                  <h3 dir="auto">{one.title}</h3>
+                  <p dir="auto">{one.body}</p>
                   <div className="rd-card-foot">
                     <span className="rd-card-who">
-                      <AgentAvatar bot="michael" size="sm" /> {BOT_LABELS[lead ?? "michael"]} has the details
+                      <AgentAvatar bot="michael" size="sm" /> {t("home.hasDetails", { name: BOT_LABELS[lead ?? "michael"] })}
                     </span>
                     <button type="button" className="rd-link-action" onClick={one.go}>
                       {one.action} <Icon name="arrow-right" />
@@ -257,15 +265,15 @@ export default function Home() {
                 </>
               ) : (
                 <>
-                  <h3>Nothing is waiting on you.</h3>
-                  <p>When something needs your okay, it shows here first.</p>
+                  <h3>{t("home.nothingWaiting")}</h3>
+                  <p>{t("home.nothingWaitingSub")}</p>
                 </>
               )}
             </article>
             <article className="rd-card rd-moving">
               <div className="rd-card-top">
-                <h3>Moving for you</h3>
-                <span className="rd-eyebrow">• LIVE</span>
+                <h3>{t("home.movingForYou")}</h3>
+                <span className="rd-eyebrow">{t("home.live")}</span>
               </div>
               {moving.length ? (
                 <ul>
@@ -274,17 +282,17 @@ export default function Home() {
                       <button type="button" onClick={() => actions.openBuilds(c.id)}>
                         <AgentAvatar bot={c.from && c.from !== "foreman" ? c.from : "michael"} size="sm" />
                         <span>
-                          {c.title}
-                          <small>
-                            {BOT_LABELS[c.from ?? ""] ?? "Your team"} · {c.now?.text ?? (c.kicker === "built" ? "Built, ready for a look" : c.kicker)}
+                          <bdi dir="auto">{c.title}</bdi>
+                          <small dir="auto">
+                            {BOT_LABELS[c.from ?? ""] ?? t("shell.nav.team")} · {c.now?.text ?? (c.kicker === "built" ? t("home.builtReady") : c.kicker)}
                           </small>
                         </span>
                         {c.kicker === "built" ? (
-                          <span className="rd-moving-state done" title="Ready for a look">
+                          <span className="rd-moving-state done" title={t("home.readyForLook")}>
                             <Icon name="check" />
                           </span>
                         ) : c.now ? (
-                          <span className="rd-moving-state working" title="Working" aria-label="Working" />
+                          <span className="rd-moving-state working" title={t("home.working")} aria-label={t("home.working")} />
                         ) : (
                           <Icon name="chevron-right" />
                         )}
@@ -293,7 +301,7 @@ export default function Home() {
                   ))}
                 </ul>
               ) : (
-                <p className="rd-quiet">{builds ? "Nothing is moving right now." : "Loading your work…"}</p>
+                <p className="rd-quiet">{builds ? t("home.nothingMoving") : t("home.loadingWork")}</p>
               )}
               <button type="button" className="rd-card-foot rd-team-foot" onClick={() => goPage("work")}>
                 <span className="rd-team-stack" aria-hidden="true">
@@ -301,7 +309,7 @@ export default function Home() {
                     <AgentAvatar key={bot} bot={bot} size="xs" />
                   ))}
                 </span>
-                <span>One team. On the same page.</span>
+                <span>{t("home.oneTeam")}</span>
                 <Icon name="arrow-right" />
               </button>
             </article>
@@ -311,19 +319,19 @@ export default function Home() {
       {admin && (
         <footer className="rd-home-foot">
           {/* FINAL workspace-footer: what this workspace is connected to, and a quiet privacy line. */}
-          <button type="button" className="rd-home-connected" onClick={() => goPage("connections")} aria-label="Connected to your world · open Connections">
+          <button type="button" className="rd-home-connected" onClick={() => goPage("connections")} aria-label={t("home.connectedLabel")}>
             <span className="rd-home-connected-icons" aria-hidden="true">
               <i><Icon name="gmail" /></i>
               <i><Icon name="search" /></i>
               <i><Icon name="folder" /></i>
             </span>
             <span>
-              Connected to your world<span className="rd-home-foot-arrow"> ↗</span>
+              {t("home.connected")}<span className="rd-home-foot-arrow">{t("home.footArrow")}</span>
             </span>
           </button>
           <span className="rd-home-privacy">
             <Icon name="shield" />
-            Private. Yours. Always.
+            {t("home.privacy")}
           </span>
         </footer>
       )}

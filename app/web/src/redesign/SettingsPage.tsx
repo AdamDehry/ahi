@@ -19,27 +19,32 @@ import { railOrder } from "./agents";
 import { MODEL_LABELS } from "../views/Settings";
 import { goPage } from "./Shell";
 import LanguageSettings from "./LanguageSettings";
+import { getLang, locale, t, tn, useT, type Key } from "../i18n";
 import "./settings-final.css";
 
 export type SettingsSection = "appearance" | "language" | "agents" | "notifications" | "passkeys" | "updates" | "account";
-export const SETTINGS_SECTIONS: Array<{ id: SettingsSection; label: string; icon: IconName; owner?: boolean }> = [
-  { id: "appearance", label: "Appearance", icon: "sun" },
-  { id: "language", label: "Language", icon: "globe" },
-  { id: "agents", label: "Agents", icon: "people" },
-  { id: "notifications", label: "Notifications", icon: "bell" },
-  { id: "passkeys", label: "Passkeys", icon: "fingerprint", owner: true },
-  { id: "updates", label: "Updates", icon: "download", owner: true },
-  { id: "account", label: "Account", icon: "settings" },
+/** `label` is a catalog key, translated where the list is rendered (Team.tsx SettingsNav). */
+export const SETTINGS_SECTIONS: Array<{ id: SettingsSection; label: Key; icon: IconName; owner?: boolean }> = [
+  { id: "appearance", label: "settings.section.appearance", icon: "sun" },
+  { id: "language", label: "lang.section", icon: "globe" },
+  { id: "agents", label: "settings.section.agents", icon: "people" },
+  { id: "notifications", label: "shell.notifications", icon: "bell" },
+  { id: "passkeys", label: "settings.section.passkeys", icon: "fingerprint", owner: true },
+  { id: "updates", label: "settings.section.updates", icon: "download", owner: true },
+  { id: "account", label: "settings.section.account", icon: "settings" },
 ];
-const HEADS: Record<SettingsSection, [string, string]> = {
-  appearance: ["A space that feels like you.", "Choose the light that suits your day."],
-  language: ["Your language, everywhere.", "Choose the language AHI speaks: the app, the desktop app and your agents."],
-  agents: ["A mind and a voice for each role.", "Choose how your agents think and sound."],
-  notifications: ["The right things, at the right time.", "Choose what reaches you, from which apps and agents."],
-  passkeys: ["Your approval. Your devices.", "Manage the devices you use for protected approvals."],
-  updates: ["New tools, when they are ready.", "Check for a newer AHI and update your skills shelf."],
-  account: ["Your personal workspace.", "Your identity and access, in one place."],
+const HEADS: Record<SettingsSection, [Key, Key]> = {
+  appearance: ["settings.head.appearance", "settings.head.appearanceSub"],
+  language: ["lang.headTitle", "lang.headSub"],
+  agents: ["settings.head.agents", "settings.head.agentsSub"],
+  notifications: ["settings.head.notifications", "settings.head.notificationsSub"],
+  passkeys: ["settings.head.passkeys", "settings.head.passkeysSub"],
+  updates: ["settings.head.updates", "settings.head.updatesSub"],
+  account: ["settings.head.account", "settings.head.accountSub"],
 };
+
+/** English keeps the browser's own date format, as before; other languages format in their locale. */
+const dateLoc = (): string | string[] => (getLang() === "en" ? [] : locale());
 
 let current: SettingsSection = "appearance";
 const subs = new Set<() => void>();
@@ -71,13 +76,14 @@ const Row = ({ title, sub, children }: { title: React.ReactNode; sub?: React.Rea
 );
 
 export default function SettingsPage() {
+  const t = useT();
   const { user } = useAppState();
   const owner = !!user?.admin;
   let section = useSettingsSection();
   if ((section === "passkeys" || section === "updates") && !owner) section = "account";
   const [saved, setSaved] = useState("");
-  const flash = (t = "Saved") => {
-    setSaved(t);
+  const flash = (text: string = t("common.saved")) => {
+    setSaved(text);
     window.setTimeout(() => setSaved(""), 1500);
   };
   const [title, sub] = HEADS[section];
@@ -85,8 +91,8 @@ export default function SettingsPage() {
     <div className="rs-page">
       <div className="rs-content">
         <header>
-          <h2>{title}</h2>
-          <p>{sub}</p>
+          <h2>{t(title)}</h2>
+          <p>{t(sub)}</p>
         </header>
         {section === "appearance" && <Appearance name={user?.name ?? ""} owner={owner} />}
         {section === "language" && <LanguageSettings onSaved={flash} />}
@@ -96,7 +102,7 @@ export default function SettingsPage() {
         {section === "updates" && <Updates />}
         {section === "account" && <Account name={user?.name ?? ""} owner={owner} />}
         <footer className="rs-footer">
-          <span role="status" aria-live="polite">{saved || "Preferences save automatically"}</span>
+          <span role="status" aria-live="polite">{saved || t("settings.autoSave")}</span>
         </footer>
       </div>
     </div>
@@ -106,16 +112,17 @@ export default function SettingsPage() {
 const initials = (n: string) => n.split(/\s+/).filter(Boolean).map((x) => x[0]).slice(0, 2).join("").toUpperCase() || "?";
 
 function Appearance({ name, owner }: { name: string; owner: boolean }) {
+  const t = useT();
   const [mode, setMode] = useState<ThemeMode>(getThemeMode());
   return (
     <>
-      <div className="rs-theme-grid" role="radiogroup" aria-label="Application appearance">
+      <div className="rs-theme-grid" role="radiogroup" aria-label={t("settings.appearanceGroup")}>
         {(
           [
-            ["light", "Light", "sun"],
-            ["dark", "Dark", "moon"],
-            ["system", "System", "monitor"],
-          ] as Array<[ThemeMode, string, IconName]>
+            ["light", "settings.theme.light", "sun"],
+            ["dark", "settings.theme.dark", "moon"],
+            ["system", "settings.theme.system", "monitor"],
+          ] as Array<[ThemeMode, Key, IconName]>
         ).map(([id, label, glyph]) => (
           <button
             key={id}
@@ -139,33 +146,33 @@ function Appearance({ name, owner }: { name: string; owner: boolean }) {
             </span>
             <span>
               <Icon name={glyph} />
-              <strong>{label}</strong>
+              <strong>{t(label)}</strong>
               {mode === id && <Icon name="check" />}
             </span>
           </button>
         ))}
       </div>
-      <p className="rs-note">System follows your device’s light or dark appearance. Your petrol navigation stays consistent with the rest of AHI.</p>
+      <p className="rs-note">{t("settings.theme.note")}</p>
       <div className="rs-card rs-shortcuts">
-        <Row title="Make your team feel familiar" sub={owner ? "Choose a model and voice for each agent." : "See who you work with and how they are set up."}>
+        <Row title={t("settings.familiarTitle")} sub={owner ? t("settings.familiarOwner") : t("settings.familiarMember")}>
           <Btn onClick={() => setSettingsSection("agents")}>
-            Your agents <Icon name="arrow-right" />
+            {t("lang.agentsTitle")} <Icon name="arrow-right" />
           </Btn>
         </Row>
-        <Row title="Keep the useful things close" sub="Choose notifications by app, activity and agent.">
+        <Row title={t("settings.closeTitle")} sub={t("settings.closeSub")}>
           <Btn onClick={() => setSettingsSection("notifications")}>
-            Notifications <Icon name="arrow-right" />
+            {t("shell.notifications")} <Icon name="arrow-right" />
           </Btn>
         </Row>
       </div>
       <div className="rs-account-shortcut">
         <span className="profile-avatar">{initials(name)}</span>
         <div>
-          <strong>{name}</strong>
-          <small>{owner ? "Owner" : "Member"} · Personal workspace</small>
+          <strong dir="auto">{name}</strong>
+          <small>{owner ? t("settings.owner") : t("shell.member")} · {t("shell.personalWorkspace")}</small>
         </div>
         <Btn onClick={() => setSettingsSection("account")}>
-          Account <Icon name="arrow-right" />
+          {t("settings.section.account")} <Icon name="arrow-right" />
         </Btn>
       </div>
     </>
@@ -175,13 +182,14 @@ function Appearance({ name, owner }: { name: string; owner: boolean }) {
 /** An agent's identity lives in its managed identity file on the host, which the app doesn't write; the change
  *  goes to Michael, who keeps those files (the draft waits for the owner to send it). */
 function editIdentity(bot: string) {
-  actions.setDraft("michael", `I'd like to change ${BOT_LABELS[bot] ?? bot}'s identity: `);
+  actions.setDraft("michael", t("settings.identityDraft", { name: BOT_LABELS[bot] ?? bot }));
   actions.toggleSettings(false);
   actions.setView("messages");
   actions.openMobileThread("michael");
 }
 
-function Agents({ owner, onSaved }: { owner: boolean; onSaved: (t?: string) => void }) {
+function Agents({ owner, onSaved }: { owner: boolean; onSaved: (text?: string) => void }) {
+  const t = useT();
   const [settings, setSettings] = useState<SettingsPayload | null>(null);
   const [health, setHealth] = useState<HealthPayload | null>(null);
   useEffect(() => {
@@ -190,7 +198,7 @@ function Agents({ owner, onSaved }: { owner: boolean; onSaved: (t?: string) => v
   }, [owner]);
   const patch = async (bot: string, p: { model?: string; voice?: string }) => {
     if (await saveBotSetting(bot, p)) {
-      onSaved(`${BOT_LABELS[bot] ?? bot} saved`);
+      onSaved(t("settings.agentSaved", { name: BOT_LABELS[bot] ?? bot }));
       void fetchSettings().then(setSettings);
     }
   };
@@ -211,7 +219,7 @@ function Agents({ owner, onSaved }: { owner: boolean; onSaved: (t?: string) => v
                   <p>{BOT_SUBTITLES[name] ?? ""}</p>
                   {owner && (
                     <button type="button" className="identity-edit-link" onClick={() => editIdentity(name)}>
-                      Edit identity
+                      {t("settings.editIdentity")}
                     </button>
                   )}
                 </div>
@@ -219,8 +227,8 @@ function Agents({ owner, onSaved }: { owner: boolean; onSaved: (t?: string) => v
               {owner && settings ? (
                 <div className="rs-agent-controls">
                   <label className="rs-select">
-                    <span>Model</span>
-                    <select aria-label={`${BOT_LABELS[name] ?? name} model`} value={b.model} onChange={(e) => void patch(name, { model: e.target.value })}>
+                    <span>{t("settings.model")}</span>
+                    <select aria-label={t("settings.agentModel", { name: BOT_LABELS[name] ?? name })} value={b.model} onChange={(e) => void patch(name, { model: e.target.value })}>
                       {settings.availableModels.map((m) => (
                         <option key={m} value={m}>
                           {MODEL_LABELS[m] ?? m}
@@ -229,8 +237,8 @@ function Agents({ owner, onSaved }: { owner: boolean; onSaved: (t?: string) => v
                     </select>
                   </label>
                   <label className="rs-select">
-                    <span>Voice</span>
-                    <select aria-label={`${BOT_LABELS[name] ?? name} voice`} value={b.voice} onChange={(e) => void patch(name, { voice: e.target.value })}>
+                    <span>{t("settings.voice")}</span>
+                    <select aria-label={t("settings.agentVoice", { name: BOT_LABELS[name] ?? name })} value={b.voice} onChange={(e) => void patch(name, { voice: e.target.value })}>
                       {settings.voiceGroups
                         .filter((g) => !g.bots || g.bots.includes(name))
                         .map((g) => (
@@ -247,14 +255,14 @@ function Agents({ owner, onSaved }: { owner: boolean; onSaved: (t?: string) => v
                 </div>
               ) : (
                 <p className="rs-note">
-                  {MODEL_LABELS[b.model] ?? b.model} · online. Models and voices are managed by the workspace owner.
+                  {t("settings.memberModelLine", { model: MODEL_LABELS[b.model] ?? b.model })}
                 </p>
               )}
             </article>
           );
         })}
       </div>
-      {owner && <p className="rs-note">A change applies to the agent’s next turn; a call in progress keeps its voice until it ends.</p>}
+      {owner && <p className="rs-note">{t("settings.agentChangeNote")}</p>}
     </>
   );
 }
@@ -263,7 +271,8 @@ function Agents({ owner, onSaved }: { owner: boolean; onSaved: (t?: string) => v
  *  per app; the card opens an attached list of its activities), Your agents, Sound & timing. Every switch is a
  *  real preference the gateway enforces when a push goes out (src/push.ts pushVerdict); In-app and the app
  *  choices also govern the bell. */
-function Notifications({ agents, owner, onSaved }: { agents: string[]; owner: boolean; onSaved: (t?: string) => void }) {
+function Notifications({ agents, owner, onSaved }: { agents: string[]; owner: boolean; onSaved: (text?: string) => void }) {
+  const t = useT();
   const support = pushSupport();
   const [subscribed, setSubscribed] = useState(false);
   const [view, setView] = useState<PushSettingsView | null>(null);
@@ -282,7 +291,7 @@ function Notifications({ agents, owner, onSaved }: { agents: string[]; owner: bo
       setView((v) => (v ? { ...v, settings: next } : v));
       pushPrefsChanged(next);
       onSaved();
-    } else onSaved("Couldn’t save — try again");
+    } else onSaved(t("settings.couldntSave"));
   };
   const device = async () => {
     if (busy) return;
@@ -300,44 +309,44 @@ function Notifications({ agents, owner, onSaved }: { agents: string[]; owner: bo
   };
   // Says plainly what is missing when this device can't take alerts (the owner: "Set up does nothing").
   const deviceLine = !view
-    ? "Checking this device…"
+    ? t("settings.device.checking")
     : !view.configured
-      ? "Device alerts need this gateway’s push keys, and they aren’t set. In-app notifications still work."
+      ? t("settings.device.noKeys")
       : support === "needs-install"
-        ? "Add AHI to your Home Screen first; iPhone only delivers alerts to installed apps."
+        ? t("settings.device.needsInstall")
         : support === "unsupported"
-          ? "This browser can’t receive device alerts. In-app notifications still work."
+          ? t("settings.device.unsupported")
           : subscribed
-            ? "Device delivery is on for this device."
+            ? t("settings.device.on")
             : typeof Notification !== "undefined" && Notification.permission === "denied"
-              ? "Permission denied. Delivery must be enabled in your browser or app."
-              : "Connect device delivery when you’re ready.";
+              ? t("settings.device.denied")
+              : t("settings.device.connect");
   const q = s?.quietHours;
   const setQuiet = (k: "start" | "end", v: string) => {
     if (!q || !v) return;
-    if (v === (k === "start" ? q.end : q.start)) return setQuietErr("Choose different start and end times.");
+    if (v === (k === "start" ? q.end : q.start)) return setQuietErr(t("settings.quiet.sameTimes"));
     setQuietErr(null);
     void patch({ quietHours: { [k]: v, tz: Intl.DateTimeFormat().resolvedOptions().timeZone } });
   };
   return (
     <>
       <div className="rs-card">
-        <Row title="In-app notifications" sub="New activity in your notification inbox.">
-          <Switch on={s?.inApp !== false} label="In-app notifications" disabled={!s} onChange={(v) => void patch({ inApp: v })} />
+        <Row title={t("settings.inApp")} sub={t("settings.inAppSub")}>
+          <Switch on={s?.inApp !== false} label={t("settings.inApp")} disabled={!s} onChange={(v) => void patch({ inApp: v })} />
         </Row>
-        <Row title="This device" sub={deviceLine}>
+        <Row title={t("settings.thisDevice")} sub={deviceLine}>
           <Btn onClick={() => void device()} disabled={busy || !view || !view.configured || support !== "ok"}>
-            {busy ? "Working…" : subscribed ? "Turn off here" : "Set up"}
+            {busy ? t("settings.working") : subscribed ? t("settings.turnOffHere") : t("settings.setUp")}
           </Btn>
         </Row>
       </div>
       {note && <p className="rs-notice">{note}</p>}
-      {s?.inApp === false && <p className="rs-notice">In-app delivery is paused. Your app and agent choices are kept for when you turn it back on.</p>}
+      {s?.inApp === false && <p className="rs-notice">{t("settings.inAppPaused")}</p>}
       {s && view && (
         <>
           <div className="rs-section-title">
-            <h3>Apps & activity</h3>
-            <p>Turn an app on or off, then choose the activities inside it.</p>
+            <h3>{t("settings.appsTitle")}</h3>
+            <p>{t("settings.appsSub")}</p>
           </div>
           <div className="rs-sources">
             {view.sources.map((src) => {
@@ -366,10 +375,10 @@ function Notifications({ agents, owner, onSaved }: { agents: string[]; owner: bo
                         <strong>{src.name}</strong>
                         <small>{src.blurb}</small>
                       </span>
-                      <span className="rs-event-count">{p.enabled ? `${count} selected` : "Off"}</span>
+                      <span className="rs-event-count">{p.enabled ? t("settings.selected", { n: count }) : t("common.off")}</span>
                       <Icon name="chevron" />
                     </button>
-                    <Switch on={p.enabled} label={`${src.name} notifications`} onChange={(v) => void patch({ sources: { [src.id]: { enabled: v } } })} />
+                    <Switch on={p.enabled} label={t("settings.sourceNotifications", { name: src.name })} onChange={(v) => void patch({ sources: { [src.id]: { enabled: v } } })} />
                   </header>
                   <div className="rs-source-events" id={`rs-events-${src.id}`} hidden={!isOpen}>
                     {src.events.map((e) => (
@@ -383,8 +392,8 @@ function Notifications({ agents, owner, onSaved }: { agents: string[]; owner: bo
             })}
           </div>
           <div className="rs-section-title">
-            <h3>Your agents</h3>
-            <p>These choices apply to agent messages. App alerts keep their own controls above.</p>
+            <h3>{t("lang.agentsTitle")}</h3>
+            <p>{t("settings.agentsNotifSub")}</p>
           </div>
           <div className="rs-card">
             {railOrder(agents).map((bot) => (
@@ -398,20 +407,20 @@ function Notifications({ agents, owner, onSaved }: { agents: string[]; owner: bo
                 }
                 sub={BOT_SUBTITLES[bot]}
               >
-                <Switch on={s.perAgent[bot] !== false} label={`${BOT_LABELS[bot] ?? bot} notifications`} onChange={(v) => void patch({ perAgent: { [bot]: v } })} />
+                <Switch on={s.perAgent[bot] !== false} label={t("settings.sourceNotifications", { name: BOT_LABELS[bot] ?? bot })} onChange={(v) => void patch({ perAgent: { [bot]: v } })} />
               </Row>
             ))}
           </div>
           <div className="rs-section-title">
-            <h3>Sound & timing</h3>
-            <p>Quiet hours use your device’s local time.</p>
+            <h3>{t("settings.soundTitle")}</h3>
+            <p>{t("settings.soundSub")}</p>
           </div>
           <div className="rs-card">
-            <Row title="Sound" sub="A subtle cue for new activity.">
+            <Row title={t("settings.sound")} sub={t("settings.soundRowSub")}>
               <span className="rs-row-tail">
                 <select
                   className="rs-tone"
-                  aria-label="Notification sound"
+                  aria-label={t("settings.notificationSound")}
                   value={s.tone}
                   disabled={!s.sound}
                   onChange={(e) => {
@@ -419,35 +428,35 @@ function Notifications({ agents, owner, onSaved }: { agents: string[]; owner: bo
                     void patch({ tone: e.target.value });
                   }}
                 >
-                  {view.tones.map((t) => (
-                    <option key={t}>{t}</option>
+                  {view.tones.map((tone) => (
+                    <option key={tone}>{tone}</option>
                   ))}
                 </select>
-                <Switch on={s.sound} label="Notification sound" onChange={(v) => void patch({ sound: v })} />
+                <Switch on={s.sound} label={t("settings.notificationSound")} onChange={(v) => void patch({ sound: v })} />
               </span>
             </Row>
-            <Row title="Vibration" sub="When your device supports it.">
-              <Switch on={s.vibration} label="Notification vibration" onChange={(v) => void patch({ vibration: v })} />
+            <Row title={t("settings.vibration")} sub={t("settings.vibrationSub")}>
+              <Switch on={s.vibration} label={t("settings.notificationVibration")} onChange={(v) => void patch({ vibration: v })} />
             </Row>
-            <Row title="Quiet hours" sub="Hold device alerts until your quiet time ends.">
-              <Switch on={!!q?.enabled} label="Quiet hours" onChange={(v) => void patch({ quietHours: { enabled: v, tz: Intl.DateTimeFormat().resolvedOptions().timeZone } })} />
+            <Row title={t("settings.quietHours")} sub={t("settings.quietHoursSub")}>
+              <Switch on={!!q?.enabled} label={t("settings.quietHours")} onChange={(v) => void patch({ quietHours: { enabled: v, tz: Intl.DateTimeFormat().resolvedOptions().timeZone } })} />
             </Row>
             <div className="rs-quiet" hidden={!q?.enabled}>
               <label>
-                From
-                <input type="time" defaultValue={q?.start} aria-label="Quiet hours start" onChange={(e) => setQuiet("start", e.target.value)} />
+                {t("settings.quiet.from")}
+                <input type="time" defaultValue={q?.start} aria-label={t("settings.quiet.start")} onChange={(e) => setQuiet("start", e.target.value)} />
               </label>
               <label>
-                Until
-                <input type="time" defaultValue={q?.end} aria-label="Quiet hours end" onChange={(e) => setQuiet("end", e.target.value)} />
+                {t("settings.quiet.until")}
+                <input type="time" defaultValue={q?.end} aria-label={t("settings.quiet.end")} onChange={(e) => setQuiet("end", e.target.value)} />
               </label>
             </div>
             {quietErr && <p className="rs-notice">{quietErr}</p>}
-            <Row title="Time-sensitive alerts during quiet hours" sub="Only alerts specifically marked time-sensitive. Other alerts wait.">
-              <Switch on={s.urgent} label="Time-sensitive alerts during quiet hours" onChange={(v) => void patch({ urgent: v })} />
+            <Row title={t("settings.urgent")} sub={t("settings.urgentSub")}>
+              <Switch on={s.urgent} label={t("settings.urgent")} onChange={(v) => void patch({ urgent: v })} />
             </Row>
           </div>
-          <p className="rs-note">{owner ? "Saved on the gateway and applied when an alert is about to go out, on every device you use." : "Saved on the gateway and applied to every device you use."} Sound and vibration can only quiet what your device would do.</p>
+          <p className="rs-note">{owner ? t("settings.savedGatewayOwner") : t("settings.savedGatewayMember")} {t("settings.soundOnlyQuiets")}</p>
         </>
       )}
     </>
@@ -455,6 +464,7 @@ function Notifications({ agents, owner, onSaved }: { agents: string[]; owner: bo
 }
 
 function Passkeys() {
+  const t = useT();
   const [list, setList] = useState<Passkey[] | null>(null);
   const [enrollUntil, setEnrollUntil] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -467,7 +477,7 @@ function Passkeys() {
       setEnrollUntil(r.enroll_open_until);
     });
   useEffect(load, []);
-  const day = (iso: string) => new Date(iso).toLocaleDateString([], { month: "short", day: "numeric" });
+  const day = (iso: string) => new Date(iso).toLocaleDateString(dateLoc(), { month: "short", day: "numeric" });
   const add = async () => {
     if (busy || !list) return;
     setBusy(true);
@@ -475,7 +485,7 @@ function Passkeys() {
     const r = await addThisDevice(list.length > 0, !!enrollUntil);
     setBusy(false);
     if (r.ok) {
-      setNote({ tone: "ok", text: `${r.value.passkey.label} added. Protected approvals can now use it.` });
+      setNote({ tone: "ok", text: t("settings.passkey.added", { label: r.value.passkey.label }) });
       load();
     } else setNote({ tone: "err", text: r.error });
   };
@@ -486,7 +496,7 @@ function Passkeys() {
     const r = await removePasskey(p.id);
     setBusy(false);
     if (r.ok) {
-      setNote({ tone: "ok", text: `${p.label} removed.` });
+      setNote({ tone: "ok", text: t("settings.passkey.removed", { label: p.label }) });
       load();
     } else setNote({ tone: "err", text: r.error });
   };
@@ -496,8 +506,8 @@ function Passkeys() {
       <div className="rs-security-note">
         <Icon name="fingerprint" />
         <div>
-          <strong>For the decisions that need you.</strong>
-          <p>Passkeys verify sensitive approvals. Your device may use a fingerprint, face or PIN.</p>
+          <strong>{t("settings.passkey.title")}</strong>
+          <p>{t("settings.passkey.body")}</p>
         </div>
       </div>
       <div className="rs-card">
@@ -510,51 +520,51 @@ function Passkeys() {
               title={
                 <span className="rs-key-name">
                   <Icon name="fingerprint" />
-                  {p.label}
+                  <bdi dir="auto">{p.label}</bdi>
                 </span>
               }
-              sub={`Added ${day(p.created)} · ${p.last_used ? `used ${day(p.last_used)}` : "not used yet"}`}
+              sub={p.last_used ? t("settings.passkey.addedUsed", { added: day(p.created), used: day(p.last_used) }) : t("settings.passkey.addedNotUsed", { added: day(p.created) })}
             >
               <Btn onClick={() => void remove(p)} disabled={busy}>
-                Remove
+                {t("common.remove")}
               </Btn>
             </Row>
           ))
         ) : (
           <div className="rs-empty">
-            <h3>No passkeys yet.</h3>
-            <p>Protected approvals stay waiting until a verification method is set up.</p>
+            <h3>{t("settings.passkey.none")}</h3>
+            <p>{t("settings.passkey.noneSub")}</p>
           </div>
         )}
       </div>
       <div className="rs-enrollment">
         <div>
-          <h3>{enrollUntil ? "Enrollment is open." : "Add another device."}</h3>
+          <h3>{enrollUntil ? t("settings.passkey.enrollOpen") : t("settings.passkey.addAnother")}</h3>
           <p>
             {!supported
-              ? "This browser can’t create passkeys. Use the installed app on your phone."
+              ? t("settings.passkey.unsupported")
               : enrollUntil
-                ? `Your 15-minute window is open until ${new Date(enrollUntil).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}. Confirm on the device you want to add.`
+                ? t("settings.passkey.windowOpen", { time: new Date(enrollUntil).toLocaleTimeString(dateLoc(), { hour: "numeric", minute: "2-digit" }) })
                 : list && list.length
-                  ? "Confirm with a passkey you already have, then add this one."
-                  : "Michael opens a 15-minute enrollment window before a device can be added."}
+                  ? t("settings.passkey.confirmExisting")
+                  : t("settings.passkey.michaelOpens")}
           </p>
         </div>
         {closedFirst ? (
           <Btn
             primary
             onClick={() => {
-              actions.setDraft("michael", "Please open a 15-minute passkey enrollment window for this device.");
+              actions.setDraft("michael", t("settings.passkey.enrollDraft"));
               actions.toggleSettings(false);
               actions.setView("messages");
               actions.openMobileThread("michael");
             }}
           >
-            Request enrollment
+            {t("settings.passkey.request")}
           </Btn>
         ) : (
           <Btn primary onClick={() => void add()} disabled={busy || !supported || list === null}>
-            {busy ? "Waiting for your passkey…" : "Add this device"}
+            {busy ? t("settings.passkey.waiting") : t("settings.passkey.addThis")}
           </Btn>
         )}
       </div>
@@ -564,6 +574,7 @@ function Passkeys() {
 }
 
 function Updates() {
+  const t = useT();
   const [info, setInfo] = useState<UpdatesPayload | null>(null);
   const [busy, setBusy] = useState("");
   const [note, setNote] = useState("");
@@ -581,34 +592,34 @@ function Updates() {
     const installed = r.installed ?? [], kept = r.keptOwn ?? [];
     setNote(
       !r.ok
-        ? `Skills update failed: ${r.error}`
-        : `Updated ${installed.length} skill${installed.length === 1 ? "" : "s"}.${kept.length ? ` Kept your own copy of ${kept.join(", ")}.` : ""}`,
+        ? t("settings.updates.failed", { error: r.error ?? "" })
+        : tn("settings.updates.updated", installed.length) + (kept.length ? t("settings.updates.kept", { names: kept.join(", ") }) : ""),
     );
     await check();
   };
-  if (!info) return <p className="rs-note">{busy ? "Checking for updates…" : "Updates are unavailable right now."}</p>;
+  if (!info) return <p className="rs-note">{busy ? t("settings.updates.checking") : t("settings.updates.unavailable")}</p>;
   const { current, latest } = info;
   return (
     <>
       <div className="rs-card">
-        <Row title={`AHI ${current.version}`} sub={info.configured ? (latest ? `Latest release: ${latest.name}, published ${new Date(latest.publishedAt).toLocaleDateString()}.` : info.error ?? "") : "This install does not know which release channel to check."}>
+        <Row title={<bdi dir="ltr">{`AHI ${current.version}`}</bdi>} sub={info.configured ? (latest ? t("settings.updates.latest", { name: latest.name, date: new Date(latest.publishedAt).toLocaleDateString(dateLoc()) }) : info.error ?? "") : t("settings.updates.noChannel")}>
           {info.appUpdate && latest ? (
             <Btn primary onClick={() => window.open(latest.url, "_blank", "noopener")}>
-              Get AHI {latest.version} <Icon name="download" />
+              {t("settings.updates.get", { version: latest.version })} <Icon name="download" />
             </Btn>
           ) : (
             <Btn onClick={() => void check(true)} disabled={!!busy || !info.configured}>
-              Check now <Icon name="refresh" />
+              {t("settings.updates.checkNow")} <Icon name="refresh" />
             </Btn>
           )}
         </Row>
         <Row
-          title="Skills shelf"
-          sub={info.skills?.length ? `${info.skills.length} newer: ${info.skills.map((s) => `${s.name} ${s.version}`).join(", ")}.` : `Up to date${current.skillsRelease ? ` (release ${current.skillsRelease})` : ""}.`}
+          title={t("settings.updates.shelf")}
+          sub={info.skills?.length ? t("settings.updates.newer", { n: info.skills.length, list: info.skills.map((s) => `${s.name} ${s.version}`).join(", ") }) : current.skillsRelease ? t("settings.updates.upToDateRelease", { release: current.skillsRelease }) : t("settings.updates.upToDate")}
         >
           {!!info.skills?.length && (
             <Btn primary onClick={() => void install()} disabled={!!busy}>
-              {busy === "skills" ? "Updating…" : "Update skills"} <Icon name="download" />
+              {busy === "skills" ? t("settings.updates.updating") : t("settings.updates.updateSkills")} <Icon name="download" />
             </Btn>
           )}
         </Row>
@@ -619,6 +630,7 @@ function Updates() {
 }
 
 function Account({ name, owner }: { name: string; owner: boolean }) {
+  const t = useT();
   const [confirming, setConfirming] = useState(false);
   const signOut = async () => {
     await logout();
@@ -632,42 +644,42 @@ function Account({ name, owner }: { name: string; owner: boolean }) {
       <div className="rs-account-card">
         <span className="profile-avatar">{initials(name)}</span>
         <div>
-          <h3>{name}</h3>
-          <p>Personal workspace</p>
-          <span>{owner ? "Owner" : "Member"}</span>
+          <h3 dir="auto">{name}</h3>
+          <p>{t("shell.personalWorkspace")}</p>
+          <span>{owner ? t("settings.owner") : t("shell.member")}</span>
         </div>
       </div>
       <div className="rs-card">
-        <Row title="Workspace" sub="Your team, connected apps and preferences.">
+        <Row title={t("settings.account.workspace")} sub={t("settings.account.workspaceSub")}>
           <Btn onClick={() => goPage("connections")}>
-            Connections <Icon name="arrow-right" />
+            {t("shell.nav.connections")} <Icon name="arrow-right" />
           </Btn>
         </Row>
-        <Row title="Verification" sub="Devices for protected approvals.">
+        <Row title={t("settings.account.verification")} sub={t("settings.account.verificationSub")}>
           {owner ? (
             <Btn onClick={() => setSettingsSection("passkeys")}>
-              Passkeys <Icon name="arrow-right" />
+              {t("settings.section.passkeys")} <Icon name="arrow-right" />
             </Btn>
           ) : (
-            <span className="rs-note">Managed by the owner</span>
+            <span className="rs-note">{t("settings.account.managedByOwner")}</span>
           )}
         </Row>
       </div>
       <div className="rs-signout-row">
         <div>
-          <h3>Sign out</h3>
-          <p>Leave your account on this device.</p>
+          <h3>{t("common.signOut")}</h3>
+          <p>{t("settings.account.signOutSub")}</p>
         </div>
         {confirming ? (
           <span className="rs-signout-confirm">
-            <Btn onClick={() => setConfirming(false)}>Cancel</Btn>
+            <Btn onClick={() => setConfirming(false)}>{t("common.cancel")}</Btn>
             <Btn primary onClick={() => void signOut()}>
-              Log out
+              {t("settings.account.logOut")}
             </Btn>
           </span>
         ) : (
           <Btn onClick={() => setConfirming(true)}>
-            Sign out <Icon name="exit" />
+            {t("common.signOut")} <Icon name="exit" />
           </Btn>
         )}
       </div>

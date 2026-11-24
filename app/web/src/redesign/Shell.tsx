@@ -18,6 +18,7 @@ import GlobalSearch from "./Search";
 import BellInbox, { bellCount, useBellSources } from "./Bell";
 import { playTone } from "../lib/tones";
 import { phoneChatOpen } from "./history";
+import { useT } from "../i18n";
 
 /** Shortcuts per platform — ⌘J / ⌘K on a Mac (and iPad), Ctrl J / Ctrl K on Windows and Linux. */
 const IS_MAC = (() => {
@@ -87,17 +88,19 @@ function useCounts(): Partial<Record<Page, number>> {
 }
 
 function NavItem({ d, active, count, onGo, collapsed, extra }: { d: Dest; active: boolean; count?: number; onGo: () => void; collapsed?: boolean; extra?: ReactNode }) {
+  const t = useT();
+  const label = t(d.label);
   return (
     <button
       type="button"
       className={`rd-nav-item${active ? " active" : ""}`}
       aria-current={active ? "page" : undefined}
-      title={collapsed ? d.label : undefined}
+      title={collapsed ? label : undefined}
       onClick={onGo}
     >
       <Icon name={d.icon} />
-      <span className="rd-nav-label">{d.label}</span>
-      {!!count && <span className="rd-nav-count" aria-label={`${count} need you`}>{count}</span>}
+      <span className="rd-nav-label">{label}</span>
+      {!!count && <span className="rd-nav-count" aria-label={t("shell.needYou", { count })}>{count}</span>}
       {extra}
     </button>
   );
@@ -105,6 +108,7 @@ function NavItem({ d, active, count, onGo, collapsed, extra }: { d: Dest; active
 
 /** The rail (desktop) and the full menu (phone): one component, same destinations. */
 export function Rail({ onNavigate, phone = false }: { onNavigate?: () => void; phone?: boolean }) {
+  const t = useT();
   const s = useAppState();
   const admin = !!s.user?.admin;
   const page = currentPage(s.view, s.settingsOpen);
@@ -119,12 +123,12 @@ export function Rail({ onNavigate, phone = false }: { onNavigate?: () => void; p
   };
   const show = (d: Dest) => pageVisible(d.page, admin);
   return (
-    <aside className={`rd-rail${collapsed ? " collapsed" : ""}${phone ? " phone" : ""}`} aria-label="Workspace navigation">
+    <aside className={`rd-rail${collapsed ? " collapsed" : ""}${phone ? " phone" : ""}`} aria-label={t("shell.workspaceNav")}>
       {lead && (
         <button
           type="button"
           className="rd-new-chat"
-          title={collapsed ? `Message ${BOT_LABELS[lead] ?? lead}` : undefined}
+          title={collapsed ? t("shell.messageAgent", { name: BOT_LABELS[lead] ?? lead }) : undefined}
           onClick={() => {
             actions.setView("messages");
             actions.setActiveBot(lead);
@@ -132,11 +136,11 @@ export function Rail({ onNavigate, phone = false }: { onNavigate?: () => void; p
           }}
         >
           <Icon name="messages" />
-          <span className="rd-nav-label">Message {BOT_LABELS[lead] ?? lead}</span>
+          <span className="rd-nav-label">{t("shell.messageAgent", { name: BOT_LABELS[lead] ?? lead })}</span>
           {!phone && <span className="rd-key">{MOD_LABEL} J</span>}
         </button>
       )}
-      <nav className="rd-main-nav" aria-label="Main">
+      <nav className="rd-main-nav" aria-label={t("shell.mainNav")}>
         {PRIMARY.filter(show).map((d) => (
           <NavItem key={d.page} d={d} active={page === d.page} count={counts[d.page]} collapsed={collapsed} onGo={() => go(d.page)} />
         ))}
@@ -153,12 +157,12 @@ export function Rail({ onNavigate, phone = false }: { onNavigate?: () => void; p
                 setWorldOpen(!worldOpen);
               }}
             >
-              <span>YOUR WORLD</span>
+              <span>{t("shell.yourWorldHeading")}</span>
               <Icon name="chevron" />
             </button>
           )}
           {(worldOpen || collapsed) && (
-            <nav aria-label="Your world">
+            <nav aria-label={t("shell.yourWorld")}>
               {WORLD.filter(show).map((d) => (
                 <NavItem key={d.page} d={d} active={page === d.page} count={counts[d.page]} collapsed={collapsed} onGo={() => go(d.page)} />
               ))}
@@ -181,7 +185,7 @@ export function Rail({ onNavigate, phone = false }: { onNavigate?: () => void; p
                   {bots.length > 2 && <i>+{bots.length - 2}</i>}
                 </span>
               ) : d.page === "connections" ? (
-                <span className={`rd-conn-dot ${s.connection}`} title={s.connection === "open" ? "Connected" : "Reconnecting"} />
+                <span className={`rd-conn-dot ${s.connection}`} title={s.connection === "open" ? t("shell.connected") : t("shell.reconnecting")} />
               ) : undefined
             }
           />
@@ -189,14 +193,14 @@ export function Rail({ onNavigate, phone = false }: { onNavigate?: () => void; p
         <button
           type="button"
           className={`rd-profile${page === "settings" ? " active" : ""}`}
-          aria-label={`${s.user?.name ?? "Profile"} — settings`}
-          title={collapsed ? "Settings" : undefined}
+          aria-label={t("shell.profileSettings", { name: s.user?.name ?? t("shell.profile") })}
+          title={collapsed ? t("common.settings") : undefined}
           onClick={() => go("settings")}
         >
           <span className="rd-profile-avatar">{initials(s.user?.name)}</span>
           <span className="rd-profile-text">
-            {s.user?.name}
-            <small>{admin ? "Personal workspace" : "Member"}</small>
+            <bdi dir="auto">{s.user?.name}</bdi>
+            <small>{admin ? t("shell.personalWorkspace") : t("shell.member")}</small>
           </span>
           <Icon name="chevrons" />
         </button>
@@ -206,6 +210,7 @@ export function Rail({ onNavigate, phone = false }: { onNavigate?: () => void; p
 }
 
 function ThemeToggle() {
+  const t = useT();
   const theme = useResolvedTheme();
   const [, force] = useState(0);
   useEffect(() => onThemeModeChange(() => force((n) => n + 1)), []);
@@ -214,8 +219,8 @@ function ThemeToggle() {
     <button
       type="button"
       className="rd-icon-btn rd-theme"
-      aria-label={`Switch to ${next} mode`}
-      title={getThemeMode() === "system" ? "Following your device — tap to choose" : undefined}
+      aria-label={next === "light" ? t("shell.switchToLight") : t("shell.switchToDark")}
+      title={getThemeMode() === "system" ? t("shell.followingDevice") : undefined}
       onClick={() => applyThemeMode(next)}
     >
       <Icon name={theme === "dark" ? "sun" : "moon"} />
@@ -224,13 +229,14 @@ function ThemeToggle() {
 }
 
 function CalendarButton() {
+  const t = useT();
   const { open, unread } = useScheduleUi();
   const badge = badgeText(unread);
   return (
     <button
       type="button"
       className={`rd-icon-btn${open ? " on" : ""}`}
-      aria-label={badge ? `Calendar, ${unread} new` : "Calendar"}
+      aria-label={badge ? t("shell.calendarNew", { n: unread }) : t("shell.calendar")}
       onClick={() => (open ? scheduleUi.close() : scheduleUi.open())}
     >
       <Icon name="calendar" />
@@ -241,6 +247,7 @@ function CalendarButton() {
 
 /** Top chrome actions — search, calendar, bell, theme (FINAL header order). */
 function ChromeActions({ phone = false }: { phone?: boolean }) {
+  const t = useT();
   const s = useAppState();
   const admin = !!s.user?.admin;
   const [searching, setSearching] = useState(false);
@@ -275,12 +282,12 @@ function ChromeActions({ phone = false }: { phone?: boolean }) {
       <button
         type="button"
         className={phone ? "rd-icon-btn" : "rd-search"}
-        aria-label="Search your workspace"
+        aria-label={t("shell.searchWorkspace")}
         aria-expanded={searching}
         onClick={() => (setBell(false), setSearching(true))}
       >
         <Icon name="search" />
-        {!phone && <span>Search anything</span>}
+        {!phone && <span>{t("shell.searchAnything")}</span>}
         {!phone && <kbd>{MOD_LABEL} K</kbd>}
       </button>
       {admin && <CalendarButton />}
@@ -288,7 +295,7 @@ function ChromeActions({ phone = false }: { phone?: boolean }) {
       <button
         type="button"
         className={`rd-icon-btn rd-bell-btn${bell ? " on" : ""}`}
-        aria-label={count ? `Notifications, ${count} new` : "Notifications"}
+        aria-label={count ? t("shell.notificationsNew", { n: count }) : t("shell.notifications")}
         aria-expanded={bell}
         onClick={() => (setSearching(false), setBell(!bell))}
       >
@@ -330,6 +337,7 @@ function useCanGo(): { back: boolean; forward: boolean } {
 
 /** Desktop frame. */
 export function DesktopShell({ children }: { children: ReactNode }) {
+  const t = useT();
   const s = useAppState();
   const canGo = useCanGo();
   const page = currentPage(s.view, s.settingsOpen);
@@ -349,17 +357,17 @@ export function DesktopShell({ children }: { children: ReactNode }) {
       <header className="rd-top">
         <div className="rd-tools">
           <span className="rd-tool-nav">
-            <button type="button" className="rd-tool" aria-label="Back" title="Go back" disabled={!canGo.back} onClick={() => window.history.back()}>
+            <button type="button" className="rd-tool" aria-label={t("common.back")} title={t("shell.goBack")} disabled={!canGo.back} onClick={() => window.history.back()}>
               <Icon name="arrow-left" />
             </button>
-            <button type="button" className="rd-tool" aria-label="Forward" title="Go forward" disabled={!canGo.forward} onClick={() => window.history.forward()}>
+            <button type="button" className="rd-tool" aria-label={t("shell.forward")} title={t("shell.goForward")} disabled={!canGo.forward} onClick={() => window.history.forward()}>
               <Icon name="arrow-right" />
             </button>
           </span>
           <button
             type="button"
             className="rd-tool"
-            aria-label={s.sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            aria-label={s.sidebarCollapsed ? t("shell.expandSidebar") : t("shell.collapseSidebar")}
             aria-expanded={!s.sidebarCollapsed}
             onClick={() => actions.toggleSidebar()}
           >
@@ -369,7 +377,7 @@ export function DesktopShell({ children }: { children: ReactNode }) {
             </svg>
           </button>
         </div>
-        <button type="button" className="rd-brand" aria-label="AHI home" onClick={() => goPage("home")}>
+        <button type="button" className="rd-brand" aria-label={t("shell.ahiHome")} onClick={() => goPage("home")}>
           ahi<span className="rd-brand-dot">.</span>
         </button>
         <ChromeActions />
@@ -386,6 +394,7 @@ export function DesktopShell({ children }: { children: ReactNode }) {
 
 /** Phone frame: top chrome, the canvas, the bottom dock; the menu is the rail full-screen. */
 export function PhoneShell({ children, menuOpen, setMenuOpen }: { children: ReactNode; menuOpen: boolean; setMenuOpen: (o: boolean) => void }) {
+  const t = useT();
   const s = useAppState();
   const admin = !!s.user?.admin;
   const page = currentPage(s.view, s.settingsOpen);
@@ -393,7 +402,7 @@ export function PhoneShell({ children, menuOpen, setMenuOpen }: { children: Reac
   return (
     <div className={`rd-app phone${menuOpen ? " menu-open" : ""}${chat ? " chat-open" : ""}`} data-page={page}>
       <header className="rd-top">
-        <button type="button" className="rd-brand" aria-label="AHI home" onClick={() => (setMenuOpen(false), goPage("home"))}>
+        <button type="button" className="rd-brand" aria-label={t("shell.ahiHome")} onClick={() => (setMenuOpen(false), goPage("home"))}>
           ahi<span className="rd-brand-dot">.</span>
         </button>
         <ChromeActions phone />
@@ -402,11 +411,11 @@ export function PhoneShell({ children, menuOpen, setMenuOpen }: { children: Reac
         {children}
       </main>
       {menuOpen && (
-        <div className="rd-phone-menu" role="dialog" aria-label="All destinations">
+        <div className="rd-phone-menu" role="dialog" aria-label={t("shell.allDestinations")}>
           <Rail phone onNavigate={() => setMenuOpen(false)} />
         </div>
       )}
-      <nav className="rd-dock" aria-label="Primary">
+      <nav className="rd-dock" aria-label={t("shell.primaryNav")}>
         <div className="rd-dock-dest">
           {PRIMARY.filter((d) => pageVisible(d.page, admin)).map((d) => (
             <button
@@ -420,14 +429,14 @@ export function PhoneShell({ children, menuOpen, setMenuOpen }: { children: Reac
               }}
             >
               <Icon name={d.icon} />
-              <span>{d.label}</span>
+              <span>{t(d.label)}</span>
             </button>
           ))}
         </div>
         <button
           type="button"
           className={`rd-dock-menu${menuOpen ? " on" : ""}`}
-          aria-label={menuOpen ? "Close menu" : "Open menu"}
+          aria-label={menuOpen ? t("shell.closeMenu") : t("shell.openMenu")}
           aria-expanded={menuOpen}
           onClick={() => setMenuOpen(!menuOpen)}
         >

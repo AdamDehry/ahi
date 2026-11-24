@@ -13,14 +13,14 @@
 .native-vault .vault-button.primary:hover { filter:brightness(1.07);background:var(--accent) }
 .native-vault .vault-overview { display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:20px }
 .native-vault .vault-net-worth { padding:32px;border-radius:20px;background:linear-gradient(125deg,var(--raised),var(--surface));border:1px solid var(--line);display:flex;flex-direction:column;justify-content:center;min-height:268px;position:relative;overflow:hidden }
-.native-vault .vault-net-worth:after { content:'';position:absolute;right:-120px;top:-130px;width:330px;height:330px;border:1px solid var(--line);border-radius:50%;pointer-events:none }
+.native-vault .vault-net-worth:after { content:'';position:absolute;inset-inline-end:-120px;top:-130px;width:330px;height:330px;border:1px solid var(--line);border-radius:50%;pointer-events:none }
 .native-vault .vault-net-worth>strong { font-size:clamp(32px,4vw,50px);letter-spacing:-1.8px;font-weight:450;line-height:1.2;margin:20px 0 12px;position:relative;z-index:1;overflow-wrap:anywhere }
 .native-vault .vault-net-worth>p { font-size:12px;color:var(--text-mute) }
 .native-vault .vault-net-worth>div { display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center;margin-top:36px;font-size:10px;color:var(--text-mute) }
 .native-vault .vault-net-worth>div>span { display:flex;align-items:center;gap:7px }
 .native-vault .vault-net-worth svg { width:14px;height:14px }
 .native-vault .vault-overview-side { display:grid;grid-template-columns:1fr 1fr;gap:12px }
-.native-vault .vault-summary-card { display:flex;flex-direction:column;gap:9px;padding:20px;text-align:left;border:1px solid var(--line);border-radius:16px;background:var(--surface);min-width:0 }
+.native-vault .vault-summary-card { display:flex;flex-direction:column;gap:9px;padding:20px;text-align:start;border:1px solid var(--line);border-radius:16px;background:var(--surface);min-width:0 }
 .native-vault .vault-summary-card:first-child { grid-column:1/-1 }
 .native-vault .vault-summary-card>span { font-size:11px;color:var(--text-mute);display:flex;gap:8px;align-items:center }
 .native-vault .vault-summary-card svg { width:13px;height:13px }
@@ -39,7 +39,7 @@
 .native-vault .vault-section-title>div>span { display:block;font-size:10px;line-height:1.7;color:var(--text-mute);margin-top:6px }
 .native-vault .vault-section-title select,.native-vault .vault-list-tools select { padding:9px 12px;border:1px solid var(--line);border-radius:10px;color:var(--text);background:var(--surface);font-size:11px;max-width:100% }
 .native-vault .vault-attention { display:grid;grid-template-columns:1fr 1fr;gap:12px }
-.native-vault .vault-flag { display:flex;align-items:center;gap:13px;padding:19px;text-align:left;border:1px solid var(--line);border-radius:14px;background:var(--surface);min-width:0 }
+.native-vault .vault-flag { display:flex;align-items:center;gap:13px;padding:19px;text-align:start;border:1px solid var(--line);border-radius:14px;background:var(--surface);min-width:0 }
 .native-vault .vault-flag>i { width:4px;align-self:stretch;border-radius:4px;background:var(--text-mute);opacity:.6;flex-shrink:0 }
 .native-vault .vault-flag.urgent>i { background:#ce8e81 }
 .native-vault .vault-flag.watch>i { background:var(--accent) }
@@ -49,12 +49,12 @@
 .native-vault .vault-flag p { font-size:10px;color:var(--text-mute);line-height:1.8 }
 .native-vault .vault-flag>svg { width:16px;height:16px;color:var(--text-mute);flex-shrink:0 }
 .native-vault .vault-debts { border:1px solid var(--line);border-radius:16px;overflow:hidden;background:var(--surface) }
-.native-vault .vault-debts>button { display:flex;align-items:center;gap:18px;padding:20px;width:100%;text-align:left;border-bottom:1px solid var(--line) }
+.native-vault .vault-debts>button { display:flex;align-items:center;gap:18px;padding:20px;width:100%;text-align:start;border-bottom:1px solid var(--line) }
 .native-vault .vault-debts>button:last-child { border:0 }
 .native-vault .vault-debts>button>span:first-child { flex:1;font-size:13px;min-width:0 }
 .native-vault .vault-debts>button>strong { font-size:19px;font-weight:450;width:100px }
 .native-vault .vault-debts>button>strong small { display:inline;font-size:9px;font-weight:400 }
-.native-vault .vault-debts>button>span:nth-last-child(2) { font-size:12px;text-align:right }
+.native-vault .vault-debts>button>span:nth-last-child(2) { font-size:12px;text-align:end }
 .native-vault .vault-debts small { display:block;color:var(--text-mute);font-size:9px;margin-top:5px;line-height:1.5 }
 .native-vault .vault-debts svg { width:15px;height:15px;color:var(--text-mute);flex-shrink:0 }
 .native-vault .vault-category-tabs { display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;border:1px solid var(--line);border-radius:12px;padding:5px;width:max-content;max-width:100%;background:var(--surface-dim) }
@@ -68,14 +68,14 @@
 .native-vault .vault-archive-filter { display:flex;align-items:center;gap:6px;font-size:10px;color:var(--text-mute) }
 .native-vault .vault-archive-filter input { accent-color:var(--accent) }
 .native-vault .vault-records { display:grid;grid-template-columns:1fr 1fr;gap:12px }
-.native-vault .vault-record { display:flex;align-items:center;gap:13px;padding:19px 16px;text-align:left;border:1px solid var(--line);border-radius:14px;background:var(--surface);min-width:0;min-height:110px }
+.native-vault .vault-record { display:flex;align-items:center;gap:13px;padding:19px 16px;text-align:start;border:1px solid var(--line);border-radius:14px;background:var(--surface);min-width:0;min-height:110px }
 .native-vault .vault-record-icon { color:var(--text-mute);flex-shrink:0 }
 .native-vault .vault-record-icon svg { width:23px;height:23px }
 .native-vault .vault-record-main { flex:1;min-width:0 }
 .native-vault .vault-record-main strong { display:block;font-size:12px;font-weight:500;line-height:1.5;overflow-wrap:anywhere }
 .native-vault .vault-record-main small,.native-vault .vault-record-main em { display:block;font-style:normal;font-size:9px;color:var(--text-mute);line-height:1.8;margin-top:4px }
 .native-vault .vault-record-main em { font-size:8px }
-.native-vault .vault-record-value { text-align:right;font-size:14px;letter-spacing:-.3px;flex-shrink:0 }
+.native-vault .vault-record-value { text-align:end;font-size:14px;letter-spacing:-.3px;flex-shrink:0 }
 .native-vault .vault-record-value small { display:block;color:var(--text-mute);font-size:9px;letter-spacing:0;margin-top:7px }
 .native-vault .vault-record>svg { width:13px;height:13px;color:var(--text-mute);flex-shrink:0 }
 .native-vault .vault-list-empty,.native-vault .vault-clear { padding:26px;color:var(--text-mute);font-size:12px }
@@ -106,12 +106,12 @@
 .native-vault .vault-detail-grid article>div>span { color:var(--text-mute) }
 .native-vault .vault-detail-grid article>div>strong { font-weight:400 }
 .native-vault .vault-detail-grid p,.native-vault .vault-account-notes p { font-size:12px;color:var(--text-mute);line-height:1.9;margin:12px 0 }
-.native-vault .vault-detail-grid article>.vault-button { margin:5px 5px 5px 0 }
+.native-vault .vault-detail-grid article>.vault-button { margin-block:5px 5px; margin-inline:0 5px }
 .native-vault .vault-detail-grid article>small { display:block;font-size:9px;color:var(--text-mute);line-height:1.8;margin-top:10px }
 .native-vault .vault-detail-subhead { margin-top:28px }
 .native-vault .vault-detail-actions { display:flex;flex-wrap:wrap;gap:10px;margin:20px 0 }
 .native-vault .vault-connection-grid,.native-vault .vault-document-grid { display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px }
-.native-vault .vault-connection-grid article,.native-vault .vault-document-grid>button { padding:22px;border:1px solid var(--line);border-radius:15px;background:var(--surface);text-align:left;min-width:0 }
+.native-vault .vault-connection-grid article,.native-vault .vault-document-grid>button { padding:22px;border:1px solid var(--line);border-radius:15px;background:var(--surface);text-align:start;min-width:0 }
 .native-vault .vault-connection-grid h2 { font-size:17px;font-weight:450;margin:17px 0 10px }
 .native-vault .vault-connection-grid p { font-size:11px;color:var(--text-mute);margin-bottom:12px }
 .native-vault .vault-connection-grid small { font-size:9px;line-height:1.8;color:var(--text-mute);display:block;margin-bottom:20px }
@@ -193,9 +193,9 @@
 .native-vault .vault-net-worth > strong.neg { color: var(--negative); }
 .native-vault .vault-summary-card { color: var(--text); cursor: pointer; }
 .native-vault .vault-summary-card:hover { background: var(--raised); }
-.native-vault .vault-flag { padding: 0 19px 0 0; }
-.native-vault .vault-flag > i { margin: 19px 0 19px 19px; }
-.native-vault .vault-flag-open { flex: 1; min-width: 0; display: block; padding: 19px 0; text-align: left; color: var(--text); background: none; border: 0; }
+.native-vault .vault-flag { padding-block: 0 0; padding-inline: 0 19px; }
+.native-vault .vault-flag > i { margin-block: 19px 19px; margin-inline: 19px 0; }
+.native-vault .vault-flag-open { flex: 1; min-width: 0; display: block; padding: 19px 0; text-align: start; color: var(--text); background: none; border: 0; }
 .native-vault .vault-flag-open:disabled { cursor: default; }
 .native-vault .vault-flag-ack { flex: none; font-size: 10px; color: var(--text-mute); padding: 6px 8px; border-radius: 8px; }
 .native-vault .vault-flag-ack:hover { background: var(--raised); color: var(--text); }
@@ -236,13 +236,13 @@
 .vault-dialog-layer .modal-error { font-family: var(--font-ui); font-size: 11px; letter-spacing: 0; text-transform: none; color: #ce8e81; margin: 0 0 12px; }
 .vault-dialog-layer .vault-row-sub { font-size: 12px; line-height: 1.9; color: var(--text-body); margin: 0 0 17px; }
 .vault-dialog-layer .vault-add-choices { display: grid; gap: 12px; padding-bottom: 24px; }
-.vault-dialog-layer .vault-add-choices button { text-align: left; padding: 21px; border: 1px solid var(--line); border-radius: 13px; display: grid; grid-template-columns: 27px 1fr; gap: 9px 14px; color: var(--text); background: none; }
+.vault-dialog-layer .vault-add-choices button { text-align: start; padding: 21px; border: 1px solid var(--line); border-radius: 13px; display: grid; grid-template-columns: 27px 1fr; gap: 9px 14px; color: var(--text); background: none; }
 .vault-dialog-layer .vault-add-choices button:hover { background: var(--raised); }
 .vault-dialog-layer .vault-add-choices svg { width: 24px; height: 24px; grid-row: span 2; color: var(--accent); }
 .vault-dialog-layer .vault-add-choices strong { font-size: 14px; font-weight: 500; }
 .vault-dialog-layer .vault-add-choices span { font-size: 11px; line-height: 1.8; color: var(--text-mute); }
 .vault-dialog-layer .vault-coverage { display: grid; gap: 0; margin: 0 0 12px; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
-.vault-dialog-layer .vault-coverage > div, .vault-dialog-layer .vault-owner-row { display: grid; grid-template-columns: 1fr auto auto; gap: 14px; align-items: center; padding: 13px 16px; border-bottom: 1px solid var(--line); font-size: 11px; text-align: left; color: var(--text); background: none; width: 100%; }
+.vault-dialog-layer .vault-coverage > div, .vault-dialog-layer .vault-owner-row { display: grid; grid-template-columns: 1fr auto auto; gap: 14px; align-items: center; padding: 13px 16px; border-bottom: 1px solid var(--line); font-size: 11px; text-align: start; color: var(--text); background: none; width: 100%; }
 .vault-dialog-layer .vault-coverage > :last-child { border-bottom: 0; }
 .vault-dialog-layer .vault-owner-row:hover { background: var(--raised); }
 .vault-dialog-layer .vault-coverage span:nth-child(2) { color: var(--text-mute); }
@@ -256,7 +256,7 @@
 .vault-dialog-layer .modal-field textarea { min-height: 90px; resize: vertical; line-height: 1.6; }
 .vault-dialog-layer .modal-check { display: flex; align-items: center; gap: 9px; font-size: 13px; color: var(--text); margin: 0 0 16px; }
 .vault-dialog-layer .modal-check input { width: 16px; height: 16px; margin: 0; accent-color: var(--accent); }
-.vault-dialog-layer .modal-foot .btn-text { border-color: transparent; background: none; color: var(--text-mute); margin-right: auto; }
+.vault-dialog-layer .modal-foot .btn-text { border-color: transparent; background: none; color: var(--text-mute); margin-inline-end: auto; }
 .vault-dialog-layer .modal-foot .btn-text:hover { color: var(--negative); }
 @media (max-width: 650px) {
   .vault-dialog-layer .vault-dialog-head { padding: 20px; }

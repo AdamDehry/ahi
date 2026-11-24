@@ -14,9 +14,10 @@ import { actions, availableBots, useAppState } from "../store";
 import { Icon, type IconName } from "./icons";
 import { goPage } from "./Shell";
 import { getFresh } from "../lib/api";
+import { t, tn, useLang, useT, type Key } from "../i18n";
 
 type Category = "communication" | "money" | "productivity" | "files";
-const CATEGORY_LABEL: Record<Category | "all", string> = { all: "Everything", communication: "Communication", money: "Money", productivity: "Productivity", files: "Files" };
+const CATEGORY_LABEL: Record<Category | "all", Key> = { all: "shell.bell.everything", communication: "connections.cat.communication", money: "connections.cat.money", productivity: "connections.cat.productivity", files: "connections.cat.files" };
 
 interface AppRow {
   key: string;
@@ -31,12 +32,13 @@ interface AppRow {
   manage?: { label: string; go: () => void };
 }
 
-const DISCOVER: Array<{ key: string; name: string; blurb: string; category: Category; img?: string; icon?: IconName }> = [
-  { key: "gmail", name: "Gmail", blurb: "All your inboxes, with one place to keep up.", category: "communication", img: "/brand/gmail.svg" },
-  { key: "gcal", name: "Google Calendar", blurb: "A clear view of your time, with room to breathe.", category: "productivity", img: "/brand/google-calendar.svg" },
-  { key: "gdrive", name: "Google Drive", blurb: "Your shared files, where your team can find them.", category: "files", img: "/brand/google-drive.svg" },
-  { key: "slack", name: "Slack", blurb: "Team conversations, close to the work.", category: "communication", img: "/brand/slack.svg" },
-  { key: "notion", name: "Notion", blurb: "Notes and plans your agents can read.", category: "productivity", img: "/brand/notion.svg" },
+/** Names are brands (never translated); `blurb` is a catalog key, translated where it is matched and shown. */
+const DISCOVER: Array<{ key: string; name: string; blurb: Key; category: Category; img?: string; icon?: IconName }> = [
+  { key: "gmail", name: "Gmail", blurb: "connections.discover.gmail", category: "communication", img: "/brand/gmail.svg" },
+  { key: "gcal", name: "Google Calendar", blurb: "connections.discover.gcal", category: "productivity", img: "/brand/google-calendar.svg" },
+  { key: "gdrive", name: "Google Drive", blurb: "connections.discover.gdrive", category: "files", img: "/brand/google-drive.svg" },
+  { key: "slack", name: "Slack", blurb: "connections.discover.slack", category: "communication", img: "/brand/slack.svg" },
+  { key: "notion", name: "Notion", blurb: "connections.discover.notion", category: "productivity", img: "/brand/notion.svg" },
 ];
 
 
@@ -73,31 +75,31 @@ function rows(live: Live, admin: boolean): AppRow[] {
   if (admin) {
     const banks = live.vault?.connections ?? [];
     out.push({
-      key: "banks", name: "Bank links", blurb: "Read-only balances for the Vault, through your bank’s own sign-in.", category: "money", mark: { icon: "shield" },
+      key: "banks", name: t("connections.banks.name"), blurb: t("connections.banks.blurb"), category: "money", mark: { icon: "shield" },
       state: loading ? "loading" : banks.length ? "on" : "off",
-      status: loading ? "Checking…" : banks.length ? `${banks.length} institution${banks.length === 1 ? "" : "s"} · ${banks.reduce((n, b) => n + b.accounts, 0)} accounts` : "Added · no accounts linked",
-      detail: banks.length ? banks.map((b) => `${b.institution} · ${b.status}`) : ["No bank is linked yet. Linking happens inside the Vault, with your bank’s own sign-in."],
-      admin: true, manage: { label: "Manage in Vault", go: () => goPage("vault") },
+      status: loading ? t("connections.checking") : banks.length ? `${tn("connections.banks.institutions", banks.length)} · ${t("connections.banks.accounts", { n: banks.reduce((n, b) => n + b.accounts, 0) })}` : t("connections.banks.none"),
+      detail: banks.length ? banks.map((b) => `${b.institution} · ${b.status}`) : [t("connections.banks.noneDetail")],
+      admin: true, manage: { label: t("connections.banks.manage"), go: () => goPage("vault") },
     });
   }
   const pushOn = !!live.push?.configured;
   const devices = live.push?.settings?.deviceCount ?? 0;
   out.push({
-    key: "push", name: "Notifications", blurb: "Alerts on your phone and computer when something needs you.", category: "productivity", mark: { icon: "bell" },
+    key: "push", name: t("shell.notifications"), blurb: t("connections.push.blurb"), category: "productivity", mark: { icon: "bell" },
     state: loading ? "loading" : pushOn ? "on" : "off",
-    status: loading ? "Checking…" : pushOn ? `${devices} device${devices === 1 ? "" : "s"} signed up` : "Not configured on this server",
-    detail: ["Each device signs up for itself in Settings → Notifications."], manage: { label: "Notification settings", go: () => actions.toggleSettings(true) },
+    status: loading ? t("connections.checking") : pushOn ? tn("connections.push.devices", devices) : t("connections.push.notConfigured"),
+    detail: [t("connections.push.detail")], manage: { label: t("connections.push.manage"), go: () => actions.toggleSettings(true) },
   });
   const searchOn = !!live.search?.enabled;
   out.push({
-    key: "search", name: "Web and image search", blurb: "Look things up on the web from any conversation.", category: "productivity", mark: { icon: "search" },
-    state: loading ? "loading" : searchOn ? "on" : "off", status: loading ? "Checking…" : searchOn ? "On" : "Off on this server",
-    detail: ["Runs only when you ask, from the composer’s search or global search."],
+    key: "search", name: t("connections.search.name"), blurb: t("connections.search.blurb"), category: "productivity", mark: { icon: "search" },
+    state: loading ? "loading" : searchOn ? "on" : "off", status: loading ? t("connections.checking") : searchOn ? t("common.on") : t("connections.search.off"),
+    detail: [t("connections.search.detail")],
   });
   out.push({
-    key: "folders", name: "Workspace folders", blurb: "The documents your team is allowed to work with.", category: "files", mark: { icon: "folder" },
-    state: "managed", status: "Workspace managed", detail: ["Uploads, Clips and Mission control. Managed by the workspace, not an app you remove."],
-    manage: { label: "Open Documents", go: () => goPage("documents") },
+    key: "folders", name: t("home.docs.workspaceFolders"), blurb: t("connections.folders.blurb"), category: "files", mark: { icon: "folder" },
+    state: "managed", status: t("connections.folders.status"), detail: [t("connections.folders.detail")],
+    manage: { label: t("connections.folders.manage"), go: () => goPage("documents") },
   });
   return out;
 }
@@ -107,6 +109,8 @@ function Mark({ icon, img }: { icon?: IconName; img?: string }) {
 }
 
 export default function Connections() {
+  const t = useT();
+  const lang = useLang();
   const s = useAppState();
   const admin = !!s.user?.admin;
   const live = useLive(admin);
@@ -119,11 +123,12 @@ export default function Connections() {
   useEffect(() => {
     if (gmailConnect) void getFresh<{ configured: boolean }>("/app/gmail/status").then((v) => setGmailReady(!!v?.configured));
   }, [gmailConnect]);
-  const yours = useMemo(() => rows(live, admin), [live, admin]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const yours = useMemo(() => rows(live, admin), [live, admin, lang]);
   const match = (name: string, blurb: string, c: Category) =>
     (cat === "all" || c === cat) && (!q.trim() || `${name} ${blurb}`.toLowerCase().includes(q.trim().toLowerCase()));
   const shownYours = yours.filter((r) => match(r.name, r.blurb, r.category));
-  const shownDiscover = DISCOVER.filter((d) => match(d.name, d.blurb, d.category));
+  const shownDiscover = DISCOVER.filter((d) => match(d.name, t(d.blurb), d.category));
   const [menu, setMenu] = useState<string | null>(null);
   useEffect(() => {
     if (!menu) return;
@@ -140,7 +145,7 @@ export default function Connections() {
   const chosen = yours.find((r) => r.key === open) ?? null;
   const canAsk = availableBots(s.user).includes("michael");
   const ask = (what: string) => {
-    actions.setDraft("michael", `I’d like to connect ${what}. What would it take?`);
+    actions.setDraft("michael", t("connections.askDraft", { what }));
     actions.setView("messages");
     actions.openMobileThread("michael");
   };
@@ -156,12 +161,12 @@ export default function Connections() {
               <span className="rd-app-text">
                 <span className="rd-app-name">{r.name}</span>
                 <span className="rd-app-blurb">{r.blurb}</span>
-                <span className={`rd-app-status ${r.state}`}>{r.status}</span>
+                <span className={`rd-app-status ${r.state}`} dir="auto">{r.status}</span>
               </span>
             </button>
             {/* FINAL card menu: Manage goes to the app's own place. No Uninstall — removing a server
                 integration is not something the app can do (D13). */}
-            <button type="button" className="rd-app-more" aria-label={`${r.name} options`} aria-haspopup="menu" aria-expanded={menu === r.key} onClick={() => setMenu(menu === r.key ? null : r.key)}>
+            <button type="button" className="rd-app-more" aria-label={t("connections.options", { name: r.name })} aria-haspopup="menu" aria-expanded={menu === r.key} onClick={() => setMenu(menu === r.key ? null : r.key)}>
               <svg viewBox="0 0 24 24" aria-hidden="true" fill="currentColor" stroke="none">
                 <circle cx="6" cy="12" r="1.4" />
                 <circle cx="12" cy="12" r="1.4" />
@@ -169,9 +174,9 @@ export default function Connections() {
               </svg>
             </button>
             {menu === r.key && (
-              <div className="rd-app-menu" role="menu" aria-label={`${r.name} options`}>
+              <div className="rd-app-menu" role="menu" aria-label={t("connections.options", { name: r.name })}>
                 <button type="button" role="menuitem" onClick={() => (setMenu(null), setOpen(r.key))}>
-                  Details
+                  {t("connections.details")}
                 </button>
                 {r.manage && (
                   <button type="button" role="menuitem" onClick={() => (setMenu(null), r.manage!.go())}>
@@ -184,7 +189,7 @@ export default function Connections() {
         ))}
       </div>
     ) : (
-      <p className="rd-quiet rd-empty-line">No app matches that.</p>
+      <p className="rd-quiet rd-empty-line">{t("connections.noMatch")}</p>
     );
   } else {
     body = shownDiscover.length ? (
@@ -194,17 +199,17 @@ export default function Connections() {
             <Mark img={d.img} icon={d.icon} />
             <span className="rd-app-text">
               <span className="rd-app-name">{d.name}</span>
-              <span className="rd-app-blurb">{d.blurb}</span>
-              <span className={`rd-app-status ${d.key === "gmail" ? "on" : "off"}`}>{d.key === "gmail" ? "Ready to connect" : "Not available yet"}</span>
+              <span className="rd-app-blurb">{t(d.blurb)}</span>
+              <span className={`rd-app-status ${d.key === "gmail" ? "on" : "off"}`}>{d.key === "gmail" ? t("connections.readyToConnect") : t("connections.notAvailable")}</span>
             </span>
             <span className="rd-app-actions">
               {d.key === "gmail" ? (
                 // Gmail connects for real — FINAL's dialog, then Google's own sign-in.
-                <button type="button" className="rd-btn rd-btn-accent" onClick={() => setGmailConnect(true)}>Connect</button>
+                <button type="button" className="rd-btn rd-btn-accent" onClick={() => setGmailConnect(true)}>{t("connections.connect")}</button>
               ) : (
                 <>
-                  <button type="button" className="rd-btn" disabled title="AHI has no connector for this app yet">Add</button>
-                  {canAsk && <button type="button" className="rd-btn" onClick={() => ask(d.name)}>Ask Michael</button>}
+                  <button type="button" className="rd-btn" disabled title={t("connections.noConnector")}>{t("common.add")}</button>
+                  {canAsk && <button type="button" className="rd-btn" onClick={() => ask(d.name)}>{t("connections.askMichael")}</button>}
                 </>
               )}
             </span>
@@ -212,7 +217,7 @@ export default function Connections() {
         ))}
       </div>
     ) : (
-      <p className="rd-quiet rd-empty-line">No app matches that.</p>
+      <p className="rd-quiet rd-empty-line">{t("connections.noMatch")}</p>
     );
   }
 
@@ -221,35 +226,35 @@ export default function Connections() {
       <div className="rd-page-top">
         <header className="rd-page-head">
           <div>
-            <h1 className="rd-title">Connections<span className="rd-title-dot">.</span></h1>
-            <p className="rd-sub">The apps your team uses, and the accounts you choose to share.</p>
+            <h1 className="rd-title">{t("shell.nav.connections")}<span className="rd-title-dot">.</span></h1>
+            <p className="rd-sub">{t("connections.sub")}</p>
           </div>
           {canAsk && (
             <div className="rd-page-actions">
-              <button type="button" className="rd-btn" onClick={() => ask("an app")}>
-                Ask Michael <Icon name="arrow-right" />
+              <button type="button" className="rd-btn" onClick={() => ask(t("connections.anApp"))}>
+                {t("connections.askMichael")} <Icon name="arrow-right" />
               </button>
             </div>
           )}
         </header>
         <div className="rd-conn-bar">
-          <div className="rd-tabs" role="tablist" aria-label="Connections">
+          <div className="rd-tabs" role="tablist" aria-label={t("shell.nav.connections")}>
             <button type="button" role="tab" aria-selected={tab === "yours"} className={`rd-tab${tab === "yours" ? " active" : ""}`} onClick={() => setTab("yours")}>
-              Your apps <span className="rd-count">{yours.length}</span>
+              {t("connections.yourApps")} <span className="rd-count">{yours.length}</span>
             </button>
             <button type="button" role="tab" aria-selected={tab === "discover"} className={`rd-tab${tab === "discover" ? " active" : ""}`} onClick={() => setTab("discover")}>
-              Discover <span className="rd-count">{DISCOVER.length}</span>
+              {t("connections.discover")} <span className="rd-count">{DISCOVER.length}</span>
             </button>
           </div>
           <label className="rd-find">
             <Icon name="search" />
-            <input type="search" placeholder="Find an app…" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Find an app" />
+            <input type="search" dir="auto" placeholder={t("connections.findPlaceholder")} value={q} onChange={(e) => setQ(e.target.value)} aria-label={t("connections.find")} />
           </label>
         </div>
-        <div className="rd-chips" role="group" aria-label="Category">
+        <div className="rd-chips" role="group" aria-label={t("connections.category")}>
           {(Object.keys(CATEGORY_LABEL) as Array<Category | "all">).map((c) => (
             <button key={c} type="button" className={`rd-chip${cat === c ? " on" : ""}`} aria-pressed={cat === c} onClick={() => setCat(c)}>
-              {CATEGORY_LABEL[c]}
+              {t(CATEGORY_LABEL[c])}
             </button>
           ))}
         </div>
@@ -257,16 +262,16 @@ export default function Connections() {
       <div className="rd-conn-body">
         {body}
         {tab === "yours" && chosen && (
-          <section className="rd-app-detail" aria-label={`${chosen.name} details`}>
+          <section className="rd-app-detail" aria-label={t("connections.detailsOf", { name: chosen.name })}>
             <div className="rd-card-top">
               <h3>{chosen.name}</h3>
-              <button type="button" className="rd-chat-control" aria-label="Close details" onClick={() => setOpen(null)}>
+              <button type="button" className="rd-chat-control" aria-label={t("connections.closeDetails")} onClick={() => setOpen(null)}>
                 <Icon name="x" />
               </button>
             </div>
             <ul>
               {chosen.detail.map((d) => (
-                <li key={d}>{d}</li>
+                <li key={d} dir="auto">{d}</li>
               ))}
             </ul>
             {chosen.manage && (
@@ -277,7 +282,7 @@ export default function Connections() {
           </section>
         )}
         <p className="rd-conn-note">
-          <Icon name="shield" /> You choose the accounts, access, and agents for every connection. Keys stay on the server; this page only shows status.
+          <Icon name="shield" /> {t("connections.note")}
         </p>
       </div>
       {gmailConnect && <ConnectGmailDialog configured={gmailReady} onClose={() => setGmailConnect(false)} />}

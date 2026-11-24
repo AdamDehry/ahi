@@ -9,6 +9,7 @@
  */
 import type { MediaRef, MessageEvent } from "./types";
 import { actions, getState } from "../store";
+import { locale } from "../i18n";
 
 export type PanelTab = "media" | "files" | "links";
 
@@ -99,5 +100,5 @@ export function shortDate(ts: string, now = new Date()): string {
   const d = new Date(ts);
   if (Number.isNaN(d.getTime())) return "";
   const sameYear = d.getFullYear() === now.getFullYear();
-  return d.toLocaleDateString([], sameYear ? { month: "short", day: "numeric" } : { month: "short", day: "numeric", year: "numeric" });
+  return d.toLocaleDateString(locale(), sameYear ? { month: "short", day: "numeric" } : { month: "short", day: "numeric", year: "numeric" });
 }

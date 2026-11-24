@@ -1,6 +1,7 @@
 import { readFileSync, existsSync } from "fs";
 import { canonicalAgentId } from "./agent-rename.js";
 import { resolve } from "path";
+import { userLanguage, type Language } from "./ui-prefs.js";
 
 /**
  * Multi-user token registry.
@@ -186,10 +187,13 @@ export interface UserPublic {
   userId: string;
   agents: string[];
   admin: boolean;
+  /** Settings → Language, once chosen. */
+  language?: Language;
 }
 
 export function toPublic(user: UserConfig): UserPublic {
-  return { name: user.name, userId: user.userId, agents: user.agents, admin: user.admin };
+  const language = userLanguage(user.userId);
+  return { name: user.name, userId: user.userId, agents: user.agents, admin: user.admin, ...(language ? { language } : {}) };
 }
 
 /**
@@ -204,4 +208,9 @@ export function ownerUserId(): string {
   } catch {
     return "owner";
   }
+}
+
+/** The owner's chosen language (voice recognizers and the setup handoff follow it); English when unset. */
+export function ownerLanguage(): Language {
+  return userLanguage(ownerUserId()) ?? "en";
 }

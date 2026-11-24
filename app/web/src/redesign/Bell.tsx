@@ -15,10 +15,11 @@ import { usePushPrefs } from "../lib/push";
 import { Icon, type IconName } from "./icons";
 import { goPage } from "./Shell";
 import { readStoredList, writeStoredList } from "../lib/cache";
+import { useLang, useT, t, type Key } from "../i18n";
 
 type Cat = "work" | "gmail" | "calendar";
 /** `attn`: the attention-bar key a build row stands for — seeing the row dismisses that bar, and a dismissed bar reads as seen. */
-interface Row { key: string; cat: Cat; kicker: string; title: string; line: string; at: string | null; open: () => void; serverRead?: string; attn?: string; dismissed?: boolean }
+interface Row { key: string; cat: Cat; kicker: Key; title: string; line: string; at: string | null; open: () => void; serverRead?: string; attn?: string; dismissed?: boolean }
 
 const SEEN_KEY = "ahi-bell-seen";
 const readSeen = (): Set<string> => new Set(readStoredList(SEEN_KEY));
@@ -27,6 +28,7 @@ const writeSeen = (s: Set<string>) => writeStoredList(SEEN_KEY, [...s], 500);
 /** The bell's rows (admin sources only), fetched once for both the dot and the open inbox (ChromeActions owns it). */
 export function useBellSources(open: boolean) {
   const s = useAppState();
+  const lang = useLang();
   const admin = !!s.user?.admin;
   // Settings → Notifications: In-app off empties the inbox; an app or activity switched off drops its rows.
   const prefs = usePushPrefs(`${s.user?.userId ?? ""}:${admin ? 1 : 0}`);
@@ -64,23 +66,23 @@ export function useBellSources(open: boolean) {
       const p = prefs?.sources?.[src];
       return !p || (p.enabled && (!ev || p.events[ev] !== false));
     };
-    if (allow("builds", "approval")) for (const a of s.attention ?? []) out.push({ key: `att:${a.key}`, cat: "work", kicker: a.kind === "question" ? "Question" : "Builds", title: a.title, line: a.line, at: null, open: () => actions.openBuilds(a.cardId), attn: a.key, dismissed: s.attentionDismissed.includes(a.key) });
-    if (allow("review", "requests")) for (const r of review) out.push({ key: `rv:${r.id}`, cat: "work", kicker: "Review", title: r.title, line: r.cost_risk || "Ready for your look.", at: r.created, open: () => actions.openReview(r.id) });
+    if (allow("builds", "approval")) for (const a of s.attention ?? []) out.push({ key: `att:${a.key}`, cat: "work", kicker: a.kind === "question" ? "shell.bell.question" : "shell.tab.builds", title: a.title, line: a.line, at: null, open: () => actions.openBuilds(a.cardId), attn: a.key, dismissed: s.attentionDismissed.includes(a.key) });
+    if (allow("review", "requests")) for (const r of review) out.push({ key: `rv:${r.id}`, cat: "work", kicker: "shell.tab.review", title: r.title, line: r.cost_risk || t("shell.bell.readyForLook"), at: r.created, open: () => actions.openReview(r.id) });
     if (allow("calendar"))
       for (const a of sched)
         out.push({
-        key: `sc:${a.id}`, cat: "calendar", kicker: a.kind === "decision" ? "Decision" : a.kind === "review" ? "Review" : "Question",
+        key: `sc:${a.id}`, cat: "calendar", kicker: a.kind === "decision" ? "shell.bell.decision" : a.kind === "review" ? "shell.tab.review" : "shell.bell.question",
         title: a.text, line: BOT_LABELS[a.who] ?? a.who, at: a.at, serverRead: a.unread ? a.id : undefined,
         open: () => (a.kind === "review" ? actions.openReview() : scheduleUi.open(a.block)),
       });
-    if (allow("gmail")) for (const m of mail) out.push({ key: `gm:${m.account}:${m.id}`, cat: "gmail", kicker: "Gmail", title: m.subject, line: m.from, at: m.at, open: () => goPage("gmail") });
+    if (allow("gmail")) for (const m of mail) out.push({ key: `gm:${m.account}:${m.id}`, cat: "gmail", kicker: "shell.nav.gmail", title: m.subject, line: m.from, at: m.at, open: () => goPage("gmail") });
     return out;
-  }, [admin, prefs, s.attention, s.attentionDismissed, review, sched, mail]);
+  }, [admin, prefs, s.attention, s.attentionDismissed, review, sched, mail, lang]);
   return { rows, prefs, refresh: () => setTick((n) => n + 1) };
 }
 
 const CAT_ICON: Record<Cat, IconName> = { work: "layers", gmail: "gmail", calendar: "calendar" };
-const CAT_LABEL: Record<Cat, string> = { work: "Your work", gmail: "Gmail", calendar: "Calendar" };
+const CAT_LABEL: Record<Cat, Key> = { work: "shell.nav.work", gmail: "shell.nav.gmail", calendar: "shell.calendar" };
 
 /** Unseen count for the bell's dot. */
 export function bellCount(rows: Row[]): number {
@@ -89,6 +91,7 @@ export function bellCount(rows: Row[]): number {
 }
 
 export default function BellInbox({ rows, refresh, onClose }: { rows: Row[]; refresh: () => void; onClose: () => void }) {
+  const t = useT();
   const [seen, setSeen] = useState(readSeen);
   const [tab, setTab] = useState<"all" | "unread">("all");
   const [cat, setCat] = useState<Cat | "all">("all");
@@ -99,8 +102,8 @@ export default function BellInbox({ rows, refresh, onClose }: { rows: Row[]; ref
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     const onDown = (e: MouseEvent) => {
-      const t = e.target as Node;
-      if (box.current && !box.current.contains(t) && !(t as HTMLElement).closest?.(".rd-bell-btn")) onClose();
+      const el = e.target as Node;
+      if (box.current && !box.current.contains(el) && !(el as HTMLElement).closest?.(".rd-bell-btn")) onClose();
     };
     window.addEventListener("keydown", onKey);
     window.addEventListener("mousedown", onDown);
@@ -120,39 +123,39 @@ export default function BellInbox({ rows, refresh, onClose }: { rows: Row[]; ref
   };
   const groups = (["work", "gmail", "calendar"] as Cat[]).map((c) => ({ c, items: shown.filter((r) => r.cat === c) })).filter((g) => g.items.length);
   return (
-    <div className="rd-bell" ref={box} role="dialog" aria-label="Notifications">
+    <div className="rd-bell" ref={box} role="dialog" aria-label={t("shell.notifications")}>
       <div className="rd-bell-head">
         <div>
-          <div className="rd-eyebrow">YOUR INBOX</div>
+          <div className="rd-eyebrow">{t("shell.bell.yourInbox")}</div>
           <h2>
-            Notifications <span>{unread.length} unread</span>
+            {t("shell.notifications")} <span>{t("shell.bell.unreadCount", { n: unread.length })}</span>
           </h2>
         </div>
-        <button type="button" className="rd-chat-control" aria-label="Close notifications" onClick={onClose}>
+        <button type="button" className="rd-chat-control" aria-label={t("shell.bell.close")} onClick={onClose}>
           <Icon name="x" />
         </button>
       </div>
       <div className="rd-bell-tabs" role="tablist">
         <button type="button" role="tab" aria-selected={tab === "all"} className={tab === "all" ? "on" : ""} onClick={() => setTab("all")}>
-          All activity
+          {t("shell.bell.allActivity")}
         </button>
         <button type="button" role="tab" aria-selected={tab === "unread"} className={tab === "unread" ? "on" : ""} onClick={() => setTab("unread")}>
-          Unread <span>{unread.length}</span>
+          {t("shell.bell.unread")} <span>{unread.length}</span>
         </button>
       </div>
       <div className="rd-chips">
         {(["all", "work", "gmail", "calendar"] as const).map((c) => (
           <button key={c} type="button" className={`rd-chip${cat === c ? " on" : ""}`} aria-pressed={cat === c} onClick={() => setCat(c)}>
-            {c === "all" ? "Everything" : CAT_LABEL[c]}
+            {c === "all" ? t("shell.bell.everything") : t(CAT_LABEL[c])}
           </button>
         ))}
       </div>
       <div className="rd-bell-list">
-        {!groups.length && <p className="rd-quiet rd-empty-line">{tab === "unread" ? "Nothing unread." : "Nothing needs you right now."}</p>}
+        {!groups.length && <p className="rd-quiet rd-empty-line">{tab === "unread" ? t("shell.bell.nothingUnread") : t("shell.bell.nothingNeedsYou")}</p>}
         {groups.map((g) => (
           <section key={g.c} className={`rd-bell-group tone-${g.c}`}>
             <h3>
-              <Icon name={CAT_ICON[g.c]} /> {CAT_LABEL[g.c]} <span>{g.items.length}</span>
+              <Icon name={CAT_ICON[g.c]} /> {t(CAT_LABEL[g.c])} <span>{g.items.length}</span>
             </h3>
             {g.items.map((r) => (
               <button
@@ -165,9 +168,9 @@ export default function BellInbox({ rows, refresh, onClose }: { rows: Row[]; ref
                   onClose();
                 }}
               >
-                <span className="rd-bell-kicker">{r.kicker}</span>
-                <span className="rd-bell-title">{r.title}</span>
-                <span className="rd-bell-line">{r.line}</span>
+                <span className="rd-bell-kicker">{t(r.kicker)}</span>
+                <span className="rd-bell-title" dir="auto">{r.title}</span>
+                <span className="rd-bell-line" dir="auto">{r.line}</span>
                 {r.at && <span className="rd-bell-at">{ago(r.at)}</span>}
               </button>
             ))}
@@ -176,13 +179,13 @@ export default function BellInbox({ rows, refresh, onClose }: { rows: Row[]; ref
       </div>
       <div className="rd-bell-foot">
         <button type="button" onClick={() => (goPage("today"), onClose())}>
-          See Today <Icon name="arrow-right" />
+          {t("shell.bell.seeToday")} <Icon name="arrow-right" />
         </button>
-        <button type="button" onClick={() => void markSeen(unread)} disabled={!unread.length} title="Marks them seen here; nothing is approved or closed">
-          <Icon name="check" /> Mark all as seen
+        <button type="button" onClick={() => void markSeen(unread)} disabled={!unread.length} title={t("shell.bell.markAllTitle")}>
+          <Icon name="check" /> {t("shell.bell.markAll")}
         </button>
       </div>
-      <p className="rd-bell-note">Seen is remembered on this device (calendar items on the server). Seeing something never approves or closes it.</p>
+      <p className="rd-bell-note">{t("shell.bell.note")}</p>
     </div>
   );
 }

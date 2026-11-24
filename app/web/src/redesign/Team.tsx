@@ -12,12 +12,14 @@ import { AgentAvatar } from "./AgentRail";
 import { PageHeader } from "./pages";
 import { railOrder } from "./agents";
 import { SETTINGS_SECTIONS, setSettingsSection, useSettingsSection } from "./SettingsPage";
+import { useT, type Key } from "../i18n";
 
-export const PURPOSE: Record<string, string> = {
-  michael: "Your first point of contact. Plans, delegates, and brings the important decisions back to you.",
-  zali: "Builds your software and keeps it running.",
-  avi: "Turns ideas into thoughtful design.",
-  miriam: "Makes room in your calendar and personal life.",
+/** Catalog keys, translated where they are shown (Team cards, global search). */
+export const PURPOSE: Record<string, Key> = {
+  michael: "shell.team.purpose.michael",
+  zali: "shell.team.purpose.zali",
+  avi: "shell.team.purpose.avi",
+  miriam: "shell.team.purpose.miriam",
 };
 
 function draftToMichael(text: string) {
@@ -27,6 +29,7 @@ function draftToMichael(text: string) {
 }
 
 export function TeamPage() {
+  const t = useT();
   const { user } = useAppState();
   const bots = railOrder(availableBots(user));
   const hasMichael = bots.includes("michael");
@@ -37,8 +40,8 @@ export function TeamPage() {
           page="team"
           actionsSlot={
             hasMichael ? (
-              <button type="button" className="rd-btn" onClick={() => draftToMichael("Please coordinate the team on this: ")}>
-                Ask Michael to coordinate <Icon name="arrow-right" />
+              <button type="button" className="rd-btn" onClick={() => draftToMichael(t("shell.team.coordinateDraft"))}>
+                {t("shell.team.askCoordinate")} <Icon name="arrow-right" />
               </button>
             ) : undefined
           }
@@ -46,12 +49,12 @@ export function TeamPage() {
       </div>
       <div className="rd-team-grid">
         {bots.map((b) => (
-          <button key={b} type="button" className={`rd-team-card${b === "michael" ? " lead" : ""}`} onClick={() => (actions.setView("messages"), actions.openMobileThread(b))} aria-label={`Message ${BOT_LABELS[b] ?? b}`}>
+          <button key={b} type="button" className={`rd-team-card${b === "michael" ? " lead" : ""}`} onClick={() => (actions.setView("messages"), actions.openMobileThread(b))} aria-label={t("shell.messageAgent", { name: BOT_LABELS[b] ?? b })}>
             <AgentAvatar bot={b} size="sm" />
             <span className="rd-team-text">
               <span className="rd-team-name">{BOT_LABELS[b] ?? b}</span>
               <span className="rd-team-role">{BOT_SUBTITLES[b] ?? ""}</span>
-              <span className="rd-team-purpose">{PURPOSE[b] ?? ""}</span>
+              <span className="rd-team-purpose">{PURPOSE[b] ? t(PURPOSE[b]) : ""}</span>
             </span>
             <Icon name="arrow-right" />
           </button>
@@ -60,11 +63,11 @@ export function TeamPage() {
       {hasMichael && (
         <div className="rd-team-more">
           <div>
-            <h3>Room for another specialist.</h3>
-            <p className="rd-quiet">Work out the role and what good work looks like with Michael.</p>
+            <h3>{t("shell.team.roomTitle")}</h3>
+            <p className="rd-quiet">{t("shell.team.roomSub")}</p>
           </div>
-          <button type="button" className="rd-btn" onClick={() => draftToMichael("I’d like to add a specialist to the team. Role: ")}>
-            <Icon name="plus" /> Add a specialist
+          <button type="button" className="rd-btn" onClick={() => draftToMichael(t("shell.team.specialistDraft"))}>
+            <Icon name="plus" /> {t("shell.team.addSpecialist")}
           </button>
         </div>
       )}
@@ -74,16 +77,17 @@ export function TeamPage() {
 
 /** FINAL Settings section list: picks the section shown (SettingsPage). */
 export function SettingsNav() {
+  const t = useT();
   const { user } = useAppState();
   const active = useSettingsSection();
   return (
-    <nav className="rd-settings-nav" aria-label="Settings sections">
+    <nav className="rd-settings-nav" aria-label={t("shell.team.settingsSections")}>
       {SETTINGS_SECTIONS.filter((x) => !x.owner || user?.admin).map((x) => (
         <button key={x.id} type="button" className={active === x.id ? "on" : ""} aria-current={active === x.id ? "page" : undefined} onClick={() => setSettingsSection(x.id)}>
-          <Icon name={x.icon} /> {x.label}
+          <Icon name={x.icon} /> {t(x.label)}
         </button>
       ))}
-      <small className="rd-settings-ws">Personal workspace</small>
+      <small className="rd-settings-ws">{t("shell.personalWorkspace")}</small>
     </nav>
   );
 }

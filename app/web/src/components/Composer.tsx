@@ -23,6 +23,7 @@ import {
   uploadStaged,
   type StagedItem,
 } from "../lib/staging";
+import { tn, useT } from "../i18n";
 
 /**
  * The composer, in the design grammar: a centered surface field (max
@@ -36,6 +37,7 @@ import {
 const COARSE_POINTER = window.matchMedia("(pointer: coarse)").matches;
 
 export default function Composer({ bot }: { bot: string }) {
+  const t = useT();
   const { drafts, voiceBots, streams, awaiting, connection, restartingAt, call } = useAppState();
   // A planned restart: sending and voice entry wait, typing does not — the draft is kept.
   const lock = composerLock(connection, restartingAt, Date.now());
@@ -236,7 +238,7 @@ export default function Composer({ bot }: { bot: string }) {
 
     const attachmentIds = readyMediaIds(cargo);
     if (running) {
-      setQueuedPreview(value || `${attachmentIds.length} attachment${attachmentIds.length === 1 ? "" : "s"}`);
+      setQueuedPreview(value || tn("media.attachments", attachmentIds.length));
       queuedAgainst.current = new Set(
         Object.values(streams).filter((s) => s.bot === bot && !s.done).map((s) => s.streamId),
       );
@@ -274,7 +276,7 @@ export default function Composer({ bot }: { bot: string }) {
   }
 
   return (
-    <div className="composer-row">
+    <div className="composer-row" data-caption={t("chat.composerCaption")}>
       <div
         className={`composer${recording ? " recording" : ""}${dropState ? ` ${dropState}` : ""}`}
         onDragOver={(e) => {
@@ -307,9 +309,9 @@ export default function Composer({ bot }: { bot: string }) {
           </div>
         )}
         {!recording && searchMode && (
-          <div className="composer-search" role="group" aria-label="Search">
-            <span className="composer-search-label mono-label">{searching ? "Searching…" : "Search"}</span>
-            <div className="composer-search-kinds" role="radiogroup" aria-label="What to search">
+          <div className="composer-search" role="group" aria-label={t("common.search")}>
+            <span className="composer-search-label mono-label">{searching ? t("chat.searching") : t("common.search")}</span>
+            <div className="composer-search-kinds" role="radiogroup" aria-label={t("chat.whatToSearch")}>
               {(["web", "images"] as const).map((k) => (
                 <button
                   key={k}
@@ -322,20 +324,20 @@ export default function Composer({ bot }: { bot: string }) {
                     areaRef.current?.focus();
                   }}
                 >
-                  {k === "web" ? "Web" : "Pictures"}
+                  {k === "web" ? t("chat.searchWeb") : t("chat.searchPictures")}
                 </button>
               ))}
             </div>
-            <button type="button" className="composer-search-close" aria-label="Close search" onClick={() => setSearchMode(null)}>
+            <button type="button" className="composer-search-close" aria-label={t("chat.closeSearch")} onClick={() => setSearchMode(null)}>
               ✕
             </button>
           </div>
         )}
         {!recording && queuedPreview && (
           <div className="steer-preview" role="status">
-            <span className="steer-preview-text">{queuedPreview}</span>
+            <span className="steer-preview-text" dir="auto">{queuedPreview}</span>
             <button type="button" className="steer-action" disabled={steering} onClick={() => void steer()}>
-              {steering ? "Steering" : "Steer"}
+              {steering ? t("chat.steering") : t("chat.steer")}
             </button>
           </div>
         )}
@@ -346,8 +348,8 @@ export default function Composer({ bot }: { bot: string }) {
               <button
                 type="button"
                 className={`composer-icon attach${atCap ? " at-cap" : ""}`}
-                title="Attach files or images"
-                aria-label="Attach"
+                title={t("media.attachTitle")}
+                aria-label={t("media.attach")}
                 onClick={() => attachRef.current?.click()}
               >
                 <IconPlus />
@@ -368,7 +370,8 @@ export default function Composer({ bot }: { bot: string }) {
               <textarea
                 ref={areaRef}
                 rows={1}
-                placeholder={searchMode === "web" ? "Search the web…" : searchMode === "images" ? "Search pictures…" : `Message ${BOT_LABELS[bot] ?? bot}…`}
+                dir="auto"
+                placeholder={searchMode === "web" ? t("chat.searchWebPlaceholder") : searchMode === "images" ? t("chat.searchPicturesPlaceholder") : t("chat.messagePlaceholder", { name: BOT_LABELS[bot] ?? bot })}
                 enterKeyHint={searchMode ? "search" : undefined}
                 value={text}
                 onChange={(e) => actions.setDraft(bot, e.target.value)}

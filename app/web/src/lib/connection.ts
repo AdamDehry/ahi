@@ -1,4 +1,5 @@
 import type { ConnectionStatus } from "./ws";
+import { t } from "../i18n";
 
 /**
  * The header's connection chip (ONLINE / RESTARTING / RECONNECTING / OFFLINE).
@@ -18,7 +19,7 @@ export function connectionDisplay(
   restartingAt: number | null,
   now: number = Date.now(),
 ): { label: string; dot: ConnectionDot } {
-  if (connection === "open") return { label: "ONLINE", dot: "open" };
-  if (restartingAt !== null && now - restartingAt < RESTART_GRACE_MS) return { label: "RESTARTING", dot: "restarting" };
-  return connection === "connecting" ? { label: "RECONNECTING", dot: "connecting" } : { label: "OFFLINE", dot: "closed" };
+  if (connection === "open") return { label: t("chat.connOnline"), dot: "open" };
+  if (restartingAt !== null && now - restartingAt < RESTART_GRACE_MS) return { label: t("chat.connRestarting"), dot: "restarting" };
+  return connection === "connecting" ? { label: t("chat.connReconnecting"), dot: "connecting" } : { label: t("chat.connOffline"), dot: "closed" };
 }

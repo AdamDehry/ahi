@@ -549,6 +549,8 @@ export function frontGatePrompt(
   persona: FrontVoicePersona = MICHAEL_DEFAULT,
   /** "Now: Tuesday, October 27, 2026, 6:28 PM EDT" in his zone (voice step 5); absent = not told. */
   clock?: string,
+  /** The user's language from Settings when it isn't English ("Hebrew"); absent = English. */
+  language?: string,
 ): string {
   const call = recentCall
     .slice(-RECENT_CALL_LINES)
@@ -557,6 +559,7 @@ export function frontGatePrompt(
   return [
     `Allowed: ${allowFull ? "FULL, WORK or QUICK" : "WORK or QUICK"}`,
     ...(clock ? [clock] : []),
+    ...(language ? [`Language: ${persona.user} uses ${language}. Say your line in ${language}, unless their last words were in another language; then use theirs.`] : []),
     call ? `The call so far (oldest first):\n${call}` : "The call just started.",
     frontVoicePrompt(heard, recentAcks, rejected, persona),
   ].join("\n");
@@ -596,6 +599,8 @@ export interface GateTurnOptions {
   onClaim?: (claim: GateClaim) => void;
   /** The "Now:" line (voice step 5): the time, day and date in his zone. Absent = the gate has no clock. */
   clock?: string;
+  /** The user's language when it isn't English ("Hebrew"): the gate's line is said in it. */
+  language?: string;
   /**
    * QUICK may carry a bridge (voice step 6): its tag claims "bridge", and a
    * bridge that passes checkBridgeLine comes back on the verdict. Set where
@@ -687,7 +692,7 @@ export async function frontGateFor(
     return null;
   };
   for (let attempt = 0; attempt < 2; attempt++) {
-    const content = frontGatePrompt(heard, allowFull, recentCall, recentAcks, rejected, persona, clock);
+    const content = frontGatePrompt(heard, allowFull, recentCall, recentAcks, rejected, persona, clock, opts.language);
     const answers = askEach
       ? askEach(content, signal, (_lane, text) => hearPartial(text))
       : [ask(content, signal, hearPartial)];

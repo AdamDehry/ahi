@@ -152,7 +152,7 @@
 /* The letter: what he says out loud ("B") is printed on the picture. */
 .ahi-studio-card .ast-key {
   position: absolute;
-  left: 6px;
+  inset-inline-start: 6px;
   top: 6px;
   min-width: 22px;
   height: 22px;
@@ -170,7 +170,7 @@
 .ahi-studio-card .ast-option.is-picked .ast-key { background: var(--ast-accent); color: var(--ast-ground); }
 .ahi-studio-card .ast-check {
   position: absolute;
-  right: 8px;
+  inset-inline-end: 8px;
   bottom: 8px;
   width: 20px;
   height: 20px;
@@ -181,7 +181,7 @@
 .ahi-studio-card .ast-check::after {
   content: "";
   position: absolute;
-  left: 7px;
+  inset-inline-start: 7px;
   top: 4px;
   width: 5px;
   height: 9px;
@@ -191,11 +191,11 @@
 }
 .ahi-studio-card .ast-play {
   position: absolute;
-  left: 50%;
+  inset-inline-start: 50%;
   top: 50%;
   width: 34px;
   height: 34px;
-  margin: -17px 0 0 -17px;
+  margin-block: -17px 0; margin-inline: -17px 0;
   border-radius: 50%;
   background: color-mix(in srgb, var(--ast-ground) 70%, transparent);
   pointer-events: none;
@@ -203,7 +203,7 @@
 .ahi-studio-card .ast-play::after {
   content: "";
   position: absolute;
-  left: 13px;
+  inset-inline-start: 13px;
   top: 10px;
   border-style: solid;
   border-width: 7px 0 7px 11px;
@@ -211,7 +211,7 @@
 }
 .ahi-studio-card .ast-expand {
   position: absolute;
-  right: 5px;
+  inset-inline-end: 5px;
   top: 5px;
   width: 26px;
   height: 26px;

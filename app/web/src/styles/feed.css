@@ -21,7 +21,7 @@
 .fd-slot-chip .agent { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
 .fd-slot-chip .agent.avi { background: var(--tone-built); }
 .fd-slot-chip .agent.michael { background: var(--text); }
-.fd-slot-chip .pf-age { margin-left: 2px; }
+.fd-slot-chip .pf-age { margin-inline-start: 2px; }
 .fd-restricted { font-size: var(--fs-sm); color: var(--text-mute); }
 
 /* group marks inside the one list */
@@ -31,8 +31,8 @@
 .fd-item + .fd-item .fd-kind { margin-top: var(--sp-5); }
 
 /* the row */
-.fd-row { position: relative; display: flex; flex-direction: column; gap: var(--sp-1); padding: var(--sp-3) var(--sp-3) var(--sp-3) calc(var(--sp-3) + var(--pf-rule-w, 3px)); border: var(--hairline) solid var(--line); border-radius: var(--radius-card, 12px); background: var(--surface); margin-bottom: var(--sp-2); overflow: hidden; }
-.fd-row::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: var(--pf-rule-w, 3px); background: var(--tone, var(--line-strong)); }
+.fd-row { position: relative; display: flex; flex-direction: column; gap: var(--sp-1); padding-block: var(--sp-3) var(--sp-3); padding-inline: calc(var(--sp-3) + var(--pf-rule-w, 3px)) var(--sp-3); border: var(--hairline) solid var(--line); border-radius: var(--radius-card, 12px); background: var(--surface); margin-bottom: var(--sp-2); overflow: hidden; }
+.fd-row::before { content: ""; position: absolute; inset-inline-start: 0; top: 0; bottom: 0; width: var(--pf-rule-w, 3px); background: var(--tone, var(--line-strong)); }
 .fd-row.needs_you { --tone: var(--tone-you); background: var(--tone-you-soft); border-color: var(--tone-you-line, var(--line)); }
 .fd-row.parked { --tone: var(--accent); }
 .fd-row.parked.built { --tone: var(--tone-built); }
@@ -40,7 +40,7 @@
 .fd-row.parked.hold, .fd-row.parked.queued { --tone: var(--line-strong); }
 .fd-row.parked.running, .fd-row.parked.starting { --tone: var(--accent-strong, var(--accent)); }
 .fd-row.gone { --tone: var(--line-strong); border-style: dashed; }
-.fd-row.idea { --tone: transparent; background: transparent; border-color: var(--line); padding-left: var(--sp-3); }
+.fd-row.idea { --tone: transparent; background: transparent; border-color: var(--line); padding-inline-start: var(--sp-3); }
 .fd-row.idea::before { display: none; }
 .fd-row-top { display: flex; justify-content: space-between; align-items: center; gap: var(--sp-2); }
 .fd-row.needs_you .pf-kicker > span:first-child { color: var(--tone-you); }

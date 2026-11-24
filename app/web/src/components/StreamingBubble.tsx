@@ -2,6 +2,7 @@ import { memo } from "react";
 import type { StreamState } from "../store";
 import { BOT_LABELS } from "../lib/types";
 import { renderStreamingMarkdown } from "../lib/markdown";
+import { useT } from "../i18n";
 
 /**
  * A live streaming reply — same bare-text agent grammar as a completed
@@ -11,6 +12,7 @@ import { renderStreamingMarkdown } from "../lib/markdown";
  * tail block re-parses per chunk (lib/markdown.ts).
  */
 const StreamingBubble = memo(function StreamingBubble({ stream }: { stream: StreamState }) {
+  const t = useT();
   const { stableHtml, tailHtml } = renderStreamingMarkdown(stream.text);
   const label = BOT_LABELS[stream.bot] ?? stream.bot;
 
@@ -21,9 +23,9 @@ const StreamingBubble = memo(function StreamingBubble({ stream }: { stream: Stre
         <span className="agent-name" data-bot={stream.bot}>
           {label}
         </span>
-        <span className="agent-time mono-label">NOW</span>
+        <span className="agent-time mono-label">{t("chat.now")}</span>
       </div>
-      <div className="msg-text">
+      <div className="msg-text" dir="auto">
         {stableHtml && <span dangerouslySetInnerHTML={{ __html: stableHtml }} />}
         {tailHtml && <span dangerouslySetInnerHTML={{ __html: tailHtml }} />}
         {!stream.done && <span className="stream-caret" />}
@@ -31,9 +33,9 @@ const StreamingBubble = memo(function StreamingBubble({ stream }: { stream: Stre
       {stream.error && <div className="stream-error mono-label">{stream.error.toUpperCase()}</div>}
       {stream.tools.length > 0 && (
         <div className="tool-chips">
-          {stream.tools.map((t) => (
-            <span key={t} className="tool-chip">
-              {t.toUpperCase()}
+          {stream.tools.map((tool) => (
+            <span key={tool} className="tool-chip">
+              {tool.toUpperCase()}
             </span>
           ))}
         </div>

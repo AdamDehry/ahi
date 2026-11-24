@@ -32,7 +32,7 @@ const MediaAttachment = memo(function MediaAttachment({
   return (
     <a className="media-doc" href={downloadUrl(media.id)} download={media.originalName}>
       <IconFiles />
-      <span className="media-doc-name">{media.originalName}</span>
+      <span className="media-doc-name" dir="auto">{media.originalName}</span>
       <span className="mono-label">{formatSize(media.size)}</span>
     </a>
   );

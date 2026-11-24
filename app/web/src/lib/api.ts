@@ -1,4 +1,5 @@
 import type { SentAnswer } from "./answers";
+import { t } from "../i18n";
 import type { Bill, BillSettings, Clip, CostEntry, FileEntry, McFile, McL2Entry, McL3Detail, MessageEvent, UserPublic } from "./types";
 
 async function getJson<T>(url: string): Promise<T | null> {
@@ -121,7 +122,7 @@ export async function uploadFile(file: File, category?: string): Promise<{ ok: b
     }
     return { ok: true };
   } catch {
-    return { ok: false, error: "network" };
+    return { ok: false, error: t("chat.errNetwork") };
   }
 }
 
@@ -148,7 +149,7 @@ async function jsonOp(url: string, method: string, body?: unknown): Promise<{ ok
     if (!res.ok) return { ok: false, error: (parsed as { error?: string }).error || `HTTP ${res.status}` };
     return { ok: true, ...parsed };
   } catch {
-    return { ok: false, error: "network" };
+    return { ok: false, error: t("chat.errNetwork") };
   }
 }
 
@@ -283,7 +284,7 @@ export async function uploadVoiceNote(
     }
     return { ok: true, transcript: (body as { transcript?: string }).transcript };
   } catch {
-    return { ok: false, kind: "network", error: "network" };
+    return { ok: false, kind: "network", error: t("chat.errNetwork") };
   }
 }
 
@@ -302,7 +303,7 @@ export async function attachFile(bot: string, file: File): Promise<{ ok: boolean
     }
     return { ok: true };
   } catch {
-    return { ok: false, error: "network" };
+    return { ok: false, error: t("chat.errNetwork") };
   }
 }
 
@@ -453,9 +454,9 @@ async function billJson(url: string, method: string, body?: unknown): Promise<{ 
     });
     if (res.ok) return { ok: true };
     const j = (await res.json().catch(() => ({}))) as { error?: string };
-    return { ok: false, error: j.error || `Failed (${res.status})` };
+    return { ok: false, error: j.error || t("chat.errFailedStatus", { status: String(res.status) }) };
   } catch {
-    return { ok: false, error: "Offline — try again" };
+    return { ok: false, error: t("chat.errOfflineTryAgain") };
   }
 }
 

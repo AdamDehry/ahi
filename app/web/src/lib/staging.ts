@@ -17,6 +17,8 @@
    Order is send order: this array IS the order, and drag-reorder mutates it.
    ============================================================ */
 
+import { t } from "../i18n";
+
 export type StagedKind = "image" | "doc";
 
 /**
@@ -106,10 +108,10 @@ export async function uploadStaged(
     }
     const body = (await res.json()) as { media?: { id?: string } };
     const id = body.media?.id;
-    if (!id) return { ok: false, error: "no media id returned" };
+    if (!id) return { ok: false, error: t("media.errNoMediaId") };
     return { ok: true, mediaId: id };
   } catch {
-    return { ok: false, error: "network" };
+    return { ok: false, error: t("chat.errNetwork") };
   }
 }
 

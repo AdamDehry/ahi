@@ -6,6 +6,7 @@ import {
   shortMime,
   type StagedItem,
 } from "../lib/staging";
+import { tn, useT } from "../i18n";
 
 /* ============================================================
    AttachmentShelf — design lock v4, deck pp.1–5.
@@ -41,6 +42,7 @@ function DocGlyph() {
 }
 
 function RemoveButton({ onRemove, hidden }: { onRemove: () => void; hidden: boolean }) {
+  const t = useT();
   // 20px circle on a 24px target, overlapping the corner. Hidden during a
   // drag so it can never be hit while reordering.
   return (
@@ -51,7 +53,7 @@ function RemoveButton({ onRemove, hidden }: { onRemove: () => void; hidden: bool
         e.stopPropagation();
         onRemove();
       }}
-      aria-label="Remove attachment"
+      aria-label={t("media.removeAttachment")}
       tabIndex={hidden ? -1 : 0}
     >
       <svg viewBox="0 0 20 20" width="20" height="20" aria-hidden="true">
@@ -104,7 +106,7 @@ function Tile({
           </span>
           {/* unicode-bidi: plaintext so an RTL filename keeps its extension
               in place; mime and size stay LTR. */}
-          <span className="shelf-doc-name mono-label">{item.name}</span>
+          <span className="shelf-doc-name mono-label" dir="auto">{item.name}</span>
           <span className="shelf-doc-meta mono-label">
             {shortMime(item.mime, item.name)}·{formatSize(item.size)}
           </span>
@@ -126,6 +128,7 @@ export default function AttachmentShelf({
 }) {
   // 5+ compresses to an overlap stack; tapping expands it into a horizontal
   // scroller in THIS shelf. Never a second row, never a sheet.
+  const t = useT();
   const [expanded, setExpanded] = useState(false);
   const [dragging, setDragging] = useState<number | null>(null);
 
@@ -151,14 +154,14 @@ export default function AttachmentShelf({
     <div className="attach-shelf" data-count={items.length}>
       <div className="shelf-count-row">
         <span className="shelf-count mono-label">
-          {items.length} {items.length === 1 ? "FILE" : "FILES"}
+          {tn("media.fileCount", items.length)}
         </span>
         {/* Cap note is INLINE and in warn — never a toast, never a dialog. */}
-        {atCap && <span className="shelf-cap-note mono-label">MAX {ATTACHMENT_CAP} PER MESSAGE</span>}
-        {reading > 0 && <span className="shelf-reading-note mono-label">READING {reading}…</span>}
+        {atCap && <span className="shelf-cap-note mono-label">{t("media.maxPerMessage", { n: ATTACHMENT_CAP })}</span>}
+        {reading > 0 && <span className="shelf-reading-note mono-label">{t("media.readingCount", { n: reading })}</span>}
         {failed > 0 && (
           <span className="shelf-cap-note mono-label">
-            {failed} FAILED · WON'T SEND — REMOVE
+            {t("media.failedWontSend", { n: failed })}
           </span>
         )}
       </div>
@@ -181,7 +184,7 @@ export default function AttachmentShelf({
             type="button"
             className="shelf-more mono-label"
             onClick={() => setExpanded(true)}
-            aria-label={`Show all ${items.length} attachments`}
+            aria-label={t("media.showAll", { n: items.length })}
           >
             +{tail}
           </button>

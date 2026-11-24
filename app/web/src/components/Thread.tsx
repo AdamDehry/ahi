@@ -6,6 +6,7 @@ import MessageBubble from "./MessageBubble";
 import type { VoiceSessionMeta } from "./voice/SessionRecordCard";
 import StreamingBubble from "./StreamingBubble";
 import { IconChevronDown } from "./icons";
+import { locale, t, useLang } from "../i18n";
 
 type Item =
   | { kind: "msg"; key: string; msg: import("../lib/types").LocalMessage }
@@ -16,13 +17,13 @@ function dayLabel(ts: string): string {
   const date = new Date(ts);
   if (Number.isNaN(date.getTime())) return "";
   const now = new Date();
-  const md = date.toLocaleDateString([], { month: "long", day: "numeric" }).toUpperCase();
-  if (date.toDateString() === now.toDateString()) return `TODAY · ${md}`;
+  const md = date.toLocaleDateString(locale(), { month: "long", day: "numeric" }).toUpperCase();
+  if (date.toDateString() === now.toDateString()) return t("chat.dayToday", { date: md });
   const yesterday = new Date(now);
   yesterday.setDate(now.getDate() - 1);
-  if (date.toDateString() === yesterday.toDateString()) return `YESTERDAY · ${md}`;
+  if (date.toDateString() === yesterday.toDateString()) return t("chat.dayYesterday", { date: md });
   if (now.getTime() - date.getTime() < 7 * 86_400_000) {
-    return `${date.toLocaleDateString([], { weekday: "long" }).toUpperCase()} · ${md}`;
+    return `${date.toLocaleDateString(locale(), { weekday: "long" }).toUpperCase()} · ${md}`;
   }
   return md;
 }
@@ -74,6 +75,8 @@ export default function Thread({
   bot: string;
   onOpenVoiceSession?: (record: VoiceSessionMeta) => void;
 }) {
+  // Subscribes to the language (useT's job): day dividers and labels re-render on a switch.
+  const lang = useLang();
   const { threads, streams, awaiting, reveal } = useAppState();
   const [flashKey, setFlashKey] = useState<string | null>(null);
   const virtuosoRef = useRef<VirtuosoHandle>(null);
@@ -174,7 +177,8 @@ export default function Thread({
     }
     for (const s of liveStreams) list.push({ kind: "stream", key: s.streamId, stream: s });
     return list;
-  }, [messages, liveStreams]);
+    // lang: the day dividers are words — a language switch re-labels them.
+  }, [messages, liveStreams, lang]);
 
   // Typing indicator: we sent something and no reply signal (stream-start
   // or out-message) has arrived yet for this bot.
@@ -299,22 +303,22 @@ export default function Thread({
     () =>
       showTyping ? (
         <div className="agent-run typing">
-          <span className="typing-dots" aria-label={`${BOT_LABELS[bot] ?? bot} is thinking`}>
+          <span className="typing-dots" aria-label={t("chat.isThinking", { name: BOT_LABELS[bot] ?? bot })}>
             <i /><i /><i />
           </span>
         </div>
       ) : (
         <div className="feed-tail" />
       ),
-    [showTyping, bot],
+    [showTyping, bot, lang],
   );
 
   return (
     <div className="thread-feed">
       {items.length === 0 && !showTyping ? (
         <div className="feed-empty">
-          <span className="mono-label">NO MESSAGES YET</span>
-          Say something below — it appears instantly.
+          <span className="mono-label">{t("chat.emptyTitle")}</span>
+          {t("chat.emptyBody")}
         </div>
       ) : (
         <Virtuoso
@@ -354,7 +358,7 @@ export default function Thread({
       <button
         className={`scroll-bottom-fab${!atBottom ? " visible" : ""}`}
         onClick={jumpToBottom}
-        aria-label="Scroll to latest"
+        aria-label={t("chat.scrollToLatest")}
         aria-hidden={atBottom}
         tabIndex={atBottom ? -1 : 0}
       >

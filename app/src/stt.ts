@@ -34,9 +34,11 @@ import type { protos } from "@google-cloud/speech";
 import { existsSync } from "node:fs";
 import { homedir } from "node:os";
 import { resolve } from "node:path";
+import { ownerLanguage } from "./users.js";
 
 const RECOGNIZE_SAMPLE_RATE = 16000;
-const RECOGNIZE_LANGUAGE = "en-US";
+/** Google hears the owner's language (Settings → Language): Hebrew or English. */
+const recognizeLanguage = (): string => (ownerLanguage() === "he" ? "he-IL" : "en-US");
 
 // ── Streaming client (gRPC) ───────────────────────────────────────────
 
@@ -139,7 +141,7 @@ export function startStreamingRecognize(
       encoding:
         "LINEAR16" as unknown as protos.google.cloud.speech.v1.RecognitionConfig.AudioEncoding,
       sampleRateHertz: RECOGNIZE_SAMPLE_RATE,
-      languageCode: RECOGNIZE_LANGUAGE,
+      languageCode: recognizeLanguage(),
       enableAutomaticPunctuation: true,
       model: "latest_short",
     },
@@ -241,7 +243,7 @@ export async function transcribeShort(
       config: {
         encoding: "LINEAR16",
         sampleRateHertz,
-        languageCode: RECOGNIZE_LANGUAGE,
+        languageCode: recognizeLanguage(),
         enableAutomaticPunctuation: true,
         model: "latest_short",
       },

@@ -10,6 +10,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { renderMarkdown } from "../lib/markdown";
 import { Icon } from "./icons";
+import { getLang, locale, t as tr, useT } from "../i18n";
 
 export interface DocEntry {
   path: string;
@@ -68,8 +69,9 @@ export function AhiTreeNav({
   onFolder: (e: DocEntry) => void;
   onFile: (e: DocEntry) => void;
 }) {
+  const t = useT();
   const level = (path: string, depth: number) => (
-    <ul className="rd-tree" role={depth ? "group" : "tree"} aria-label={depth ? undefined : "AHI folders"}>
+    <ul className="rd-tree" role={depth ? "group" : "tree"} aria-label={depth ? undefined : t("home.tree.ahiFolders")}>
       {(tree.lists[path] ?? []).map((e) => {
         const isOpen = e.kind === "folder" && expanded.has(e.path);
         return (
@@ -77,7 +79,7 @@ export function AhiTreeNav({
             <button
               type="button"
               className={`rd-tree-row${open === e.path ? " active" : ""}${e.kind === "file" ? " file" : ""}`}
-              style={{ paddingLeft: 10 + depth * 14 }}
+              style={{ paddingInlineStart: 10 + depth * 14 }}
               onClick={() => (e.kind === "folder" ? onFolder(e) : onFile(e))}
               title={e.name}
             >
@@ -89,7 +91,7 @@ export function AhiTreeNav({
                 <span className="rd-tree-caret none" aria-hidden="true" />
               )}
               <Icon name={e.kind === "folder" ? "folder" : "file"} />
-              <span className="rd-tree-name">{e.name}</span>
+              <span className="rd-tree-name" dir="auto">{e.name}</span>
             </button>
             {isOpen && tree.lists[e.path] && tree.lists[e.path].some((c) => c.kind === "folder") && level(e.path, depth + 1)}
           </li>
@@ -101,7 +103,7 @@ export function AhiTreeNav({
 }
 
 const bytes = (n?: number) => (n === undefined ? "" : n < 1024 ? `${n} B` : n < 1024 * 1024 ? `${Math.round(n / 1024)} KB` : `${(n / 1024 / 1024).toFixed(1)} MB`);
-const when = (iso?: string) => (iso ? new Date(iso).toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" }) : "");
+const when = (iso?: string) => (iso ? new Date(iso).toLocaleDateString(getLang() === "en" ? [] : locale(), { month: "short", day: "numeric", year: "numeric" }) : "");
 
 /** The open folder in the right pane: where it is, Add folder, then its folders and files. */
 export function AhiFolderView({
@@ -117,6 +119,7 @@ export function AhiFolderView({
   onFile: (e: DocEntry) => void;
   onAdded: (path: string) => void;
 }) {
+  const t = useT();
   const entries = tree.lists[path];
   const [adding, setAdding] = useState(false);
   const [name, setName] = useState("");
@@ -128,13 +131,13 @@ export function AhiFolderView({
     try {
       const r = await fetch("/app/docs/folders", { method: "POST", headers: { "Content-Type": "application/json", "X-AHI-Review": "1" }, body: JSON.stringify({ parent: path, name }) });
       const v = (await r.json().catch(() => ({}))) as { path?: string; error?: string };
-      if (!r.ok || !v.path) return setErr(v.error ?? `Couldn’t add it (HTTP ${r.status}).`);
+      if (!r.ok || !v.path) return setErr(v.error ?? t("home.tree.couldntAdd", { status: String(r.status) }));
       setAdding(false);
       setName("");
       await tree.load(path);
       onAdded(v.path);
     } catch {
-      setErr("No connection — nothing was added.");
+      setErr(t("home.tree.noConnection"));
     }
   };
   const crumbs = path.split("/").filter(Boolean);
@@ -143,7 +146,7 @@ export function AhiFolderView({
   return (
     <div className="rd-ahi-folder">
       <div className="rd-docs-bar">
-        <span className="rd-ahi-crumbs">
+        <span className="rd-ahi-crumbs" dir="ltr">
           AHI
           {crumbs.map((c, i) => (
             <span key={i}> / {c}</span>
@@ -151,10 +154,10 @@ export function AhiFolderView({
         </span>
         <label className="rd-find">
           <Icon name="search" />
-          <input type="search" placeholder="Find in this folder…" value={find} onChange={(e) => setFind(e.target.value)} aria-label="Find in this folder" />
+          <input type="search" dir="auto" placeholder={t("home.tree.findPlaceholder")} value={find} onChange={(e) => setFind(e.target.value)} aria-label={t("home.tree.find")} />
         </label>
         <button type="button" className="rd-btn" onClick={() => setAdding((a) => !a)} aria-expanded={adding}>
-          <Icon name="plus" /> Add folder
+          <Icon name="plus" /> {t("home.tree.addFolder")}
         </button>
       </div>
       {adding && (
@@ -165,12 +168,12 @@ export function AhiFolderView({
             if (name.trim()) void add();
           }}
         >
-          <input autoFocus value={name} maxLength={60} placeholder="New folder name" aria-label="New folder name" onChange={(e) => setName(e.target.value)} />
+          <input autoFocus dir="auto" value={name} maxLength={60} placeholder={t("home.tree.newFolderName")} aria-label={t("home.tree.newFolderName")} onChange={(e) => setName(e.target.value)} />
           <button type="submit" className="rd-btn rd-btn-accent" disabled={!name.trim()}>
-            Add
+            {t("common.add")}
           </button>
           <button type="button" className="rd-btn" onClick={() => setAdding(false)}>
-            Cancel
+            {t("common.cancel")}
           </button>
           {err && (
             <p className="rd-ahi-err" role="alert">
@@ -179,8 +182,8 @@ export function AhiFolderView({
           )}
         </form>
       )}
-      {!entries && <p className="rd-quiet rd-empty-line">Opening…</p>}
-      {entries && !shown.length && <p className="rd-quiet rd-empty-line">{needle ? "Nothing here matches that." : "This folder is empty."}</p>}
+      {!entries && <p className="rd-quiet rd-empty-line">{t("home.tree.opening")}</p>}
+      {entries && !shown.length && <p className="rd-quiet rd-empty-line">{needle ? t("home.tree.noMatch") : t("home.tree.empty")}</p>}
       <ul className="rd-doc-list">
         {shown.map((e) => (
           <li key={e.path}>
@@ -189,10 +192,10 @@ export function AhiFolderView({
                 <Icon name={e.kind === "folder" ? "folder" : "file"} />
               </span>
               <span className="rd-doc-text">
-                {e.name}
-                <small>{e.kind === "folder" ? (e.hasChildren ? "Folder" : "Empty folder") : [bytes(e.size), when(e.modified)].filter(Boolean).join(" · ")}</small>
+                <bdi dir="auto">{e.name}</bdi>
+                <small>{e.kind === "folder" ? (e.hasChildren ? t("home.tree.folder") : t("home.tree.emptyFolder")) : [bytes(e.size), when(e.modified)].filter(Boolean).join(" · ")}</small>
               </span>
-              <span className="rd-doc-access ro">{e.kind === "folder" ? "Open" : "Preview"}</span>
+              <span className="rd-doc-access ro">{e.kind === "folder" ? t("common.open") : t("home.tree.preview")}</span>
               <Icon name="chevron-right" />
             </button>
           </li>
@@ -204,6 +207,7 @@ export function AhiFolderView({
 
 /** A document opened from the tree: a modal fitted to the screen — text and markdown read in place, images and PDFs shown. */
 export function DocPreviewModal({ path, onClose }: { path: string; onClose: () => void }) {
+  const t = useT();
   const [p, setP] = useState<Preview | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const box = useRef<HTMLDivElement>(null);
@@ -212,9 +216,9 @@ export function DocPreviewModal({ path, onClose }: { path: string; onClose: () =
     setP(null);
     setErr(null);
     fetch(`/app/docs/preview?path=${q(path)}`, { cache: "no-store" })
-      .then(async (r) => (r.ok ? ((await r.json()) as Preview) : Promise.reject(new Error(r.status === 404 ? "That file isn’t available." : `HTTP ${r.status}`))))
+      .then(async (r) => (r.ok ? ((await r.json()) as Preview) : Promise.reject(new Error(r.status === 404 ? tr("home.tree.notAvailable") : `HTTP ${r.status}`))))
       .then((v) => live && setP(v))
-      .catch((e: Error) => live && setErr(e.message || "Couldn’t open it."));
+      .catch((e: Error) => live && setErr(e.message || tr("home.tree.couldntOpen")));
     return () => {
       live = false;
     };
@@ -233,30 +237,30 @@ export function DocPreviewModal({ path, onClose }: { path: string; onClose: () =
       <div className="rd-docmodal" role="dialog" aria-modal="true" aria-label={name} tabIndex={-1} ref={box}>
         <header>
           <div>
-            <div className="rd-eyebrow">{path.split("/").slice(0, -1).join(" / ").toUpperCase() || "AHI"}</div>
-            <h2>{name}</h2>
-            {p && <small>{[bytes(p.size), when(p.modified), "View only"].filter(Boolean).join(" · ")}</small>}
+            <div className="rd-eyebrow" dir="ltr">{path.split("/").slice(0, -1).join(" / ").toUpperCase() || "AHI"}</div>
+            <h2 dir="auto">{name}</h2>
+            {p && <small>{[bytes(p.size), when(p.modified), t("home.docs.viewOnly")].filter(Boolean).join(" · ")}</small>}
           </div>
           <span className="rd-docmodal-actions">
             {p && (p.kind === "image" || p.kind === "pdf") && (
               <a className="rd-btn" href={raw} target="_blank" rel="noreferrer">
-                Open in a tab
+                {t("home.tree.openInTab")}
               </a>
             )}
-            <button type="button" className="rd-chat-control" aria-label="Close preview" onClick={onClose}>
+            <button type="button" className="rd-chat-control" aria-label={t("home.tree.closePreview")} onClick={onClose}>
               <Icon name="x" />
             </button>
           </span>
         </header>
         <div className="rd-docmodal-body">
           {err && <p className="rd-quiet rd-empty-line">{err}</p>}
-          {!p && !err && <p className="rd-quiet rd-empty-line">Opening…</p>}
+          {!p && !err && <p className="rd-quiet rd-empty-line">{t("home.tree.opening")}</p>}
           {p?.kind === "text" &&
-            (isMd ? <article className="msg-text rd-docmodal-md" dangerouslySetInnerHTML={{ __html: renderMarkdown(p.text) }} /> : <pre className="rd-docmodal-pre">{p.text}</pre>)}
-          {p?.kind === "text" && p.truncated && <p className="rd-quiet">Showing the first 512 KB.</p>}
+            (isMd ? <article className="msg-text rd-docmodal-md" dir="auto" dangerouslySetInnerHTML={{ __html: renderMarkdown(p.text) }} /> : <pre className="rd-docmodal-pre" dir="auto">{p.text}</pre>)}
+          {p?.kind === "text" && p.truncated && <p className="rd-quiet">{t("home.tree.truncated")}</p>}
           {p?.kind === "image" && <img className="rd-docmodal-img" src={raw} alt={name} />}
           {p?.kind === "pdf" && <iframe className="rd-docmodal-pdf" src={raw} title={name} />}
-          {p?.kind === "none" && <p className="rd-quiet rd-empty-line">{p.reason}</p>}
+          {p?.kind === "none" && <p className="rd-quiet rd-empty-line" dir="auto">{p.reason}</p>}
         </div>
       </div>
     </div>

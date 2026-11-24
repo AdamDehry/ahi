@@ -26,6 +26,7 @@ import { SettingsNav, TeamPage } from "./Team";
 import Today from "./Today";
 import LiveSessions from "./LiveSessions";
 import ChatHeader from "./ChatHeader";
+import { useT } from "../i18n";
 
 /** Views whose old per-view sidebar carries real function (agent list, categories, card list). */
 const SIDEBAR_VIEWS: ReadonlySet<View> = new Set<View>(["mission-control", "clipboard", "files", "costs"]);
@@ -85,6 +86,7 @@ export default function RedesignBody({ activeBot, chat, phone = false }: { activ
 }
 
 function PageBody({ activeBot, chat, phone }: { activeBot: string | null; chat: (bot: string) => ReactNode; phone: boolean }) {
+  const t = useT();
   const s = useAppState();
   // Never render a view this session may not open, whatever put it in the store (a role change on
   // reconnect, a stale snapshot): history.ts moves the store back to Home on the same change.
@@ -105,7 +107,7 @@ function PageBody({ activeBot, chat, phone }: { activeBot: string | null; chat: 
                 {chat(activeBot)}
               </>
             ) : (
-              <div className="tool-empty mono-label">NO AGENTS AVAILABLE</div>
+              <div className="tool-empty mono-label">{t("chat.noAgents")}</div>
             )}
           </main>
           {s.mediaPanelOpen && activeBot && <MediaPanel bot={activeBot} mobile={false} page />}
@@ -140,17 +142,18 @@ function PageBody({ activeBot, chat, phone }: { activeBot: string | null; chat: 
 
 /** Your work's header action (FINAL "Talk it through"): opens Michael with a starter, never sends. */
 function TalkItThrough() {
+  const t = useT();
   return (
     <button
       type="button"
       className="rd-btn rd-btn-accent"
       onClick={() => {
-        actions.setDraft("michael", "Let’s talk through my work: ");
+        actions.setDraft("michael", t("chat.talkItThroughDraft"));
         actions.setView("messages");
         actions.openMobileThread("michael");
       }}
     >
-      Talk it through
+      {t("chat.talkItThrough")}
     </button>
   );
 }

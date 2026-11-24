@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { createPortal } from "react-dom";
+import { useT } from "../i18n";
 
 /** The FINAL dialog frame (eyebrow, title, close; body scrolls, foot stays), shared by the Vault and the
  *  Finances dialogs. Styles live in redesign/vault-final.css; no CSS import here so views stay testable in node. */
@@ -11,7 +12,8 @@ export function useEscape(onClose: () => void) {
   }, [onClose]);
 }
 
-export function Modal({ title, onClose, children, eyebrow = "AHI · PRIVATE VAULT", variant }: { title: string; onClose: () => void; children: React.ReactNode; eyebrow?: string; variant?: string }) {
+export function Modal({ title, onClose, children, eyebrow, variant }: { title: string; onClose: () => void; children: React.ReactNode; eyebrow?: string; variant?: string }) {
+  const t = useT();
   useEscape(onClose);
   // FINAL vault-dialog frame: eyebrow + title + close; the body scrolls, the foot stays.
   return createPortal(
@@ -20,10 +22,10 @@ export function Modal({ title, onClose, children, eyebrow = "AHI · PRIVATE VAUL
       <div className={`modal vault-dialog${variant ? ` ${variant}` : ""}`} role="dialog" aria-modal="true" aria-label={title}>
         <header className="vault-dialog-head">
           <div>
-            <span className="vault-dialog-eyebrow">{eyebrow}</span>
+            <span className="vault-dialog-eyebrow">{eyebrow ?? t("chat.vaultEyebrow")}</span>
             <h3 className="card-title">{title}</h3>
           </div>
-          <button type="button" className="vault-dialog-x" aria-label="Close dialog" onClick={onClose}>
+          <button type="button" className="vault-dialog-x" aria-label={t("chat.closeDialog")} onClick={onClose}>
             ✕
           </button>
         </header>

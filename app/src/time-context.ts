@@ -40,6 +40,7 @@ import {
 } from "./temporal-envelope.js";
 import { foremanVisibleTo, readForemanBuilds, type BuildTiming } from "./temporal-events.js";
 import type { UserConfig } from "./users.js";
+import { userLanguage, type Language } from "./ui-prefs.js";
 import { CANDLE_MINS_BEFORE_SUNSET, HOLY_END_TZEIT_DEGREES, holyEndFrom, holyEndRule, holyEndSunsetMins, type HolyEndRule, type HolyEndTime } from "./zmanim-rule.js";
 import type { MessageEvent } from "./websocket.js";
 import { workdayFrameLine, workdayRuleApplies } from "./workday.js";
@@ -283,6 +284,18 @@ function elapsedLine(user: UserConfig, now: Date): string | null {
   return `**Last user message:** ${text} (${tag})`;
 }
 
+const LANGUAGE_NAMES: Record<Language, string> = { en: "English", he: "Hebrew" };
+
+/**
+ * Settings → Language reaches the agents as one line: answer in the chosen language by default, and
+ * follow the user when they write in another. Silent for English (the default) and for users who never chose.
+ */
+export function languageLine(user: Pick<UserConfig, "userId" | "name">): string | null {
+  const lang = userLanguage(user.userId);
+  if (!lang || lang === "en") return null;
+  return `**Language:** ${user.name} uses AHI in ${LANGUAGE_NAMES[lang]}. Answer in ${LANGUAGE_NAMES[lang]} by default; when they write to you in another language, answer in theirs.`;
+}
+
 interface MomentOptions {
   /** Zone that governs this turn (the user's effective zone). Defaults to their home zone. */
   timezone?: string;
@@ -333,6 +346,9 @@ function momentLines(user: UserConfig | null, now: Date, opts: MomentOptions): s
   if (jewish) lines.push(`**Hebrew:** ${formatHebrewDate(hd)}`);
 
   if (!user) return lines;
+
+  const language = languageLine(user);
+  if (language) lines.push(language);
 
   const sacredDay = jewish && locationTimesValid ? shabbatOrYomTovLine(now, timezone, location) : null;
   if (sacredDay) {

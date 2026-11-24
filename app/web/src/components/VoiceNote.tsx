@@ -12,6 +12,7 @@ import {
   voiceProgress,
 } from "../lib/nowplaying";
 import { IconPlay } from "./icons";
+import { useT } from "../i18n";
 
 function mediaUrl(id: string): string {
   return `/ui/media/${encodeURIComponent(id)}`;
@@ -82,6 +83,7 @@ function waveHeights(id: string, n = BAR_COUNT): number[] {
  * and pause glyph from the store.
  */
 const VoiceNote = memo(function VoiceNote({ media, transcript }: { media: MediaRef; transcript?: string }) {
+  const t = useT();
   const [showTranscript, setShowTranscript] = useState(false);
   const speed = useGlobalSpeed();
 
@@ -111,15 +113,15 @@ const VoiceNote = memo(function VoiceNote({ media, transcript }: { media: MediaR
   return (
     <div className="voice-note">
       <div className="vn-bar">
-        <button type="button" className="vn-play" onClick={toggle} aria-label={playing ? "Pause voice note" : "Play voice note"}>
+        <button type="button" className="vn-play" onClick={toggle} aria-label={playing ? t("media.pauseVoiceNote") : t("media.playVoiceNote")}>
           {playing ? <span className="vn-pause-glyph" /> : <IconPlay />}
         </button>
-        <button type="button" className="vn-wave" onClick={seek} aria-label="Seek">
+        <button type="button" className="vn-wave" onClick={seek} aria-label={t("media.seek")}>
           {bars.map((h, i) => (
             <i key={i} style={{ height: `${h}px` }} className={i < playedUntil ? "played" : ""} />
           ))}
         </button>
-        <span className="mono-label vn-dur">{formatDuration(media.durationSec) || "VOICE"}</span>
+        <span className="mono-label vn-dur">{formatDuration(media.durationSec) || t("media.typeVoice")}</span>
         {/* The chip SLOT is permanently reserved (3d2 §9): the button is
             always in layout and only fades in while playing — waveform,
             duration, and the TRANSCRIPT label never move. */}
@@ -129,7 +131,7 @@ const VoiceNote = memo(function VoiceNote({ media, transcript }: { media: MediaR
           onClick={playing ? cycleGlobalSpeed : undefined}
           tabIndex={playing ? 0 : -1}
           aria-hidden={!playing}
-          aria-label="Playback speed"
+          aria-label={t("media.playbackSpeed")}
         >
           {speed}×
         </button>
@@ -143,10 +145,10 @@ const VoiceNote = memo(function VoiceNote({ media, transcript }: { media: MediaR
             aria-expanded={showTranscript}
           >
             <span className={`vn-chevron${showTranscript ? " open" : ""}`} />
-            TRANSCRIPT
+            {t("media.transcriptCaps")}
           </button>
           {showTranscript && (
-            <div className="vn-transcript msg-text" dangerouslySetInnerHTML={{ __html: renderMarkdown(text) }} />
+            <div className="vn-transcript msg-text" dir="auto" dangerouslySetInnerHTML={{ __html: renderMarkdown(text) }} />
           )}
         </>
       )}

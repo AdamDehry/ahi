@@ -1,12 +1,13 @@
 import { memo, useEffect, useRef, useState } from "react";
 import { IconFiles } from "./icons";
+import { t } from "../i18n";
 
 const IMAGE_EXT = /\.(png|jpe?g|gif|webp|svg|avif|heic)$/i;
 const PDF_EXT = /\.pdf$/i;
 
 export function fileExt(name: string): string {
   const dot = name.lastIndexOf(".");
-  return dot > 0 ? name.slice(dot + 1).toUpperCase().slice(0, 5) : "FILE";
+  return dot > 0 ? name.slice(dot + 1).toUpperCase().slice(0, 5) : t("media.fileChip");
 }
 
 export function isImage(name: string): boolean {

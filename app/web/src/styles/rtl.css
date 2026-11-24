@@ -20,3 +20,19 @@
 
 /* Code, paths, numbers-only cells and URLs keep left-to-right inside a Hebrew page. */
 :root[dir="rtl"] :is(code, pre, kbd, samp) { direction: ltr; unicode-bidi: isolate; text-align: start; }
+
+/* Motion that runs along the reading direction runs the other way. */
+:root[dir="rtl"] .rs-page .rs-switch[aria-checked=true] i { transform: translateX(-15px); }
+:root[dir="rtl"] .dropdown-panel { transform-origin: top right; }
+:root[dir="rtl"] .mobile-screen.root.under { transform: translateX(var(--parallax)); }
+:root[dir="rtl"] :is(.mobile-screen.pushed, .mobile-menu) { animation-name: push-in-rtl; }
+@keyframes push-in-rtl { from { transform: translateX(-100%); } to { transform: translateX(0); } }
+/* The side-panel glyph draws its panel on the left; in Hebrew the panel opens on the right. */
+:root[dir="rtl"] .rd-tool svg:has(.rd-panel-divider) { scale: -1 1; }
+
+/* Media timelines run left to right in every language: the seek math reads clientX from the left edge. */
+:root[dir="rtl"] :is(.af-track, .vn-wave) { direction: ltr; }
+
+/* A message decides its direction per paragraph, so Hebrew and English paragraphs in one message each
+   read their own way (the bubble itself keeps its side). */
+.msg-text :is(p, li, h1, h2, h3, h4, blockquote, td, th) { unicode-bidi: plaintext; }

@@ -6,31 +6,35 @@
  */
 import type { ReactNode } from "react";
 import { actions, useAppState, type View } from "../store";
-import { TABS, canOpen, type Page } from "./nav";
+import { PAGE_TITLE, TABS, canOpen, type Page } from "./nav";
+import { useLang, useT, type Key } from "../i18n";
 
-export const PAGE_COPY: Record<Page, { eyebrow: string; title: string; sub: string }> = {
-  home: { eyebrow: "WELCOME BACK", title: "What can I take off your plate?", sub: "One conversation. Your whole world, working together." },
-  today: { eyebrow: "TODAY", title: "A little clarity for your day.", sub: "Your time, your next decisions, and the work moving around you." },
-  messages: { eyebrow: "", title: "Messages", sub: "" },
-  work: { eyebrow: "IDEAS INTO OUTCOMES", title: "Your work.", sub: "See what needs you, what’s moving, and what’s ready to ship." },
-  documents: { eyebrow: "YOUR TEAM’S SHARED CONTEXT", title: "Documents.", sub: "Plans, briefs, and the next right step. A familiar place for the work." },
-  finances: { eyebrow: "MONEY, KEPT SIMPLE", title: "Finances.", sub: "What the business runs on, and what is due at home." },
-  vault: { eyebrow: "YOUR PRIVATE FINANCIAL PICTURE", title: "A clearer financial picture.", sub: "Accounts, assets, and what needs your attention. One private place." },
-  whatsapp: { eyebrow: "YOUR CUSTOMERS", title: "WhatsApp.", sub: "Customer conversations." },
-  gmail: { eyebrow: "YOUR MAIL", title: "Gmail.", sub: "Every account in one calm inbox." },
-  team: { eyebrow: "PEOPLE BEHIND THE WORK", title: "Your team.", sub: "Start with Michael, or go straight to the person you need." },
-  connections: { eyebrow: "CONNECTED TO YOUR WORLD", title: "Connections.", sub: "The apps your team can use, and the accounts behind them." },
-  settings: { eyebrow: "MAKE YOURSELF AT HOME", title: "Settings.", sub: "Small preferences. A better everyday." },
+/** Catalog keys per page ("" = no line), translated in PageHeader. */
+export const PAGE_COPY: Record<Page, { eyebrow: Key | ""; title: Key; sub: Key | "" }> = {
+  home: { eyebrow: "shell.page.home.eyebrow", title: "shell.page.home.title", sub: "shell.page.home.sub" },
+  today: { eyebrow: "shell.page.today.eyebrow", title: "shell.page.today.title", sub: "shell.page.today.sub" },
+  messages: { eyebrow: "", title: "shell.nav.messages", sub: "" },
+  work: { eyebrow: "shell.page.work.eyebrow", title: "shell.page.work.title", sub: "shell.page.work.sub" },
+  documents: { eyebrow: "shell.page.documents.eyebrow", title: "shell.page.documents.title", sub: "shell.page.documents.sub" },
+  finances: { eyebrow: "shell.page.finances.eyebrow", title: "shell.page.finances.title", sub: "shell.page.finances.sub" },
+  vault: { eyebrow: "shell.page.vault.eyebrow", title: "shell.page.vault.title", sub: "shell.page.vault.sub" },
+  whatsapp: { eyebrow: "shell.page.whatsapp.eyebrow", title: "shell.page.whatsapp.title", sub: "shell.page.whatsapp.sub" },
+  gmail: { eyebrow: "shell.page.gmail.eyebrow", title: "shell.page.gmail.title", sub: "shell.page.gmail.sub" },
+  team: { eyebrow: "shell.page.team.eyebrow", title: "shell.page.team.title", sub: "shell.page.team.sub" },
+  connections: { eyebrow: "shell.page.connections.eyebrow", title: "shell.page.connections.title", sub: "shell.page.connections.sub" },
+  settings: { eyebrow: "shell.page.settings.eyebrow", title: "shell.page.settings.title", sub: "shell.page.settings.sub" },
 };
 
 export function PageHeader({ page, actionsSlot }: { page: Page; actionsSlot?: ReactNode }) {
+  const t = useT();
   const c = PAGE_COPY[page];
+  const title = t(c.title);
   return (
     <header className="rd-page-head">
       <div>
-        {c.eyebrow && <div className="rd-eyebrow">{c.eyebrow}</div>}
-        <h1 className="rd-title">{c.title.replace(/\.$/, "")}{c.title.endsWith(".") && <span className="rd-title-dot">.</span>}</h1>
-        {c.sub && <p className="rd-sub">{c.sub}</p>}
+        {c.eyebrow && <div className="rd-eyebrow">{t(c.eyebrow)}</div>}
+        <h1 className="rd-title">{title.replace(/\.$/, "")}{title.endsWith(".") && <span className="rd-title-dot">.</span>}</h1>
+        {c.sub && <p className="rd-sub">{t(c.sub)}</p>}
       </div>
       {actionsSlot && <div className="rd-page-actions">{actionsSlot}</div>}
     </header>
@@ -38,22 +42,24 @@ export function PageHeader({ page, actionsSlot }: { page: Page; actionsSlot?: Re
 }
 
 export function PageTabs({ page }: { page: Page }) {
+  const t = useT();
+  const lang = useLang();
   const { view, user } = useAppState();
   const admin = !!user?.admin;
-  const tabs = (TABS[page] ?? []).filter((t) => canOpen(t.view, admin));
+  const tabs = (TABS[page] ?? []).filter((x) => canOpen(x.view, admin));
   if (tabs.length < 2) return null;
   return (
-    <div className="rd-tabs" role="tablist" aria-label={`${page} sections`}>
-      {tabs.map((t) => (
+    <div className="rd-tabs" role="tablist" aria-label={t("shell.pageSections", { page: lang === "en" ? page : t(PAGE_TITLE[page]) })}>
+      {tabs.map((x) => (
         <button
-          key={t.view}
+          key={x.view}
           type="button"
           role="tab"
-          aria-selected={view === t.view}
-          className={`rd-tab${view === t.view ? " active" : ""}`}
-          onClick={() => actions.setView(t.view as View)}
+          aria-selected={view === x.view}
+          className={`rd-tab${view === x.view ? " active" : ""}`}
+          onClick={() => actions.setView(x.view as View)}
         >
-          {t.label}
+          {t(x.label)}
         </button>
       ))}
     </div>

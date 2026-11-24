@@ -3,6 +3,7 @@ import { BOT_LABELS } from "../lib/types";
 import { useAppState, type VoiceOutboxItem } from "../store";
 import { discardVoiceNote, retryVoiceNote } from "../lib/voice-outbox";
 import { IconMic, IconTrash } from "./icons";
+import { t, useT } from "../i18n";
 
 /**
  * The outbox strip — a voice note that has not reached the gateway is
@@ -20,13 +21,14 @@ function formatDuration(sec: number): string {
 }
 
 function describe(item: VoiceOutboxItem): string {
-  if (item.state === "sending") return "Sending…";
-  if (item.state === "failed") return item.lastError ? `Failed — ${item.lastError}` : "Failed";
-  if (item.attempts > 0) return "Waiting for the network";
-  return "Queued";
+  if (item.state === "sending") return t("media.outboxSending");
+  if (item.state === "failed") return item.lastError ? t("media.outboxFailedWith", { error: item.lastError }) : t("media.outboxFailed");
+  if (item.attempts > 0) return t("media.outboxWaitingNetwork");
+  return t("media.outboxQueued");
 }
 
 export default function VoiceOutbox({ bot }: { bot: string }) {
+  const t = useT();
   const { voiceOutbox, voiceOutboxWarning } = useAppState();
   // Arming a discard, per note. Deleting audio the server never received is
   // irreversible and this component exists because that audio matters, so the
@@ -39,7 +41,7 @@ export default function VoiceOutbox({ bot }: { bot: string }) {
 
   return (
     <div className="voice-outbox" role="status" aria-live="polite">
-      {voiceOutboxWarning && <p className="voice-outbox-warning">{voiceOutboxWarning}</p>}
+      {voiceOutboxWarning && <p className="voice-outbox-warning">{t(voiceOutboxWarning)}</p>}
       {mine.map((item) => (
         <div key={item.id} className={`voice-outbox-row ${item.state}`}>
           <span className="voice-outbox-glyph" aria-hidden="true">
@@ -53,7 +55,7 @@ export default function VoiceOutbox({ bot }: { bot: string }) {
               className="voice-outbox-action"
               onClick={() => void retryVoiceNote(item.id)}
             >
-              Retry
+              {t("common.retry")}
             </button>
           )}
           {item.state !== "sending" &&
@@ -66,14 +68,14 @@ export default function VoiceOutbox({ bot }: { bot: string }) {
                   void discardVoiceNote(item.id);
                 }}
               >
-                Delete?
+                {t("media.deleteConfirm")}
               </button>
             ) : (
               <button
                 type="button"
                 className="voice-outbox-action discard"
-                aria-label="Delete this voice note"
-                title="Delete this voice note"
+                aria-label={t("media.deleteVoiceNote")}
+                title={t("media.deleteVoiceNote")}
                 onClick={() => setArmed(item.id)}
               >
                 <IconTrash />
@@ -84,8 +86,8 @@ export default function VoiceOutbox({ bot }: { bot: string }) {
       {elsewhere.length > 0 && (
         <p className="voice-outbox-elsewhere">
           {elsewhere.length === 1
-            ? `1 voice note also waiting for ${BOT_LABELS[elsewhere[0].bot] ?? elsewhere[0].bot}`
-            : `${elsewhere.length} voice notes also waiting for other agents`}
+            ? t("media.elsewhereOne", { name: BOT_LABELS[elsewhere[0].bot] ?? elsewhere[0].bot })
+            : t("media.elsewhereOther", { n: elsewhere.length })}
         </p>
       )}
     </div>

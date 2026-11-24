@@ -10,6 +10,7 @@ import { agentMatches, previewText, relativeTime } from "../components/Sidebar";
 import { BOT_LABELS } from "../lib/types";
 import { Icon } from "./icons";
 import { agentInitials, railOrder } from "./agents";
+import { useT } from "../i18n";
 
 export function AgentAvatar({ bot, size = "md" }: { bot: string; size?: "md" | "sm" | "xs" }) {
   return (
@@ -20,6 +21,7 @@ export function AgentAvatar({ bot, size = "md" }: { bot: string; size?: "md" | "
 }
 
 export default function AgentRail({ activeBot }: { activeBot: string | null }) {
+  const t = useT();
   const { user, threads } = useAppState();
   const bots = railOrder(availableBots(user));
   const [expanded, setExpanded] = useState(false);
@@ -40,23 +42,23 @@ export default function AgentRail({ activeBot }: { activeBot: string | null }) {
   }, [expanded]);
   const shown = bots.filter((b) => agentMatches(threads, b, query));
   return (
-    <aside className={`rd-agent-rail${expanded ? " expanded" : ""}`} aria-label="Agents">
+    <aside className={`rd-agent-rail${expanded ? " expanded" : ""}`} aria-label={t("chat.agents")}>
       <div className="rd-agent-rail-search">
         {expanded ? (
           <div className="rd-agent-search-field" role="search">
-            <button type="button" className="rd-chat-control" aria-label="Collapse agent search" onClick={collapse}>
+            <button type="button" className="rd-chat-control" aria-label={t("chat.collapseAgentSearch")} onClick={collapse}>
               <Icon name="arrow-left" />
             </button>
-            <input ref={inputRef} value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search chats…" aria-label="Search agent chats" />
+            <input ref={inputRef} dir="auto" value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t("chat.searchChats")} aria-label={t("chat.searchAgentChats")} />
             <Icon name="search" />
           </div>
         ) : (
-          <button ref={toggleRef} type="button" className="rd-chat-control rd-agent-search" aria-label="Search agent chats" aria-expanded={false} onClick={() => setExpanded(true)}>
+          <button ref={toggleRef} type="button" className="rd-chat-control rd-agent-search" aria-label={t("chat.searchAgentChats")} aria-expanded={false} onClick={() => setExpanded(true)}>
             <Icon name="search" />
           </button>
         )}
       </div>
-      <nav className="rd-agent-switcher" aria-label="Agent chats">
+      <nav className="rd-agent-switcher" aria-label={t("chat.agentChats")}>
         {shown.map((bot) => {
           const label = BOT_LABELS[bot] ?? bot;
           const last = lastMessage(threads, bot);
@@ -65,7 +67,7 @@ export default function AgentRail({ activeBot }: { activeBot: string | null }) {
               key={bot}
               type="button"
               className={`rd-agent-switch${bot === activeBot ? " selected" : ""}`}
-              aria-label={`Message ${label}`}
+              aria-label={t("chat.messageAgent", { name: label })}
               aria-current={bot === activeBot ? "true" : undefined}
               title={expanded ? undefined : label}
               onClick={() => {
@@ -80,7 +82,7 @@ export default function AgentRail({ activeBot }: { activeBot: string | null }) {
                     <strong>{label}</strong>
                     <time>{relativeTime(last?.timestamp)}</time>
                   </span>
-                  <small>{previewText(last)}</small>
+                  <small dir="auto">{previewText(last)}</small>
                 </span>
               )}
             </button>
@@ -88,13 +90,13 @@ export default function AgentRail({ activeBot }: { activeBot: string | null }) {
         })}
         {expanded && !shown.length && (
           <p className="rd-agent-search-note">
-            No chats match.
+            {t("chat.noChatsMatch")}
             <br />
-            Try an agent’s name.
+            {t("chat.tryAgentName")}
           </p>
         )}
       </nav>
-      {expanded && <p className="rd-agent-search-note bottom">Search names or anything in your chat history.</p>}
+      {expanded && <p className="rd-agent-search-note bottom">{t("chat.searchNote")}</p>}
     </aside>
   );
 }

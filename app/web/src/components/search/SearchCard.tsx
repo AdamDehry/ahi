@@ -5,6 +5,7 @@ import { copyText } from "../../lib/messageActions";
 import { showToast } from "../../lib/toast";
 import ExpandedMedia, { type ExpandedItem } from "../ExpandedMedia";
 import ContextMenu from "../ContextMenu";
+import { getLang, locale, t as tr, useT } from "../../i18n";
 // Its stylesheet, ./search-card.css, is imported once by the shell (main.tsx),
 // like every stylesheet here: Node-run UI tests import this file and cannot load CSS.
 
@@ -34,7 +35,7 @@ const WEB_FIRST = 5;
 
 function formatTime(ts: string): string {
   const d = new Date(ts);
-  return Number.isNaN(d.getTime()) ? "" : d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  return Number.isNaN(d.getTime()) ? "" : d.toLocaleTimeString(getLang() === "en" ? [] : locale(), { hour: "numeric", minute: "2-digit" });
 }
 
 const Glyph = () => (
@@ -55,6 +56,7 @@ export interface SearchCardProps {
 }
 
 export default function SearchCard({ card, messageId, bot, byLabel }: SearchCardProps) {
+  const t = useT();
   const [open, setOpen] = useState<number | null>(null);
   const [menu, setMenu] = useState<{ x: number; y: number; index: number; touch: boolean } | null>(null);
   const [showAllWeb, setShowAllWeb] = useState(false);
@@ -65,7 +67,7 @@ export default function SearchCard({ card, messageId, bot, byLabel }: SearchCard
   async function attach(index: number) {
     const img = images[index];
     if (!img) return;
-    showToast("Adding the picture…", 4000);
+    showToast(tr("shell.card.adding"), 4000);
     const r = await attachPicture(bot, messageId, index);
     if (!r.ok) {
       showToast(r.error, 2600);
@@ -79,7 +81,7 @@ export default function SearchCard({ card, messageId, bot, byLabel }: SearchCard
       size: r.media.size,
       previewUrl: pictureSrc(bot, messageId, index, "thumb"),
     });
-    showToast(taken ? "Added to your message" : "Saved to Files");
+    showToast(taken ? tr("shell.card.added") : tr("shell.card.savedToFiles"));
   }
 
   function openSource(index: number) {
@@ -103,17 +105,17 @@ export default function SearchCard({ card, messageId, bot, byLabel }: SearchCard
   const visibleWeb = showAllWeb ? web : web.slice(0, WEB_FIRST);
 
   return (
-    <section className="ahi-search-card" data-kind={card.kind} aria-label={`${card.kind === "images" ? "Pictures" : "Web results"} for ${card.query}`}>
+    <section className="ahi-search-card" data-kind={card.kind} aria-label={card.kind === "images" ? t("shell.card.picturesFor", { q: card.query }) : t("shell.card.webResultsFor", { q: card.query })}>
       <div className="asc-head">
         <Glyph />
         <span className="asc-query" dir="auto">
           {card.query}
         </span>
-        <span className="asc-kind">{card.kind === "images" ? "Pictures" : "Web"}</span>
+        <span className="asc-kind">{card.kind === "images" ? t("shell.card.pictures") : t("shell.search.web")}</span>
       </div>
 
       {count === 0 ? (
-        <p className="asc-empty">Nothing came back for this search.</p>
+        <p className="asc-empty">{t("shell.card.empty")}</p>
       ) : card.kind === "images" ? (
         <div className="asc-grid" data-count={images.length}>
           {images.map((img, i) => (
@@ -136,8 +138,8 @@ export default function SearchCard({ card, messageId, bot, byLabel }: SearchCard
               <a className="asc-row" href={r.link} target="_blank" rel="noopener noreferrer">
                 <span className="asc-row-meta">
                   <Favicon src={r.favicon ? pictureSrc(bot, messageId, i, "icon") : null} domain={r.domain} />
-                  <span className="asc-domain">{r.domain}</span>
-                  {r.date && <span className="asc-date">{r.date}</span>}
+                  <span className="asc-domain" dir="ltr">{r.domain}</span>
+                  {r.date && <span className="asc-date" dir="auto">{r.date}</span>}
                 </span>
                 <span className="asc-title" dir="auto">
                   {r.title}
@@ -154,16 +156,16 @@ export default function SearchCard({ card, messageId, bot, byLabel }: SearchCard
       )}
       {card.kind === "web" && web.length > WEB_FIRST && (
         <button type="button" className="asc-more" onClick={() => setShowAllWeb((v) => !v)} aria-expanded={showAllWeb}>
-          {showAllWeb ? "Show fewer" : `Show ${web.length - WEB_FIRST} more`}
+          {showAllWeb ? t("shell.card.showFewer") : t("shell.card.showMore", { n: web.length - WEB_FIRST })}
         </button>
       )}
 
       <div className="asc-foot">
         <span>
-          {byLabel} · {formatTime(card.at)}
+          <bdi>{byLabel}</bdi> · {formatTime(card.at)}
         </span>
-        <span title={card.cached ? "A repeat within 24 hours: answered from the cache, no search spent" : "Searches run this month"}>
-          {[card.cached ? "Saved" : "", usage].filter(Boolean).join(" · ")}
+        <span title={card.cached ? t("shell.card.cachedTitle") : t("shell.card.usageTitle")}>
+          {[card.cached ? t("common.saved") : "", usage].filter(Boolean).join(" · ")}
         </span>
       </div>
 
@@ -173,8 +175,8 @@ export default function SearchCard({ card, messageId, bot, byLabel }: SearchCard
           startIndex={open}
           onClose={() => setOpen(null)}
           actions={[
-            { label: "ATTACH", onSelect: (i) => void attach(i) },
-            { label: "SOURCE", onSelect: openSource },
+            { label: t("shell.card.attachCaps"), onSelect: (i) => void attach(i) },
+            { label: t("shell.card.sourceCaps"), onSelect: openSource },
           ]}
         />
       )}
@@ -185,11 +187,11 @@ export default function SearchCard({ card, messageId, bot, byLabel }: SearchCard
           autoFocus={!menu.touch}
           onClose={() => setMenu(null)}
           items={[
-            { label: "Attach to message", onSelect: () => void attach(menu.index) },
-            { label: "Open source page", onSelect: () => openSource(menu.index) },
+            { label: t("shell.card.attach"), onSelect: () => void attach(menu.index) },
+            { label: t("shell.card.openSource"), onSelect: () => openSource(menu.index) },
             {
-              label: "Copy picture link",
-              onSelect: () => void copyText(images[menu.index]?.imageUrl ?? "").then((ok) => showToast(ok ? "Link copied" : "Couldn't copy")),
+              label: t("shell.card.copyLink"),
+              onSelect: () => void copyText(images[menu.index]?.imageUrl ?? "").then((ok) => showToast(ok ? tr("shell.card.linkCopied") : tr("shell.card.couldntCopy"))),
             },
           ]}
         />
@@ -217,6 +219,7 @@ function PictureTile({
   onOpen: () => void;
   onMenu: (x: number, y: number, touch: boolean) => void;
 }) {
+  const t = useT();
   const [state, setState] = useState<"loading" | "loaded" | "broken">("loading");
   const press = useRef<{ x: number; y: number; timer: number } | null>(null);
   const fired = useRef(false);
@@ -235,7 +238,7 @@ function PictureTile({
       type="button"
       className={`asc-tile is-${state}`}
       data-more={index === 8 && more > 0 ? `+${more}` : undefined}
-      aria-label={`Open picture ${index + 1}: ${alt}`}
+      aria-label={t("shell.card.openPicture", { n: index + 1, alt })}
       onClick={(e) => {
         if (fired.current) {
           fired.current = false;
@@ -272,7 +275,7 @@ function PictureTile({
       onPointerCancel={cancel}
     >
       <img src={src} alt={alt} loading="lazy" decoding="async" draggable={false} onLoad={() => setState("loaded")} onError={() => setState("broken")} />
-      {state === "broken" && <span className="asc-tile-fallback">{domain}</span>}
+      {state === "broken" && <span className="asc-tile-fallback" dir="ltr">{domain}</span>}
     </button>
   );
 }

@@ -33,6 +33,7 @@
 
 import { uploadVoiceNote } from "./api";
 import { actions, getState, type VoiceOutboxItem } from "../store";
+import type { Key } from "../i18n";
 import {
   allVoiceNotes,
   deleteVoiceNote,
@@ -46,8 +47,7 @@ import {
  * user is back on the old behaviour for this note and has a right to know
  * BEFORE they record a long one.
  */
-export const VOICE_STORAGE_WARNING =
-  "This device isn't saving voice notes locally — a note that fails to send will be lost.";
+export const VOICE_STORAGE_WARNING: Key = "media.voiceStorageWarning";
 
 const RETRY_START_MS = 2_000;
 const RETRY_MAX_MS = 30_000;

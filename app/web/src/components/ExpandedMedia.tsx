@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { MediaRef } from "../lib/types";
 import { downloadUrl, mediaUrl, thumbSrc } from "../lib/mediaFormat";
+import { isRtl, useT } from "../i18n";
 
 /* ============================================================
    ExpandedMedia — design lock v4, frame 4G (expanded view).
@@ -43,7 +44,8 @@ function downloadHref(m: ExpandedItem): string {
   return m.src ?? downloadUrl(m.id);
 }
 
-/** A swipe moves one image when it is longer than 50px and more sideways than down: left → next, right → back. */
+/** A swipe moves one image when it is longer than 50px and more sideways than down: left → next, right → back.
+ *  Physical (left-to-right) steps; the viewer mirrors them in right-to-left, where the strip runs the other way. */
 export function swipeStep(dx: number, dy: number): -1 | 0 | 1 {
   return Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) ? (dx < 0 ? 1 : -1) : 0;
 }
@@ -69,6 +71,7 @@ export default function ExpandedMedia({
   /** Extra header actions for the item on screen (a search picture's ATTACH, SOURCE). */
   actions?: Array<{ label: string; onSelect: (index: number) => void }>;
 }) {
+  const t = useT();
   const [index, setIndex] = useState(startIndex);
   const [closing, setClosing] = useState(false);
   const touch = useRef<{ x: number; y: number } | null>(null);
@@ -87,8 +90,10 @@ export default function ExpandedMedia({
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") close();
-      if (e.key === "ArrowRight") step(1);
-      if (e.key === "ArrowLeft") step(-1);
+      // Arrows move the way the strip reads: right-to-left, the left arrow is "next".
+      const forward = isRtl() ? -1 : 1;
+      if (e.key === "ArrowRight") step(forward);
+      if (e.key === "ArrowLeft") step(-forward);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -120,22 +125,22 @@ export default function ExpandedMedia({
         stop(e);
         const t0 = touch.current;
         touch.current = null;
-        const t = e.changedTouches[0];
-        if (!t0 || !t) return;
-        const d = swipeStep(t.clientX - t0.x, t.clientY - t0.y);
-        if (d) step(d);
+        const t1 = e.changedTouches[0];
+        if (!t0 || !t1) return;
+        const d = swipeStep(t1.clientX - t0.x, t1.clientY - t0.y);
+        if (d) step(isRtl() ? -d : d);
       }}
     >
       <div className="expanded-header" onClick={stop}>
-        <button type="button" className="expanded-close" onClick={close} aria-label="Close">
+        <button type="button" className="expanded-close" onClick={close} aria-label={t("common.close")}>
           ✕
         </button>
         {/* LTR: the counter must not reorder around an RTL name. */}
         <span className="expanded-title" dir="ltr">
-          <span className="expanded-name">{current.originalName}</span>
+          <span className="expanded-name" dir="auto">{current.originalName}</span>
           {items.length > 1 && (
-            <span className="expanded-count">
-              {at + 1} of {items.length}
+            <span className="expanded-count" dir="auto">
+              {t("media.countOf", { at: at + 1, count: items.length })}
             </span>
           )}
         </span>
@@ -144,19 +149,19 @@ export default function ExpandedMedia({
             {a.label}
           </button>
         ))}
-        <a className="expanded-download" href={downloadHref(current)} download={current.originalName} aria-label={`Save ${current.originalName}`}>
-          Save
+        <a className="expanded-download" href={downloadHref(current)} download={current.originalName} aria-label={t("media.saveName", { name: current.originalName })}>
+          {t("common.save")}
         </a>
       </div>
 
       <div className="expanded-stage" onClick={stop}>
         {items.length > 1 && (
           <>
-            <button type="button" className="expanded-nav prev" aria-label="Previous" disabled={at === 0} onClick={() => step(-1)}>
-              ‹
+            <button type="button" className="expanded-nav prev" aria-label={t("media.previous")} disabled={at === 0} onClick={() => step(-1)}>
+              <span className="flip-rtl">‹</span>
             </button>
-            <button type="button" className="expanded-nav next" aria-label="Next" disabled={at === last} onClick={() => step(1)}>
-              ›
+            <button type="button" className="expanded-nav next" aria-label={t("common.next")} disabled={at === last} onClick={() => step(1)}>
+              <span className="flip-rtl">›</span>
             </button>
           </>
         )}
@@ -176,7 +181,7 @@ export default function ExpandedMedia({
           <audio key={current.id} src={fullUrl(current)} controls autoPlay />
         ) : (
           <a className="expanded-doc" href={fullUrl(current)} target="_blank" rel="noopener noreferrer">
-            Open {current.originalName}
+            {t("media.openName", { name: current.originalName })}
           </a>
         )}
       </div>
@@ -184,7 +189,7 @@ export default function ExpandedMedia({
       {onShowInChat && (
         <div className="expanded-foot" onClick={stop}>
           <button type="button" className="expanded-download" onClick={() => onShowInChat(at)}>
-            Show in chat
+            {t("media.showInChat")}
           </button>
         </div>
       )}
@@ -197,12 +202,12 @@ export default function ExpandedMedia({
               key={m.id}
               className={`expanded-strip-item${i === at ? " is-current" : ""}`}
               onClick={() => setIndex(i)}
-              aria-label={`${i + 1} of ${items.length}`}
+              aria-label={t("media.countOf", { at: i + 1, count: items.length })}
             >
               {m.type === "image" || (m.type === "video" && m.thumbnail) ? (
                 <img src={thumbUrl(m)} alt="" />
               ) : (
-                <span className="mono-label">{m.type === "video" ? "VIDEO" : m.type === "audio" ? "AUDIO" : "DOC"}</span>
+                <span className="mono-label">{m.type === "video" ? t("media.typeVideo") : m.type === "audio" ? t("media.typeAudio") : t("media.typeDoc")}</span>
               )}
             </button>
           ))}

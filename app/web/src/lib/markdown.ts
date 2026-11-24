@@ -1,5 +1,6 @@
 import { marked } from "marked";
 import DOMPurify from "dompurify";
+import { getLang, t } from "../i18n";
 
 // Same options as the vanilla dashboard (public/app.js:26-33) so rendered
 // output matches what the owner sees today.
@@ -24,7 +25,7 @@ marked.use({
       const cls = lang ? ` class="language-${lang}"` : "";
       const body = code.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
       return (
-        `<div class="code-block"><button class="code-copy" type="button" aria-label="Copy code">${COPY_ICON_SVG}</button>` +
+        `<div class="code-block"><button class="code-copy" type="button" aria-label="${t("chat.copyCode")}">${COPY_ICON_SVG}</button>` +
         `<pre><code${cls}>${body}</code></pre></div>`
       );
     },
@@ -42,15 +43,17 @@ const cache = new Map<string, string>();
 const CACHE_MAX = 2000;
 
 export function renderMarkdown(text: string): string {
-  const hit = cache.get(text);
+  // Keyed by language too: the HTML carries a translated label (the code-copy button).
+  const key = `${getLang()}\u0000${text}`;
+  const hit = cache.get(key);
   if (hit !== undefined) {
     // refresh LRU position
-    cache.delete(text);
-    cache.set(text, hit);
+    cache.delete(key);
+    cache.set(key, hit);
     return hit;
   }
   const html = parse(text);
-  cache.set(text, html);
+  cache.set(key, html);
   if (cache.size > CACHE_MAX) {
     const oldest = cache.keys().next().value;
     if (oldest !== undefined) cache.delete(oldest);

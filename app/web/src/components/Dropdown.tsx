@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { isRtl } from "../i18n";
 
 /**
  * Anchored dropdown primitive (design: Mac-menubar style — the panel falls
@@ -41,7 +42,7 @@ export default function Dropdown({
   const anchorRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [pos, setPos] = useState<{ left: number; top: number; maxHeight: number } | null>(null);
+  const [pos, setPos] = useState<{ left?: number; right?: number; top: number; maxHeight: number } | null>(null);
 
   // Measure the trigger and pin the panel just under it. Re-measure on
   // resize; close on scroll of anything outside the panel (cheap + safe).
@@ -52,7 +53,10 @@ export default function Dropdown({
     }
     const measure = () => {
       const rect = anchorRef.current?.getBoundingClientRect();
-      if (rect) setPos({ left: rect.left, top: rect.bottom + 4, maxHeight: panelMaxHeight(rect.bottom + 4, window.innerHeight) });
+      // Right to left: the panel hangs from the trigger's right edge, as it hangs from the left one in English.
+      if (!rect) return;
+      const side = isRtl() ? { right: document.documentElement.clientWidth - rect.right } : { left: rect.left };
+      setPos({ ...side, top: rect.bottom + 4, maxHeight: panelMaxHeight(rect.bottom + 4, window.innerHeight) });
     };
     measure();
     window.addEventListener("resize", measure);
@@ -104,7 +108,7 @@ export default function Dropdown({
               className="dropdown-panel"
               role="menu"
               ref={panelRef}
-              style={{ left: pos.left, top: pos.top, maxHeight: pos.maxHeight }}
+              style={{ left: pos.left, right: pos.right, top: pos.top, maxHeight: pos.maxHeight }}
               onPointerEnter={hover ? cancelClose : undefined}
               onPointerLeave={hover ? scheduleClose : undefined}
             >

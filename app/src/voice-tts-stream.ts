@@ -4,6 +4,7 @@ import type { CartesiaConfig } from "./config.js";
 import type { PieceReason } from "./voice/seam-log.js";
 import { isIncompleteFragment, speechCut, splitSentences } from "./voice/speech-boundary.js";
 import { logSayText, sayText } from "./voice/say-text.js";
+import { cartesiaLanguage } from "./speech-language.js";
 
 /* ============================================================
    voice-tts-stream.ts — streaming TTS for VOICE MODE ONLY.
@@ -198,7 +199,7 @@ export class VoiceTtsStream implements CallTtsStream {
       model_id: this.cartesia.model,
       transcript,
       voice: { mode: "id", id: this.cartesia.voiceId },
-      language: this.cartesia.language,
+      language: cartesiaLanguage(this.cartesia.language),
       speed: this.cartesia.speed,
       output_format: {
         container: "raw",

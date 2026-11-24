@@ -18,28 +18,31 @@ import {
   IconTracks,
   IconWhatsApp,
   IconMedia, IconFeed } from "./icons";
+import { t, useT, type Key } from "../i18n";
 
-export const VIEW_META: Array<{ key: View; label: string; icon: () => JSX.Element; adminOnly?: boolean }> = [
-  { key: "messages", label: "Messages", icon: IconMessages },
-  { key: "feed", label: "Feed", icon: IconFeed, adminOnly: true },
-  { key: "builds", label: "Builds", icon: IconTracks, adminOnly: true },
-  { key: "review", label: "Review", icon: IconReview, adminOnly: true },
-  { key: "whatsapp", label: "WhatsApp", icon: IconWhatsApp, adminOnly: true },
-  { key: "mission-control", label: "Mission Control", icon: IconGrid },
-  { key: "clipboard", label: "Clipboard", icon: IconClipboard },
-  { key: "files", label: "Files", icon: IconFiles },
-  { key: "costs", label: "Costs", icon: IconCosts, adminOnly: true },
+export const VIEW_META: Array<{ key: View; label: Key; icon: () => JSX.Element; adminOnly?: boolean }> = [
+  { key: "messages", label: "chat.viewMessages", icon: IconMessages },
+  { key: "feed", label: "chat.viewFeed", icon: IconFeed, adminOnly: true },
+  { key: "builds", label: "chat.builds", icon: IconTracks, adminOnly: true },
+  { key: "review", label: "chat.review", icon: IconReview, adminOnly: true },
+  { key: "whatsapp", label: "chat.viewWhatsApp", icon: IconWhatsApp, adminOnly: true },
+  { key: "mission-control", label: "chat.viewMissionControl", icon: IconGrid },
+  { key: "clipboard", label: "chat.viewClipboard", icon: IconClipboard },
+  { key: "files", label: "chat.viewFiles", icon: IconFiles },
+  { key: "costs", label: "chat.viewCosts", icon: IconCosts, adminOnly: true },
   // Everyone's OWN bills (a family member's are hers alone; the owner's Costs stay admin-only).
-  { key: "bills", label: "Bills", icon: IconCosts },
+  { key: "bills", label: "chat.viewBills", icon: IconCosts },
   // Vault (finance-vault): the owner's whole picture. adminOnly hides the entry; the gateway 404s the routes for everyone else.
-  { key: "vault", label: "Vault", icon: IconCosts, adminOnly: true },
+  { key: "vault", label: "chat.viewVault", icon: IconCosts, adminOnly: true },
 ];
 
 export function viewTitle(view: View): string {
-  return VIEW_META.find((v) => v.key === view)?.label ?? view;
+  const label = VIEW_META.find((v) => v.key === view)?.label;
+  return label ? t(label) : view;
 }
 
 export default function Topbar({ activeBot }: { activeBot: string | null }) {
+  const t = useT();
   const state = useAppState();
   const [menuOpen, setMenuOpen] = useState(false);
   const [peekOpen, setPeekOpen] = useState(false);
@@ -52,7 +55,7 @@ export default function Topbar({ activeBot }: { activeBot: string | null }) {
   const sidebarToggleBtn = (
     <button
       className="topbar-btn"
-      aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+      aria-label={sidebarCollapsed ? t("chat.expandSidebar") : t("chat.collapseSidebar")}
       onClick={() => {
         setPeekOpen(false);
         actions.toggleSidebar();
@@ -78,7 +81,7 @@ export default function Topbar({ activeBot }: { activeBot: string | null }) {
         trigger={
           <button
             className={`topbar-btn${menuOpen ? " active" : ""}`}
-            aria-label="Go to…"
+            aria-label={t("chat.goTo")}
             onClick={() => setMenuOpen(!menuOpen)}
           >
             <IconMenu />
@@ -98,7 +101,7 @@ export default function Topbar({ activeBot }: { activeBot: string | null }) {
             }}
           >
             <v.icon />
-            {v.label}
+            {t(v.label)}
             {v.key === "review" && reviewWaiting > 0 && <span className="rv-badge">{reviewWaiting}</span>}
             {v.key === "builds" && buildsNeedYou > 0 && <span className="rv-badge you">{buildsNeedYou}</span>}
             {v.key === "whatsapp" && waWaiting > 0 && <span className="rv-badge you">{waWaiting}</span>}
@@ -113,7 +116,7 @@ export default function Topbar({ activeBot }: { activeBot: string | null }) {
           }}
         >
           <IconGear />
-          Settings
+          {t("common.settings")}
         </button>
       </Dropdown>
 
@@ -135,9 +138,9 @@ export default function Topbar({ activeBot }: { activeBot: string | null }) {
       {isMessages && activeBot && (
         <button
           className={`topbar-btn${state.mediaPanelOpen ? " active" : ""}`}
-          aria-label="Media, files and links"
+          aria-label={t("media.panelLabel")}
           aria-pressed={state.mediaPanelOpen}
-          title="Media, files and links"
+          title={t("media.panelLabel")}
           onClick={() => actions.toggleMediaPanel()}
         >
           <IconMedia />
@@ -151,7 +154,7 @@ export default function Topbar({ activeBot }: { activeBot: string | null }) {
           stays mounted, so closing restores scroll + sidebar state exactly. */}
       <button
         className={`topbar-btn${settingsOpen ? " active" : ""}`}
-        aria-label="Settings"
+        aria-label={t("common.settings")}
         aria-pressed={settingsOpen}
         onClick={() => actions.toggleSettings()}
       >

@@ -26,6 +26,7 @@ import type { VoiceSttProvider } from "../config.js";
 import { startStreamingRecognize, transcribeShort, type StreamingSttHandle } from "../stt.js";
 import { CartesiaStt, type SttUsage } from "./stt-cartesia.js";
 import { OpenAiStt } from "./stt-openai.js";
+import { ownerLanguage } from "../users.js";
 import type { TurnMeta } from "./turn-composer.js";
 
 export interface VoiceSttCallbacks {
@@ -131,7 +132,7 @@ export async function createVoiceStt(
 ): Promise<VoiceSttStream> {
   if (testFactory) return testFactory(bot, cb);
 
-  const configured = voiceSttProviderFor(bot);
+  const configured = hebrewCapable(voiceSttProviderFor(bot));
 
   if (configured === "cartesia" || configured === "openai") {
     try {
@@ -193,13 +194,22 @@ async function startNativeTurnStream(
 }
 
 /**
+ * Cartesia's live model (ink-2) hears English only. When the owner chose Hebrew and an OpenAI key is
+ * there, calls listen through OpenAI instead; without one they stay on Cartesia (Settings → Language says
+ * so) rather than failing.
+ */
+export function hebrewCapable(provider: VoiceSttProvider, lang = ownerLanguage(), env: NodeJS.ProcessEnv = process.env): VoiceSttProvider {
+  return provider === "cartesia" && lang === "he" && env.OPENAI_API_KEY ? "openai" : provider;
+}
+
+/**
  * The recognizer's language for an agent's calls (voice step 5): <BOT>_STT_LANGUAGE,
- * else VOICE_STT_LANGUAGE, else English for Michael (the owner speaks English to him;
- * a short "wait, stop" was heard as French) and the model's own guess
+ * else VOICE_STT_LANGUAGE, else the owner's language for Michael (English unless they chose Hebrew in
+ * Settings: a short English "wait, stop" left to guess was heard as French) and the model's own guess
  * for everyone else. "auto" = the model guesses.
  */
-export function voiceSttLanguage(bot: string, env: NodeJS.ProcessEnv = process.env): string | undefined {
-  const raw = (env[`${bot.toUpperCase()}_STT_LANGUAGE`] ?? env.VOICE_STT_LANGUAGE ?? (bot === "michael" ? "en" : "")).trim().toLowerCase();
+export function voiceSttLanguage(bot: string, env: NodeJS.ProcessEnv = process.env, lang = ownerLanguage()): string | undefined {
+  const raw = (env[`${bot.toUpperCase()}_STT_LANGUAGE`] ?? env.VOICE_STT_LANGUAGE ?? (bot === "michael" ? lang : "")).trim().toLowerCase();
   return raw && raw !== "auto" ? raw : undefined;
 }
 

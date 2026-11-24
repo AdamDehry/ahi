@@ -3,6 +3,7 @@ import type { MediaRef } from "../lib/types";
 import { pauseVoice, playVoice, seekVoice, subscribeVoice, voicePlaying, voiceProgress } from "../lib/nowplaying";
 import { formatDuration, formatSize, mediaUrl } from "../lib/mediaFormat";
 import { IconDownload, IconPlay } from "./icons";
+import { useT } from "../i18n";
 
 /**
  * An audio FILE — an mp3 Michael sends, a song the owner drops in. Not a
@@ -15,6 +16,7 @@ import { IconDownload, IconPlay } from "./icons";
  * starting it pauses anything else that is playing.
  */
 const AudioFile = memo(function AudioFile({ media }: { media: MediaRef }) {
+  const t = useT();
   const playing = useSyncExternalStore(subscribeVoice, () => voicePlaying(media.id));
   const progress = useSyncExternalStore(subscribeVoice, () => voiceProgress(media.id));
   const url = mediaUrl(media.id);
@@ -25,7 +27,7 @@ const AudioFile = memo(function AudioFile({ media }: { media: MediaRef }) {
       <button
         type="button"
         className={`af-play${playing ? " is-playing" : ""}`}
-        aria-label={playing ? `Pause ${media.originalName}` : `Play ${media.originalName}`}
+        aria-label={playing ? t("media.pauseName", { name: media.originalName }) : t("media.playName", { name: media.originalName })}
         onClick={(e) => {
           e.stopPropagation();
           if (playing) pauseVoice();
@@ -36,11 +38,11 @@ const AudioFile = memo(function AudioFile({ media }: { media: MediaRef }) {
       </button>
       <div className="af-body">
         {/* BIDI: the name is plaintext so the extension never jumps. */}
-        <span className="af-name">{media.originalName}</span>
+        <span className="af-name" dir="auto">{media.originalName}</span>
         <div
           className="af-track"
           role="slider"
-          aria-label="Seek"
+          aria-label={t("media.seek")}
           aria-valuemin={0}
           aria-valuemax={100}
           aria-valuenow={Math.round(progress * 100)}
@@ -61,8 +63,8 @@ const AudioFile = memo(function AudioFile({ media }: { media: MediaRef }) {
         className="af-download"
         href={`${url}?dl=1`}
         download={media.originalName}
-        aria-label={`Download ${media.originalName}`}
-        title="Download"
+        aria-label={t("media.downloadName", { name: media.originalName })}
+        title={t("common.download")}
         onClick={(e) => e.stopPropagation()}
       >
         <IconDownload />

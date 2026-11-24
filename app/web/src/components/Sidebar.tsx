@@ -19,15 +19,29 @@ import {
 } from "../lib/api";
 import ContextMenu from "./ContextMenu";
 import { IconSearch, IconPlus } from "./icons";
+import { locale, t, useT, type Key } from "../i18n";
 
 export const FILE_DRAG_TYPE = "application/x-ahi-file";
 
 export function previewText(msg: LocalMessage | null): string {
-  if (!msg) return "No messages yet";
+  if (!msg) return t("chat.noMessagesYet");
   // One line of plain text: markdown emphasis/heading markers would show
   // raw here (digest and day-close messages open with **bold**).
   const plain = msg.text.replace(/\*\*|__|^#{1,6}\s+/gm, "").replace(/\s+/g, " ").trim();
-  return plain || (msg.media ? `[${msg.media.type}]` : "");
+  return plain || (msg.media ? mediaPreview(msg.media.type) : "");
+}
+
+const MEDIA_PREVIEW: Record<string, Key> = {
+  image: "media.previewImage",
+  voice: "media.previewVoice",
+  document: "media.previewDocument",
+  audio: "media.previewAudio",
+  video: "media.previewVideo",
+};
+
+function mediaPreview(type: string): string {
+  const key = MEDIA_PREVIEW[type];
+  return key ? t(key) : `[${type}]`;
 }
 
 /** An agent matches a search by its name or anything in its last message (empty search: every agent). */
@@ -55,11 +69,11 @@ export function relativeTime(ts: string | undefined): string {
   const diff = Date.now() - date.getTime();
   const day = 86_400_000;
   if (diff < day && date.getDate() === new Date().getDate()) {
-    return date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+    return date.toLocaleTimeString(locale(), { hour: "numeric", minute: "2-digit" });
   }
-  if (diff < 2 * day) return "YESTERDAY";
-  if (diff < 7 * day) return date.toLocaleDateString([], { weekday: "long" }).toUpperCase();
-  return date.toLocaleDateString([], { month: "short", day: "numeric" }).toUpperCase();
+  if (diff < 2 * day) return t("chat.yesterdayCaps");
+  if (diff < 7 * day) return date.toLocaleDateString(locale(), { weekday: "long" }).toUpperCase();
+  return date.toLocaleDateString(locale(), { month: "short", day: "numeric" }).toUpperCase();
 }
 
 export const AgentRow = memo(function AgentRow({
@@ -75,6 +89,7 @@ export const AgentRow = memo(function AgentRow({
   onOpen: (bot: string) => void;
   mobile?: boolean;
 }) {
+  useT();
   const label = BOT_LABELS[bot] ?? bot;
   return (
     <button
@@ -90,7 +105,7 @@ export const AgentRow = memo(function AgentRow({
           <span className="agent-row-name">{label}</span>
           <span className={`agent-row-time${active ? " accent" : ""}`}>{relativeTime(last?.timestamp)}</span>
         </span>
-        <span className="agent-row-preview">{previewText(last)}</span>
+        <span className="agent-row-preview" dir="auto">{previewText(last)}</span>
       </span>
     </button>
   );
@@ -109,6 +124,7 @@ export function AgentList({
   compact?: boolean;
   onNavigate?: () => void;
 }) {
+  const t = useT();
   const { threads, user, activeBot } = useAppState();
   const [query, setQuery] = useState("");
 
@@ -151,7 +167,8 @@ export function AgentList({
           <IconSearch />
           <input
             type="search"
-            placeholder="Search"
+            dir="auto"
+            placeholder={t("common.search")}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
@@ -205,6 +222,7 @@ function CategoryRow({
   onDelete: () => void;
   onDropFile?: (fileName: string) => void;
 }) {
+  const t = useT();
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -241,6 +259,7 @@ function CategoryRow({
         <input
           ref={inputRef}
           className="category-rename"
+          dir="auto"
           defaultValue={item.label}
           onKeyDown={(e) => {
             if (e.key === "Enter") onCommitEdit((e.target as HTMLInputElement).value);
@@ -275,8 +294,8 @@ function CategoryRow({
           y={menu.y}
           onClose={() => setMenu(null)}
           items={[
-            { label: "Rename", onSelect: onStartEdit },
-            ...(item.renameOnly ? [] : [{ label: "Delete", danger: true, onSelect: onDelete }]),
+            { label: t("chat.rename"), onSelect: onStartEdit },
+            ...(item.renameOnly ? [] : [{ label: t("common.delete"), danger: true, onSelect: onDelete }]),
           ]}
         />
       )}
@@ -324,20 +343,21 @@ export function CategoryList({
 
 // ── Per-view sidebar content (shared by sidebar + peek) ──────────────
 
-const CLIP_TYPES = [
-  { key: "all", label: "All" },
-  { key: "text", label: "Text" },
-  { key: "links", label: "Links" },
-  { key: "code", label: "Code" },
+const CLIP_TYPES: Array<{ key: string; label: Key }> = [
+  { key: "all", label: "chat.all" },
+  { key: "text", label: "chat.clipText" },
+  { key: "links", label: "chat.clipLinks" },
+  { key: "code", label: "chat.clipCode" },
 ];
 
 function FilterList({
   options,
   onNavigate,
 }: {
-  options: Array<{ key: string; label: string }>;
+  options: Array<{ key: string; label: Key }>;
   onNavigate?: () => void;
 }) {
+  const t = useT();
   const { toolFilter } = useAppState();
   return (
     <nav className="sidebar-filters">
@@ -350,7 +370,7 @@ function FilterList({
             onNavigate?.();
           }}
         >
-          {o.label}
+          {t(o.label)}
         </button>
       ))}
     </nav>
@@ -360,26 +380,27 @@ function FilterList({
 export function sidebarLabel(view: View): string {
   switch (view) {
     case "messages":
-      return "MESSAGES";
+      return t("chat.sidebarMessages");
     case "mission-control":
-      return "CARDS";
+      return t("chat.sidebarCards");
     case "builds":
     case "review":
     case "whatsapp":
-      return "CLOSE-OUT";
+      return t("chat.sidebarCloseOut");
     case "bills":
-      return "MY BILLS";
+      return t("chat.sidebarMyBills");
     default:
-      return "CATEGORIES";
+      return t("chat.sidebarCategories");
   }
 }
 
 function LabelRow({ view, peek, onAdd, more }: { view: View; peek: boolean; onAdd?: () => void; more?: React.ReactNode }) {
+  const t = useT();
   return (
     <div className={`sidebar-label-row${peek ? " peek" : ""}`}>
       <span className="mono-label sidebar-label">{sidebarLabel(view)}</span>
       {onAdd && (
-        <button className="label-add" onClick={onAdd} aria-label="Add category" title="Add category">
+        <button className="label-add" onClick={onAdd} aria-label={t("chat.addCategory")} title={t("chat.addCategory")}>
           <IconPlus />
         </button>
       )}
@@ -391,6 +412,7 @@ function LabelRow({ view, peek, onAdd, more }: { view: View; peek: boolean; onAd
 /** FINAL's "···" after "+" in the cost chip row: the open category's actions (the same Rename / Delete as
  *  right-clicking its chip). "All" has none, so the button is off there. */
 function CategoryMoreButton({ item, onRename, onDelete }: { item: CategoryItem | undefined; onRename: () => void; onDelete: () => void }) {
+  const t = useT();
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
   const off = !item || item.locked;
   return (
@@ -398,8 +420,8 @@ function CategoryMoreButton({ item, onRename, onDelete }: { item: CategoryItem |
       <button
         className="label-add label-more"
         disabled={off}
-        aria-label={off ? "Category actions (pick a category first)" : `Category actions for ${item.label}`}
-        title={off ? "Pick a category first" : "Category actions"}
+        aria-label={off ? t("chat.categoryActionsPickFirst") : t("chat.categoryActionsFor", { name: item.label })}
+        title={off ? t("chat.pickCategoryFirst") : t("chat.categoryActions")}
         onClick={(e) => {
           const r = e.currentTarget.getBoundingClientRect();
           setMenu({ x: r.left, y: r.bottom + 6 });
@@ -414,7 +436,7 @@ function CategoryMoreButton({ item, onRename, onDelete }: { item: CategoryItem |
           x={menu.x}
           y={menu.y}
           onClose={() => setMenu(null)}
-          items={[{ label: "Rename", onSelect: onRename }, ...(item.renameOnly ? [] : [{ label: "Delete", danger: true, onSelect: onDelete }])]}
+          items={[{ label: t("chat.rename"), onSelect: onRename }, ...(item.renameOnly ? [] : [{ label: t("common.delete"), danger: true, onSelect: onDelete }])]}
         />
       )}
     </>
@@ -431,6 +453,7 @@ function refreshCostCategories(): void {
 
 /** Files categories — full CRUD + drop-to-move (3d§1/§2). */
 function FilesCategories({ peek, onNavigate }: { peek: boolean; onNavigate?: () => void }) {
+  const t = useT();
   const { fileCategories, filesList, toolFilter } = useAppState();
   const [editingKey, setEditingKey] = useState<string | null>(null);
 
@@ -439,14 +462,15 @@ function FilesCategories({ peek, onNavigate }: { peek: boolean; onNavigate?: () 
   const hasUncategorized = (filesList ?? []).some((f) => !f.name.includes("/"));
 
   const items: CategoryItem[] = [
-    { key: "all", label: "All", locked: true },
+    { key: "all", label: t("chat.all"), locked: true },
     ...(fileCategories ?? ["general"]).map((c) => ({
       key: c,
-      label: c.charAt(0).toUpperCase() + c.slice(1),
+      // "general" is the built-in folder: its name is the app's word. Folders he made keep his name.
+      label: c === "general" ? t("chat.catGeneral") : c.charAt(0).toUpperCase() + c.slice(1),
       locked: c === "general",
       droppable: true,
     })),
-    ...(hasUncategorized ? [{ key: "uncategorized", label: "Uncategorized", locked: true }] : []),
+    ...(hasUncategorized ? [{ key: "uncategorized", label: t("chat.catUncategorized"), locked: true }] : []),
   ];
 
   async function add() {
@@ -466,7 +490,7 @@ function FilesCategories({ peek, onNavigate }: { peek: boolean; onNavigate?: () 
   }
 
   async function remove(key: string) {
-    if (!confirm(`Delete category "${key}"? Its files move to General.`)) return;
+    if (!confirm(t("chat.deleteFileCategoryConfirm", { name: key }))) return;
     await deleteFileCategory(key);
     refreshFileCategories();
     fetchFiles().then(actions.setFiles);
@@ -502,11 +526,12 @@ function FilesCategories({ peek, onNavigate }: { peek: boolean; onNavigate?: () 
 
 /** Costs categories — real CRUD (3d§4; replaces the 3c stub). */
 function CostsCategories({ peek, onNavigate }: { peek: boolean; onNavigate?: () => void }) {
+  const t = useT();
   const { costCategories, toolFilter } = useAppState();
   const [editingKey, setEditingKey] = useState<string | null>(null);
 
   const items: CategoryItem[] = [
-    { key: "all", label: "All", locked: true },
+    { key: "all", label: t("chat.all"), locked: true },
     ...(costCategories ?? []).map((c) => ({
       key: c.key,
       label: c.label,
@@ -530,7 +555,7 @@ function CostsCategories({ peek, onNavigate }: { peek: boolean; onNavigate?: () 
   }
 
   async function remove(key: string) {
-    if (!confirm(`Delete category "${key}"? Its subscriptions move to Personal.`)) return;
+    if (!confirm(t("chat.deleteCostCategoryConfirm", { name: key }))) return;
     await deleteCostCategoryApi(key);
     refreshCostCategories();
     fetchCosts().then(actions.setCosts);
@@ -570,11 +595,12 @@ function CostsCategories({ peek, onNavigate }: { peek: boolean; onNavigate?: () 
  *  and his own steps), Review's is brass (its waiting count), WhatsApp's is warn (people
  *  waiting on a call back) — never one thing twice (C11). */
 function CloseOutNav({ view, peek, onNavigate }: { view: View; peek: boolean; onNavigate?: () => void }) {
+  const t = useT();
   const { buildsNeedYou, reviewWaiting, waWaiting } = useAppState();
   const items: Array<{ key: "builds" | "review" | "whatsapp"; label: string; badge: number; tone: string }> = [
-    { key: "builds", label: "Builds", badge: buildsNeedYou, tone: "you" },
-    { key: "review", label: "Review", badge: reviewWaiting, tone: "" },
-    { key: "whatsapp", label: "WhatsApp", badge: waWaiting, tone: "you" },
+    { key: "builds", label: t("chat.builds"), badge: buildsNeedYou, tone: "you" },
+    { key: "review", label: t("chat.review"), badge: reviewWaiting, tone: "" },
+    { key: "whatsapp", label: t("chat.viewWhatsApp"), badge: waWaiting, tone: "you" },
   ];
   return (
     <>
@@ -599,6 +625,7 @@ function CloseOutNav({ view, peek, onNavigate }: { view: View; peek: boolean; on
 }
 
 export function SidebarContent({ view, peek = false, onNavigate }: { view: View; peek?: boolean; onNavigate?: () => void }) {
+  const t = useT();
   const { mcFiles, costEntries, clips, filesList, user, mcL2, fileCategories, costCategories } = useAppState();
 
   useEffect(() => {
@@ -626,14 +653,14 @@ export function SidebarContent({ view, peek = false, onNavigate }: { view: View;
   if (view === "mission-control") {
     const cards = Object.values(mcFiles ?? {});
     const items = [
-      ...(user?.admin ? [{ key: "fitness", label: "Fitness" }] : []),
+      ...(user?.admin ? [{ key: "fitness", label: t("chat.fitness") }] : []),
       ...cards.map((f) => ({ key: f.name, label: f.label })),
     ];
     if (!items.length)
       return (
         <>
           <LabelRow view={view} peek={peek} />
-          <div className="dropdown-empty">Loading cards…</div>
+          <div className="dropdown-empty">{t("chat.loadingCards")}</div>
         </>
       );
     return (

@@ -12,6 +12,7 @@
    ============================================================ */
 
 import type { SearchCardMeta } from "./types";
+import { t } from "../i18n";
 
 export type SearchKind = "web" | "images";
 
@@ -54,10 +55,10 @@ export async function runSearch(bot: string, kind: SearchKind, q: string): Promi
       body: JSON.stringify({ bot, kind, q }),
     });
     const body = (await res.json().catch(() => ({}))) as { error?: string; messageId?: string | null };
-    if (!res.ok) return { ok: false, error: body.error || `Search failed (${res.status})` };
+    if (!res.ok) return { ok: false, error: body.error || t("shell.searchLib.failed", { status: String(res.status) }) };
     return { ok: true, messageId: body.messageId ?? null };
   } catch {
-    return { ok: false, error: "No connection — search didn't run" };
+    return { ok: false, error: t("shell.searchLib.noConnection") };
   }
 }
 
@@ -83,10 +84,10 @@ export async function attachPicture(bot: string, messageId: string, index: numbe
       body: JSON.stringify({ bot, m: messageId, i: index }),
     });
     const body = (await res.json().catch(() => ({}))) as { error?: string; media?: AttachedPicture };
-    if (!res.ok || !body.media?.id) return { ok: false, error: body.error || "Couldn't attach the picture" };
+    if (!res.ok || !body.media?.id) return { ok: false, error: body.error || t("shell.searchLib.attachFailed") };
     return { ok: true, media: body.media };
   } catch {
-    return { ok: false, error: "No connection" };
+    return { ok: false, error: t("shell.searchLib.noConnectionShort") };
   }
 }
 
@@ -94,7 +95,7 @@ export async function attachPicture(bot: string, messageId: string, index: numbe
 export function usageLine(card: Pick<SearchCardMeta, "usage">): string {
   const u = card.usage;
   if (!u) return "";
-  return u.limit ? `${u.used} of ${u.limit} this month` : `${u.used} this month`;
+  return u.limit ? t("shell.searchLib.usageOf", { used: u.used, limit: u.limit }) : t("shell.searchLib.usage", { used: u.used });
 }
 
 // ── Card → composer: a picked picture becomes staged cargo ──────────────
