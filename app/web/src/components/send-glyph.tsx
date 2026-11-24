@@ -17,7 +17,7 @@
 
 export const SendGlyph = () => (
   <svg
-    className="glyph glyph-send"
+    className="glyph glyph-send flip-rtl"
     xmlns="http://www.w3.org/2000/svg"
     viewBox="0 0 36 36"
     width="36"

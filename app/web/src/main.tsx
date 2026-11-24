@@ -3,6 +3,7 @@ import ReactDOM from "react-dom/client";
 import { registerSW } from "virtual:pwa-register";
 import App from "./App";
 import { initTheme } from "./theme";
+import { initLang } from "./i18n";
 import { applyIOSFit } from "./lib/ios";
 import { stashNav } from "./store";
 import { reloadWhenNoCall, watchForReleases } from "./lib/releaseCheck";
@@ -23,6 +24,7 @@ import "./redesign/media.css";
 import "./redesign/pages.css";
 import "./redesign/type-final.css";
 import "./components/studio/studio-card.css";
+import "./styles/rtl.css";
 
 // Installed PWAs can resume an old process without performing a fresh
 // navigation, especially on mobile. Check for an update as soon as the app
@@ -55,6 +57,7 @@ if ("serviceWorker" in navigator) {
 }
 
 initTheme();
+initLang();
 // Before the first render: the iPhone fit is a class on <html> (lib/ios.ts).
 applyIOSFit();
 

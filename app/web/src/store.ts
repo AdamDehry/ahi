@@ -6,6 +6,7 @@ import { BOT_ORDER, isPrivate } from "./lib/types";
 import type { ConnectionStatus } from "./lib/ws";
 import { loadSnapshot, saveSnapshot, type AnswerLink } from "./lib/cache";
 import { answersFor, MAX_ANSWERS, type SentAnswer } from "./lib/answers";
+import { setLang } from "./i18n";
 
 export interface StreamState {
   streamId: string;
@@ -430,6 +431,8 @@ function stampIsCurrent(stamp: AuthStamp): boolean {
 
 /** A different user (or none): new generation, and the old user's private data goes. */
 function userChange(user: UserPublic | null): Partial<AppState> {
+  // The saved language rides on the session: a new device opens in it without a reload.
+  if (user?.language) setLang(user.language);
   if ((user?.userId ?? null) === (state.user?.userId ?? null)) return {};
   authGeneration++;
   return { bills: null, billSettings: null, attentionDismissed: loadDismissed(user?.userId) };

@@ -7,6 +7,8 @@ export interface UserPublic {
   userId: string;
   agents: string[];
   admin: boolean;
+  /** The language this user chose in Settings; absent until they choose (the app then follows the browser). */
+  language?: "en" | "he";
 }
 
 export type ContentType = "text" | "voice" | "photo" | "document";

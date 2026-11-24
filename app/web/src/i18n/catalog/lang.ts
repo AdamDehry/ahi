@@ -1,0 +1,36 @@
+/** Settings → Language. */
+export const en = {
+  "lang.section": "Language",
+  "lang.headTitle": "Your language, everywhere.",
+  "lang.headSub": "Choose the language AHI speaks: the app, the desktop app and your agents.",
+  "lang.pickerLabel": "Language",
+  "lang.ltrNote": "Reads left to right.",
+  "lang.rtlNote": "The whole app reads right to left.",
+  "lang.saveFailed": "Couldn’t save your language, so it is back to what it was. Try again in a moment.",
+  "lang.agentsTitle": "Your agents",
+  "lang.agentsBody": "Your agents answer in this language. Write to them in another language and they follow you.",
+  "lang.voiceTitle": "Calls and voice notes",
+  "lang.voice.full": "Your voice setup hears and speaks Hebrew.",
+  "lang.voice.hears": "Your voice setup understands Hebrew, but its voice may sound foreign. An OpenAI or Google voice speaks Hebrew best.",
+  "lang.voice.speaks": "Your agents can speak Hebrew, but your voice setup can’t understand spoken Hebrew yet. Add an OpenAI key in setup to talk in Hebrew.",
+  "lang.voice.none": "Your voice setup works in English only. Calls still work; add an OpenAI key in setup for Hebrew calls.",
+  "lang.anyMessage": "Every message keeps its own direction: Hebrew reads right to left and English left to right, whichever language you choose.",
+} satisfies Record<string, string>;
+
+export const he: Record<keyof typeof en, string> = {
+  "lang.section": "שפה",
+  "lang.headTitle": "השפה שלכם, בכל מקום.",
+  "lang.headSub": "בחרו באיזו שפה AHI מדבר: האפליקציה, אפליקציית המחשב והסוכנים שלכם.",
+  "lang.pickerLabel": "שפה",
+  "lang.ltrNote": "קריאה משמאל לימין.",
+  "lang.rtlNote": "כל האפליקציה מימין לשמאל.",
+  "lang.saveFailed": "לא הצלחנו לשמור את השפה, אז היא חזרה למה שהייתה. נסו שוב בעוד רגע.",
+  "lang.agentsTitle": "הסוכנים שלכם",
+  "lang.agentsBody": "הסוכנים עונים בשפה הזו. כתבו להם בשפה אחרת והם יעברו אחריכם.",
+  "lang.voiceTitle": "שיחות והודעות קוליות",
+  "lang.voice.full": "הגדרות הקול שלכם שומעות ומדברות עברית.",
+  "lang.voice.hears": "הגדרות הקול שלכם מבינות עברית, אבל הקול עלול להישמע זר. קול של OpenAI או Google מדבר עברית הכי טוב.",
+  "lang.voice.speaks": "הסוכנים יכולים לדבר עברית, אבל הגדרות הקול שלכם עדיין לא מבינות עברית מדוברת. הוסיפו מפתח OpenAI בהתקנה כדי לדבר בעברית.",
+  "lang.voice.none": "הגדרות הקול שלכם עובדות רק באנגלית. השיחות עדיין עובדות; הוסיפו מפתח OpenAI בהתקנה לשיחות בעברית.",
+  "lang.anyMessage": "כל הודעה שומרת על הכיוון שלה: עברית מימין לשמאל ואנגלית משמאל לימין, בכל שפה שתבחרו.",
+};

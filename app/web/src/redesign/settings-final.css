@@ -18,6 +18,9 @@
 .rs-page .rs-card { border:1px solid var(--line);border-radius:16px;background:var(--surface);padding:0 22px;margin:20px 0 }
 .rs-page .rs-row { display:flex;align-items:center;justify-content:space-between;gap:20px;min-height:82px;padding:19px 0;border-bottom:1px solid var(--line) }
 .rs-page .rs-row:last-child { border:0 }
+.rs-page .rs-lang { width:100%;text-align:start;color:inherit;cursor:pointer }
+.rs-page .rs-lang svg { width:17px;height:17px;color:var(--accent) }
+.rs-page .rs-error { color:var(--danger, #c0583a) }
 .rs-page .rs-row>div { min-width:0;flex:1 }
 .rs-page .rs-row strong { font-size:12px;font-weight:500;line-height:1.7 }
 .rs-page .rs-row p { font-size:11px;line-height:1.8;color:var(--text-mute);margin-top:5px }

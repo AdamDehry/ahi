@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { login } from "../lib/api";
 import { actions } from "../store";
+import { LANGS, LANG_NAMES, setLang, useLang, useT } from "../i18n";
 import "../redesign/signin.css";
 
 /**
@@ -15,6 +16,8 @@ type View = "signin" | "create" | "recovery";
 const SETUP_DOWNLOAD_URL: string = import.meta.env.VITE_AHI_SETUP_URL || "";
 
 export default function Login() {
+  const t = useT();
+  const lang = useLang();
   const [view, setView] = useState<View>("signin");
   const [token, setToken] = useState("");
   const [error, setError] = useState("");
@@ -26,7 +29,7 @@ export default function Login() {
     const value = token.trim();
     if (!value || busy) return;
     if (!navigator.onLine) {
-      setError("You’re offline. Reconnect before signing in. Your token has not been sent.");
+      setError(t("login.offline"));
       return;
     }
     setBusy(true);
@@ -34,9 +37,9 @@ export default function Login() {
     try {
       const user = await login(value);
       if (user) return actions.loggedIn(user);
-      setError("That token wasn’t recognized. Check it and try again.");
+      setError(t("login.notRecognized"));
     } catch {
-      setError("AHI can’t be reached right now. Your token is kept; try again in a moment.");
+      setError(t("login.unreachable"));
     }
     setBusy(false);
     field.current?.focus();
@@ -49,7 +52,7 @@ export default function Login() {
       <div className="setup-frame">
         <header className="setup-masthead">
           {view === "recovery" ? (
-            <button type="button" className="setup-wordmark" onClick={go("signin")} aria-label="Back to sign in">
+            <button type="button" className="setup-wordmark" onClick={go("signin")} aria-label={t("login.backToSignIn")}>
               ahi<i>.</i>
             </button>
           ) : (
@@ -59,34 +62,34 @@ export default function Login() {
         <main className="setup-signin">
           {view === "recovery" ? (
             <section className="setup-signin-inner">
-              <p className="setup-kicker">BACK TO YOUR SPACE</p>
-              <h1>Need your token?</h1>
-              <p className="setup-intro">Check the AHI entry in your password manager or the recovery copy you saved.</p>
+              <p className="setup-kicker">{t("login.recoveryKicker")}</p>
+              <h1>{t("login.recoveryTitle")}</h1>
+              <p className="setup-intro">{t("login.recoveryIntro")}</p>
               <div className="setup-card">
-                <h3>Still signed in on another device?</h3>
-                <p className="setup-footnote">Open AHI there. The workspace owner can give this device its own access.</p>
-                <h3 className="setup-card-gap">No trusted device or recovery copy?</h3>
-                <p className="setup-footnote">Ask your workspace owner for a new token. AHI never sends tokens by email or message.</p>
+                <h3>{t("login.otherDeviceTitle")}</h3>
+                <p className="setup-footnote">{t("login.otherDeviceBody")}</p>
+                <h3 className="setup-card-gap">{t("login.noDeviceTitle")}</h3>
+                <p className="setup-footnote">{t("login.noDeviceBody")}</p>
               </div>
               <div className="setup-button-row setup-center">
-                <button type="button" className="setup-button" onClick={go("signin")}>← Back to sign in</button>
+                <button type="button" className="setup-button" onClick={go("signin")}>{t("login.backToSignInArrow")}</button>
               </div>
             </section>
           ) : (
             <div className="setup-signin-inner">
               <p className="setup-wordmark">ahi<i>.</i></p>
-              <p className="setup-brand-description">ARTIFICIAL HARMONIOUS INTELLIGENCE</p>
-              <h1>Welcome home.</h1>
-              <p className="setup-intro">Your work. Your life. Your team.</p>
-              <nav className="setup-entry-switch" aria-label="Account access">
-                <button type="button" aria-current={view === "signin" ? "page" : undefined} onClick={go("signin")}>Sign in</button>
-                <button type="button" aria-current={view === "create" ? "page" : undefined} onClick={go("create")}>Create account</button>
+              <p className="setup-brand-description">{t("login.brandDescription")}</p>
+              <h1>{t("login.welcome")}</h1>
+              <p className="setup-intro">{t("login.tagline")}</p>
+              <nav className="setup-entry-switch" aria-label={t("login.accountAccess")}>
+                <button type="button" aria-current={view === "signin" ? "page" : undefined} onClick={go("signin")}>{t("login.signIn")}</button>
+                <button type="button" aria-current={view === "create" ? "page" : undefined} onClick={go("create")}>{t("login.createAccount")}</button>
               </nav>
               {view === "signin" ? (
                 <>
                   <form className="setup-form" onSubmit={submit}>
                     <label>
-                      Your access token
+                      {t("login.tokenLabel")}
                       <input
                         ref={field}
                         type="password"
@@ -94,39 +97,46 @@ export default function Login() {
                         className="setup-input"
                         autoComplete="off"
                         required
-                        placeholder="Enter your AHI token"
+                        placeholder={t("login.tokenPlaceholder")}
                         value={token}
                         onChange={(e) => setToken(e.target.value)}
                       />
                     </label>
                     <button className="setup-button primary" type="submit" disabled={busy}>
-                      {busy ? "Signing in…" : "Enter your workspace →"}
+                      {busy ? t("login.signingIn") : t("login.enter")}
                     </button>
                     <p className="setup-error" role="alert">{error}</p>
                   </form>
                   <div className="setup-button-row setup-end">
-                    <button type="button" className="setup-button" onClick={go("recovery")}>Lost your token?</button>
+                    <button type="button" className="setup-button" onClick={go("recovery")}>{t("login.lostToken")}</button>
                   </div>
                 </>
               ) : (
                 <div className="setup-return">
-                  <h3>A new workspace starts with AHI Setup.</h3>
-                  <p>Download AHI Setup and open it on the computer that will host your workspace. It makes your home, connects a model and gives you your token.</p>
+                  <h3>{t("login.newWorkspaceTitle")}</h3>
+                  <p>{t("login.newWorkspaceBody")}</p>
                   {SETUP_DOWNLOAD_URL ? (
-                    <a className="setup-button primary setup-download" href={SETUP_DOWNLOAD_URL} target="_blank" rel="noopener noreferrer">Download AHI Setup ↗</a>
+                    <a className="setup-button primary setup-download" href={SETUP_DOWNLOAD_URL} target="_blank" rel="noopener noreferrer">{t("login.downloadSetup")}</a>
                   ) : (
-                    <p>Download AHI Setup from the project’s Releases page on GitHub.</p>
+                    <p>{t("login.downloadFromReleases")}</p>
                   )}
-                  <p>Joining someone’s workspace? Ask its owner for your token, then sign in.</p>
-                  <button type="button" className="setup-button" onClick={go("signin")}>I have a token →</button>
+                  <p>{t("login.joining")}</p>
+                  <button type="button" className="setup-button" onClick={go("signin")}>{t("login.haveToken")}</button>
                 </div>
               )}
             </div>
           )}
         </main>
         <footer className="setup-footer">
-          <span>One place for everything.</span>
-          <span>AHI · Artificial Harmonious Intelligence</span>
+          <span>{t("login.footer")}</span>
+          <nav className="setup-lang" aria-label={t("login.language")}>
+            {LANGS.map((l) => (
+              <button key={l} type="button" lang={l} aria-pressed={lang === l} onClick={() => setLang(l)}>
+                {LANG_NAMES[l]}
+              </button>
+            ))}
+          </nav>
+          <span>{t("common.brand")}</span>
         </footer>
       </div>
     </div>

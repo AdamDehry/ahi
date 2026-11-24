@@ -18,11 +18,13 @@ import { AgentAvatar } from "./AgentRail";
 import { railOrder } from "./agents";
 import { MODEL_LABELS } from "../views/Settings";
 import { goPage } from "./Shell";
+import LanguageSettings from "./LanguageSettings";
 import "./settings-final.css";
 
-export type SettingsSection = "appearance" | "agents" | "notifications" | "passkeys" | "updates" | "account";
+export type SettingsSection = "appearance" | "language" | "agents" | "notifications" | "passkeys" | "updates" | "account";
 export const SETTINGS_SECTIONS: Array<{ id: SettingsSection; label: string; icon: IconName; owner?: boolean }> = [
   { id: "appearance", label: "Appearance", icon: "sun" },
+  { id: "language", label: "Language", icon: "globe" },
   { id: "agents", label: "Agents", icon: "people" },
   { id: "notifications", label: "Notifications", icon: "bell" },
   { id: "passkeys", label: "Passkeys", icon: "fingerprint", owner: true },
@@ -31,6 +33,7 @@ export const SETTINGS_SECTIONS: Array<{ id: SettingsSection; label: string; icon
 ];
 const HEADS: Record<SettingsSection, [string, string]> = {
   appearance: ["A space that feels like you.", "Choose the light that suits your day."],
+  language: ["Your language, everywhere.", "Choose the language AHI speaks: the app, the desktop app and your agents."],
   agents: ["A mind and a voice for each role.", "Choose how your agents think and sound."],
   notifications: ["The right things, at the right time.", "Choose what reaches you, from which apps and agents."],
   passkeys: ["Your approval. Your devices.", "Manage the devices you use for protected approvals."],
@@ -86,6 +89,7 @@ export default function SettingsPage() {
           <p>{sub}</p>
         </header>
         {section === "appearance" && <Appearance name={user?.name ?? ""} owner={owner} />}
+        {section === "language" && <LanguageSettings onSaved={flash} />}
         {section === "agents" && <Agents owner={owner} onSaved={flash} />}
         {section === "notifications" && <Notifications agents={availableBots(user)} owner={owner} onSaved={flash} />}
         {section === "passkeys" && <Passkeys />}

@@ -1,0 +1,22 @@
+/*
+ * Right-to-left and Hebrew, app-wide. Layout itself flips through `dir="rtl"` on <html> plus logical
+ * properties (margin-inline, inset-inline, text-align: start) in every stylesheet; this file holds only
+ * what no logical property can express.
+ */
+
+/* Glyphs that point along the reading direction (back, forward, send, chevrons). `scale` composes with
+   any `transform` the glyph already has (a rotated chevron stays rotated). */
+:root[dir="rtl"] .flip-rtl { scale: -1 1; }
+
+/* Hebrew needs a face that has Hebrew letters: Inter and SF Pro don't, so name the system's Hebrew faces
+   before the generic fallback. Latin runs inside Hebrew keep the AHI face through the same stack. */
+:root:lang(he) {
+  --font-ui: AHI, -apple-system, BlinkMacSystemFont, "Segoe UI", "SF Hebrew", "Arial Hebrew", "Noto Sans Hebrew", "Rubik", Arial, sans-serif;
+}
+:root:lang(he) body { font-family: var(--font-ui); }
+
+/* Tracked capitals are a Latin device; Hebrew has no case and spaced-out letters read as broken words. */
+:root:lang(he) *:not(code, pre, kbd, samp) { letter-spacing: normal; }
+
+/* Code, paths, numbers-only cells and URLs keep left-to-right inside a Hebrew page. */
+:root[dir="rtl"] :is(code, pre, kbd, samp) { direction: ltr; unicode-bidi: isolate; text-align: start; }

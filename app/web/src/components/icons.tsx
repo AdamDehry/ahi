@@ -1,9 +1,11 @@
 // Minimal geometric icon set — 16px stroke icons, currentColor.
 // Deliberately quiet: the design's chrome glyphs are line drawings.
 
-function Svg({ children, size = 16 }: { children: React.ReactNode; size?: number }) {
+/** `flip`: the glyph points along the reading direction, so right-to-left mirrors it (shell.css `flip-rtl`). */
+function Svg({ children, size = 16, flip }: { children: React.ReactNode; size?: number; flip?: boolean }) {
   return (
     <svg
+      className={flip ? "flip-rtl" : undefined}
       width={size}
       height={size}
       viewBox="0 0 16 16"
@@ -84,7 +86,7 @@ export const IconSearch = () => (
 );
 
 export const IconBack = () => (
-  <Svg>
+  <Svg flip>
     <path d="M10 2.5 4.5 8 10 13.5" />
   </Svg>
 );
@@ -104,7 +106,7 @@ export const IconHamburger = () => (
 );
 
 export const IconSend = () => (
-  <Svg size={18}>
+  <Svg size={18} flip>
     <path d="M2.5 8h10M8.5 3.5 13 8l-4.5 4.5" />
   </Svg>
 );
@@ -254,7 +256,7 @@ export const IconMedia = () => (
 
 /** "Show in chat": a speech bubble with an arrow back into it. */
 export const IconShowInChat = () => (
-  <Svg>
+  <Svg flip>
     <path d="M2.5 3.5h11v7h-6l-3 2.5v-2.5h-2z" />
     <path d="M6 7h4M8.4 5.4 10 7 8.4 8.6" />
   </Svg>

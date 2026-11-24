@@ -57,7 +57,11 @@ const P: Record<string, string> = {
 
 export type IconName = keyof typeof P | "gmail" | "whatsapp-business";
 
+/** Glyphs that point along the reading direction: mirrored in right-to-left (the `flip-rtl` rule in shell.css). */
+const DIRECTIONAL = new Set<IconName>(["chevron-right", "arrow-left", "arrow-right", "exit"]);
+
 export function Icon({ name, className }: { name: IconName; className?: string }) {
+  if (DIRECTIONAL.has(name)) className = className ? `${className} flip-rtl` : "flip-rtl";
   if (name === "gmail" || name === "whatsapp-business")
     return <img className={`rd-brand-icon${className ? ` ${className}` : ""}`} src={`/brand/${name}.svg`} alt="" aria-hidden="true" />;
   return (
