@@ -52,8 +52,8 @@ test('a voice key saved after AHI is open restarts the AHI server this Setup sta
   const runtime=require('../src/ahi-runtime.cjs'),{EventEmitter}=require('node:events'),real=runtime.start;t.after(()=>{runtime.start=real;});
   // A fake runtime.start: one server at a time; while it runs, a second start adopts it (child: null), as the real one does.
   const starts=[];let live=null;
-  runtime.start=async({extra})=>{starts.push(extra);if(live&&live.exitCode===null)return {url:'http://localhost:18789/',child:null};
-    live=Object.assign(new EventEmitter(),{exitCode:null,signalCode:null,kill(){this.exitCode=0;this.emit('exit',0);}});return {url:'http://localhost:18789/',child:live};};
+  runtime.start=async({extra,onSpawn})=>{starts.push(extra);if(live&&live.exitCode===null)return {url:'http://localhost:18789/',child:null};
+    live=Object.assign(new EventEmitter(),{exitCode:null,signalCode:null,kill(){this.exitCode=0;this.emit('exit',0);}});onSpawn(live);return {url:'http://localhost:18789/',child:live};};
   const keys=new Map();const {s}=await prepared({fetcher:async()=>({ok:true}),keyring:{set:async(r,k)=>keys.set(r,k),get:async r=>keys.get(r)},ahi:{serverDir:'/x',seed:'/x',port:18789}});
   await s.verifyProvider('claude');s.state.completed=true;
   await s.ensureAhi();const first=s.ahiChild;assert.equal(starts[0].OPENAI_API_KEY,undefined);
@@ -81,4 +81,13 @@ test('the AHI window signs in with the owner key from this home, and start-at-lo
   assert.equal(await s.ownerToken(),'owner-token');
   assert.equal(s.startAtLogin,true);await s.setStartAtLogin(false);assert.equal(s.startAtLogin,false);
   const again=new SetupService({dataDir:s.dataDir});await again.init();assert.equal(again.startAtLogin,false,'the choice is saved');
+});
+test('a cancelled start (Quit) is not retried, and what it spawned is no longer counted as running',async t=>{
+  const runtime=require('../src/ahi-runtime.cjs'),real={start:runtime.start,clear:runtime.clearStaleLock};t.after(()=>Object.assign(runtime,{start:real.start,clearStaleLock:real.clear}));
+  const {s}=await prepared({ahi:{serverDir:'/x',seed:'/x',port:18789}});await s.verifyProvider('claude');s.state.completed=true;
+  const abort=new AbortController();let starts=0,cleared=0,seen=null;
+  runtime.clearStaleLock=async()=>{cleared++;return true;};
+  runtime.start=async({signal,onSpawn})=>{starts++;onSpawn({exitCode:null});seen=s.ahiChild;abort.abort();if(signal.aborted)throw Error('Starting AHI was cancelled.');};
+  await assert.rejects(s.ensureAhi({signal:abort.signal}),/cancelled/);
+  assert.ok(seen,'owned while starting');assert.equal(s.ahiChild,null);assert.equal(starts,1);assert.equal(cleared,0);
 });

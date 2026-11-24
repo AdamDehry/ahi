@@ -139,11 +139,23 @@ function serverEnv({ managed, root, port, claude, extra, serverDir }) {
 const homeId = (managed) => crypto.createHash('sha256').update(managed).digest('hex').slice(0, 16);
 
 /** The /health body of whatever answers on the port ({} if it is not an AHI server), or null if nothing answers. */
-async function health(port) {
+async function health(port, query = '') {
   try {
-    const r = await fetch(`http://127.0.0.1:${port}/health`, { signal: AbortSignal.timeout(1500) });
+    const r = await fetch(`http://127.0.0.1:${port}/health${query}`, { signal: AbortSignal.timeout(1500), redirect: 'error' });
     return r.ok ? await r.json().catch(() => ({})) : {};
   } catch { return null; }
+}
+
+const PROOF_LABEL = 'ahi-desktop-proof:'; // src/desktop-proof.ts
+/** Is the server on the port THIS home's AHI? The home id is a public path hash, so it must also answer a fresh
+ * challenge with an HMAC keyed by the owner's key, which only a server that can read this home's users file has.
+ * null = nothing answers; false = something else does. Nothing secret is sent. */
+async function serves({ port, home, token }) {
+  const challenge = crypto.randomBytes(32).toString('hex');
+  const h = await health(port, `?challenge=${challenge}`);
+  if (h === null) return null;
+  const want = crypto.createHmac('sha256', token).update(PROOF_LABEL + challenge).digest('hex');
+  return h.home === home && typeof h.proof === 'string' && h.proof.length === want.length && crypto.timingSafeEqual(Buffer.from(h.proof), Buffer.from(want));
 }
 
 const lockPath = (managed) => path.join(managed, 'logs', 'gateway.pid');
@@ -181,13 +193,20 @@ function exitReason(logged) {
   return 'AHI stopped while starting. Its log is in AHI_OS/logs/ahi-server.log.';
 }
 
-/** Start the AHI server (unless THIS home's server already answers on the port) and wait for it. Returns { url, child|null }. */
-async function start({ node, serverDir, managed, root, port = DEFAULT_PORT, claude, extra, log }) {
+/**
+ * Start the AHI server (unless THIS home's server already answers on the port, proven by serves()) and wait for it.
+ * token = the owner's key (proof only, never sent). onSpawn(child) runs the moment a server is spawned, so whoever
+ * quits can stop it even mid-start. An aborted signal stops the spawned server and rejects. Returns { url, child|null }.
+ */
+async function start({ node, serverDir, managed, root, port = DEFAULT_PORT, claude, extra, log, token, signal, onSpawn }) {
+  if (!token) throw Error('This AHI home has no owner key. Open setup and finish it again.');
   const url = `http://localhost:${port}/`;
-  const home = homeId(managed);
-  const running = await health(port);
-  if (running?.home === home) return { url, child: null };
-  if (running) throw Error(`Another program is already using port ${port}, which AHI needs. Close it or restart your computer, then press Retry.`);
+  const ours = { port, home: homeId(managed), token };
+  const cancelled = () => Error('Starting AHI was cancelled.');
+  const running = await serves(ours);
+  if (running) return { url, child: null };
+  if (running === false) throw Error(`Another program is already using port ${port}, which AHI needs. Close it or restart your computer, then press Retry.`);
+  if (signal?.aborted) throw cancelled();
   const cannotStart = (e) => Error(`AHI could not start (${e.code || e.name}). Reinstall AHI and try again.`);
   const logFile = serverLog(managed);
   const before = await fs.stat(logFile).then((s) => s.size, () => 0);
@@ -203,14 +222,15 @@ async function start({ node, serverDir, managed, root, port = DEFAULT_PORT, clau
   // A missing or unlaunchable Node arrives as 'error', not as an exception: report it instead of crashing the app.
   child.once('error', (e) => { failure = e; closeLog(); });
   child.once('exit', closeLog);
+  onSpawn?.(child);
   for (let i = 0; i < 120; i++) {
     if (failure) throw cannotStart(failure);
     if (child.exitCode !== null) {
       const logged = await fs.readFile(logFile, 'utf8').then((t) => t.slice(before), () => '');
       throw Error(exitReason(logged));
     }
-    const h = await health(port);
-    if (h?.home === home) { log?.(`AHI is running on ${url}`); return { url, child }; }
+    if (signal?.aborted) { await stop(child); throw cancelled(); }
+    if (await serves(ours)) { log?.(`AHI is running on ${url}`); return { url, child }; }
     await new Promise((r) => setTimeout(r, 500));
   }
   await stop(child);

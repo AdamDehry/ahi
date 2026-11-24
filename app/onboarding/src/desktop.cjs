@@ -12,15 +12,22 @@ function allowedCall(pageUrl, method, { setupUrl, startUrl }) {
 }
 
 /** Sign the AHI window in with the owner's key through the server's own login (it sets its own session cookie in
- * the window's cookie store). Skipped when the window is already signed in or there is no key. `fetcher` is the
- * window session's fetch, so the cookie lands where the window reads it. Returns true if it signed in. */
-async function signIn(fetcher, url, token) {
-  if (!token) return false;
+ * the window's cookie store), and confirm the session holds. `fetcher` is the window session's fetch, so the cookie
+ * lands where the window reads it. Call it only after the server proved it is this home's (ahi-runtime serves()).
+ * Resolves 'already' or 'signed-in'; anything else throws a reason for the start screen (never an unsigned window).
+ * No redirects (a 307 would carry the key elsewhere) and every request is bounded in time. */
+async function signIn(fetcher, url, token, timeoutMs = 10000) {
+  if (!token) throw Error('This AHI home has no owner key. Open setup and finish it again.');
   // credentials: 'include' = send and keep this session's cookies (Electron's fetch keeps none by default).
-  const session = await fetcher(new URL('ui/session', url).href, { credentials: 'include' });
-  if (session.ok) return false;
-  const r = await fetcher(new URL('ui/login', url).href, { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token }) });
-  return r.ok;
+  const ask = async (pathname, extra = {}) => {
+    try { return await fetcher(new URL(pathname, url).href, { credentials: 'include', redirect: 'error', signal: AbortSignal.timeout(timeoutMs), ...extra }); }
+    catch { throw Error('AHI started but did not answer the sign-in. Press Retry.'); }
+  };
+  if ((await ask('ui/session')).ok) return 'already';
+  const login = await ask('ui/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token }) });
+  if (!login.ok) throw Error(login.status === 401 ? 'AHI did not accept this home\'s owner key. Open setup and finish it again.' : `AHI could not sign you in (it answered ${login.status}). Press Retry.`);
+  if (!(await ask('ui/session')).ok) throw Error('AHI accepted the key but the window could not stay signed in. Press Retry.');
+  return 'signed-in';
 }
 
 /** Linux has no login-item API: an XDG autostart entry that starts the AppImage hidden. Removed when off. */

@@ -159,7 +159,8 @@ class SetupService {
   /** Start the bundled AHI server with the brain's own sign-in (Claude's provider home), then open it in the browser. */
   async openAhi(){const url=await this.ensureAhi();await this.openExternal(url);return this.snapshot();}
   /** Start the bundled AHI server (or adopt the one already running for this home); resolves to its local URL. */
-  async ensureAhi(){return this.exclusive('open',async()=>{
+  /** signal: cancels a start in progress (Quit); the server it spawned is stopped and nothing is retried. */
+  async ensureAhi({signal}={}){return this.exclusive('open',async()=>{
     if(!this.ahi)throw Error('This copy of AHI Setup does not include AHI itself. Download the full AHI Setup.');
     if(!this.state.completed)throw Error('Finish setup first.');
     const managed=await this.managed(),root=await this.root();
@@ -175,16 +176,22 @@ class SetupService {
     // after AHI opened, remote access set up), restart it. Only a digest is kept, never the keys.
     const envId=crypto.createHash('sha256').update(JSON.stringify(extra)).digest('hex');
     if(this.ahiChild&&this.ahiEnvId!==envId)await this.stopAhi();
-    const start=()=>runtime.start({node:this.node,serverDir:this.ahi.serverDir,managed,root,port:this.ahi.port,claude,extra});
+    // The owner's key only proves the server on the port is this home's (runtime.start never sends it).
+    const token=await this.ownerToken();
+    // Ownership is recorded the moment a server is spawned, so a Quit during a slow start still stops it.
+    let spawned=null;const onSpawn=child=>{spawned=this.ahiChild=child;this.ahiEnvId=envId;};
+    const forget=()=>{if(spawned&&this.ahiChild===spawned)this.ahiChild=null;}; // a failed start stopped (or never ran) it
+    const start=()=>runtime.start({node:this.node,serverDir:this.ahi.serverDir,managed,root,port:this.ahi.port,claude,extra,token,signal,onSpawn});
     let s;
     try{s=await start();}catch(e){
+      forget();
       // Every failed start is on record, and one stale lock (a server killed without cleaning up) costs one retry.
       await runtime.logLine(managed,`AHI could not start: ${e.message}`);
-      if(!await runtime.clearStaleLock(managed))throw e;
+      if(signal?.aborted||!await runtime.clearStaleLock(managed))throw e;
       await runtime.logLine(managed,'Cleared a stale server lock; trying once more.');
-      try{s=await start();}catch(again){await runtime.logLine(managed,`AHI could not start: ${again.message}`);throw again;}
+      try{s=await start();}catch(again){forget();await runtime.logLine(managed,`AHI could not start: ${again.message}`);throw again;}
     }
-    if(s.child){this.ahiChild=s.child;this.ahiEnvId=envId;}this.ahiUrl=s.url;
+    this.ahiUrl=s.url;
     return s.url;
   });}
   /** The owner's own sign-in key, read from this home's users file, so the AHI window opens signed in. Never logged,

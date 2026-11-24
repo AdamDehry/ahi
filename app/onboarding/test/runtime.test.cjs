@@ -170,8 +170,14 @@ test('the server keeps the operating system context Windows needs, and nothing e
   } finally { for (const k of Object.keys(process.env)) if (!(k in saved)) delete process.env[k]; Object.assign(process.env, saved); }
 });
 
-async function fakeServer(body) {
-  const server = http.createServer((_req, res) => { res.setHeader('Content-Type', 'application/json'); res.end(JSON.stringify(body)); });
+// A server that answers /health with `body`; given a `key`, it also answers the challenge as a real AHI server does
+// (src/desktop-proof.ts).
+async function fakeServer(body, key) {
+  const server = http.createServer((req, res) => {
+    const challenge = new URL(req.url, 'http://x').searchParams.get('challenge');
+    const proof = key && challenge ? { proof: require('node:crypto').createHmac('sha256', key).update('ahi-desktop-proof:' + challenge).digest('hex') } : {};
+    res.setHeader('Content-Type', 'application/json'); res.end(JSON.stringify({ ...body, ...proof }));
+  });
   await new Promise((r) => server.listen(0, '127.0.0.1', r));
   return server;
 }
@@ -179,11 +185,16 @@ async function fakeServer(body) {
 test('start adopts a server already on the port only when it serves this same AHI home', async (t) => {
   const managed = await fs.mkdtemp(path.join(os.tmpdir(), 'ahi-os-'));
   await fs.mkdir(path.join(managed, 'logs'));
-  const mine = await fakeServer({ ok: true, home: homeId(managed) }), other = await fakeServer({ ok: true, home: homeId('/another/AHI_OS') });
-  t.after(() => Promise.all([new Promise((r) => mine.close(r)), new Promise((r) => other.close(r)), fs.rm(managed, { recursive: true, force: true })]));
-  const opts = { node: process.execPath, serverDir: managed, managed, root: managed };
+  const key = 'owner-key-fixture';
+  const mine = await fakeServer({ ok: true, home: homeId(managed) }, key), other = await fakeServer({ ok: true, home: homeId('/another/AHI_OS') }, key);
+  // An impostor: it knows the (public) home id, but not the owner's key, so its proof is wrong or missing.
+  const impostor = await fakeServer({ ok: true, home: homeId(managed) }, 'not-the-key'), bare = await fakeServer({ ok: true, home: homeId(managed) });
+  const servers = [mine, other, impostor, bare];
+  t.after(() => Promise.all([...servers.map((s) => new Promise((r) => s.close(r))), fs.rm(managed, { recursive: true, force: true })]));
+  const opts = { node: process.execPath, serverDir: managed, managed, root: managed, token: key };
   assert.deepEqual(await start({ ...opts, port: mine.address().port }), { url: `http://localhost:${mine.address().port}/`, child: null });
-  await assert.rejects(start({ ...opts, port: other.address().port }), /already using port/);
+  for (const s of [other, impostor, bare]) await assert.rejects(start({ ...opts, port: s.address().port }), /already using port/);
+  await assert.rejects(start({ ...opts, token: null, port: mine.address().port }), /no owner key/);
 });
 
 test('a Node that cannot be launched is reported as a setup error, not a crash', async (t) => {
@@ -191,7 +202,7 @@ test('a Node that cannot be launched is reported as a setup error, not a crash',
   await fs.mkdir(path.join(managed, 'logs'));
   t.after(() => fs.rm(managed, { recursive: true, force: true }));
   const probe = await fakeServer({}); const port = probe.address().port; await new Promise((r) => probe.close(r)); // a free port
-  await assert.rejects(start({ node: path.join(managed, 'no-such-node'), serverDir: managed, managed, root: managed, port }), /could not start \(ENOENT\)/);
+  await assert.rejects(start({ node: path.join(managed, 'no-such-node'), serverDir: managed, managed, root: managed, port, token: 'k' }), /could not start \(ENOENT\)/);
 });
 
 // A stand-in server: a Node script in <serverDir>/dist/index.js, run by the real start().
@@ -210,7 +221,7 @@ test('the server is told where Claude\'s settings live, inside the hidden OS fol
 test('a server that gives up while starting is reported in plain words from its own log', async (t) => {
   const dir = await stubServer('console.error("[singleton] ANOTHER GATEWAY RUNNING (pid=4242, ours=1), exiting"); process.exit(1);');
   t.after(() => fs.rm(dir, { recursive: true, force: true }));
-  await assert.rejects(start({ node: process.execPath, serverDir: dir, managed: dir, root: dir, port: await freePort() }), /older copy of AHI is still running/);
+  await assert.rejects(start({ node: process.execPath, serverDir: dir, managed: dir, root: dir, port: await freePort(), token: 'k' }), /older copy of AHI is still running/);
 });
 
 test('stop asks the server to exit cleanly over IPC, and kills one that ignores it', async (t) => {
@@ -239,4 +250,15 @@ test('a lock left by a dead server is cleared; a live one is kept; on Windows a 
   assert.equal(await clearStaleLock(dir, { platform: 'win32', run: () => ({ status: 0, stdout: '"svchost.exe","' + process.pid + '","Services","0","9,000 K"\r\n' }) }), true);
   assert.equal(lockHolderAlive(process.pid, { platform: 'win32', run: () => ({ status: 0, stdout: '"node.exe","1","Console","1","50,000 K"\r\n' }) }), true);
   assert.equal(await clearStaleLock(dir), false, 'no lock left to clear');
+});
+
+test('a start cancelled mid-way stops the server it spawned, which was owned from the moment it spawned', async (t) => {
+  const dir = await stubServer('process.on("message",m=>{if(m==="ahi:stop")process.exit(0);});setInterval(()=>{},1000);'); // never answers
+  t.after(() => fs.rm(dir, { recursive: true, force: true }));
+  const abort = new AbortController();
+  let owned = null;
+  const pending = start({ node: process.execPath, serverDir: dir, managed: dir, root: dir, port: await freePort(), token: 'k', signal: abort.signal, onSpawn: (c) => { owned = c; abort.abort(); } });
+  await assert.rejects(pending, /cancelled/);
+  assert.ok(owned, 'ownership was handed over at spawn');
+  assert.equal(owned.exitCode, 0, 'the spawned server was stopped cleanly');
 });

@@ -5,7 +5,7 @@ const {pathToFileURL}=require('node:url');
 const {SetupService}=require('./service.cjs');
 const {RemoteSetup}=require('./remote.cjs');
 const {allowedCall,signIn,linuxAutostart}=require('./desktop.cjs');
-let win,winKind,tray,service,remote,starting=null,quitting=false,stopped=false,trayHintShown=false;
+let win,winKind,tray,service,remote,starting=null,startAbort=null,stopping=null,stopped=false,quitting=false,trayHintShown=false;
 const headless=app.commandLine.hasSwitch('headless-setup')||process.argv.includes('--headless-setup');
 if(headless){app.commandLine.appendSwitch('ozone-platform','headless');app.disableHardwareAcceleration();}
 // Native smoke tests can opt into a workdir-owned home; packaged apps never use fixtures.
@@ -40,14 +40,16 @@ function ahiSession(origin){
   return ses;
 }
 
-/** Replace the one window with a new page: the setup screens, the start screen, or AHI itself. */
-function openWindow(kind,url){
-  const old=win;
+/** Replace the one window with a new page: the setup screens, the start screen, or AHI itself. The new window is as
+ * visible as the one it replaces (closed to the tray stays in the tray) unless `show` says otherwise. */
+function openWindow(kind,url,{show}={}){
+  const old=win&&!win.isDestroyed()?win:null;
+  const visible=show??(old?old.isVisible():!(hiddenStart&&kind!=='setup'));
   const webPreferences=kind==='ahi'
     // AHI's own pages are a website: no bridge to this app at all.
     ?{partition:'persist:ahi',contextIsolation:true,nodeIntegration:false,sandbox:true,webSecurity:true}
     :{preload:path.join(__dirname,'preload.cjs'),contextIsolation:true,nodeIntegration:false,sandbox:true,webSecurity:true};
-  win=new BrowserWindow({width:1240,height:900,minWidth:820,minHeight:680,backgroundColor:'#0c1917',title:'AHI',autoHideMenuBar:true,show:!(hiddenStart&&!old&&kind!=='setup'),webPreferences});winKind=kind;
+  win=new BrowserWindow({width:1240,height:900,minWidth:820,minHeight:680,backgroundColor:'#0c1917',title:'AHI',autoHideMenuBar:true,show:visible,webPreferences});winKind=kind;
   if(kind==='ahi'){
     const origin=new URL(url).origin;ahiSession(origin);
     const external=u=>{if(/^https?:/i.test(u))shell.openExternal(u);};
@@ -64,20 +66,23 @@ function openWindow(kind,url){
     event.preventDefault();w.hide();
     if(tray&&!trayHintShown&&process.platform==='win32'){trayHintShown=true;tray.displayBalloon({title:'AHI is still running',content:'Open it again from here. To stop AHI, right-click this icon and choose Quit AHI.'});}
   });
-  if(old&&!old.isDestroyed())old.destroy();
+  old?.destroy();
   return win.loadURL(url);
 }
 function showMain(){
   if(win&&!win.isDestroyed()){if(win.isMinimized())win.restore();win.show();win.focus();return;}
-  if(service?.state.completed)openWindow('start',startUrl);else openWindow('setup',setupUrl);
+  if(service?.state.completed)openWindow('start',startUrl,{show:true});else openWindow('setup',setupUrl,{show:true});
 }
 
-/** Start the AHI server (one attempt at a time) and sign the window in; resolves to AHI's address. */
+/** Start the AHI server (one attempt at a time; Quit cancels it) and sign the window in; resolves to AHI's address.
+ * A sign-in that fails rejects like a failed start: the start screen shows why, never an unsigned window. */
 function startAhi(){
   return starting??=(async()=>{
+    startAbort=new AbortController();
     try{
-      const url=await service.ensureAhi();
-      await signIn((u,o)=>ahiSession(new URL(url).origin).fetch(u,o),url,await service.ownerToken()).catch(e=>logLine(`Signing the window in failed: ${e.message}`));
+      const url=await service.ensureAhi({signal:startAbort.signal});
+      if(quitting)throw Error('AHI is quitting.');
+      await signIn((u,o)=>ahiSession(new URL(url).origin).fetch(u,o),url,await service.ownerToken());
       // If the server stops by itself later, say so and offer Retry (a deliberate restart replaces ahiChild first).
       const child=service.ahiChild;
       child?.once('exit',code=>{if(quitting||service.ahiChild!==child)return;logLine(`AHI stopped unexpectedly (exit ${code}).`);if(winKind==='ahi')openWindow('start',startUrl);});
@@ -90,7 +95,7 @@ function startAhi(){
  * then gives the reason and Retry). */
 async function startHidden(){
   try{await openWindow('ahi',await startAhi());}
-  catch{await openWindow('start',startUrl);win.show();}
+  catch{await openWindow('start',startUrl,{show:true});}
 }
 
 async function applyLoginItem(){
@@ -106,7 +111,7 @@ function buildTray(){
   tray??=new Tray(icon);tray.setToolTip('AHI');
   tray.setContextMenu(Menu.buildFromTemplate([
     {label:'Open AHI',click:showMain},
-    {label:'Setup…',click:()=>openWindow('setup',setupUrl).then(()=>win.show())},
+    {label:'Setup…',click:()=>openWindow('setup',setupUrl,{show:true})},
     {type:'separator'},
     {label:'Start AHI when I log in',type:'checkbox',checked:service.startAtLogin,click:async item=>{await service.setStartAtLogin(item.checked);await applyLoginItem();}},
     {type:'separator'},
@@ -148,7 +153,10 @@ if(primary)app.whenReady().then(async()=>{
       else result=method==='remote-install'?await remote.install():method==='remote-login'?await remote.login():method==='remote-create'?await remote.create():method==='remote-route'?await remote.route(arg):method==='remote-start'?await remote.start():method==='remote-stop'?await remote.stop():await service.invoke(method,arg);
       if(method==='complete')await applyLoginItem();
       return {ok:true,value:result};
-    }catch(error){return {ok:false,error:error.message};}
+    }catch(error){
+      if(method==='start'||method==='open-ahi')win?.show(); // a failed start is shown, even from the tray
+      return {ok:false,error:error.message};
+    }
   });
   // No display (a server running the app headless): no tray to show, and GTK would abort trying.
   if(app.commandLine.getSwitchValue('ozone-platform')!=='headless')buildTray();
@@ -160,10 +168,16 @@ if(primary)app.whenReady().then(async()=>{
 // Closing the window keeps AHI running, so the last window closing is not a quit.
 app.on('window-all-closed',()=>{if(headless)app.quit();});
 // A real quit stops the server cleanly first (it removes its own lock), then lets the app exit.
+// A start in progress is cancelled and awaited first, so a server it already spawned is stopped too.
 app.on('before-quit',event=>{
   quitting=true;
-  if(stopped||!service?.ahiChild){if(remote?.child)remote.child.kill();return;}
+  if(stopped)return;
   event.preventDefault();
-  if(remote?.child)remote.child.kill();
-  service.stopAhi().catch(()=>{}).finally(()=>{stopped=true;app.quit();});
+  stopping??=(async()=>{
+    if(remote?.child)remote.child.kill();
+    startAbort?.abort();
+    await Promise.resolve(starting).catch(()=>{});
+    await service?.stopAhi().catch(()=>{});
+    stopped=true;app.quit();
+  })();
 });

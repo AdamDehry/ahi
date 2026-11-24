@@ -14,16 +14,27 @@ test('only the setup screens reach every action; the start screen reaches start 
   assert.equal(allowedCall('http://localhost:18789/','start',urls),false);
 });
 
-test('the window signs in through the server\'s own login only when it is not signed in already',async()=>{
-  const calls=[];const fetcher=signedIn=>async(url,options={})=>{calls.push({url,...options});return {ok:url.endsWith('/ui/session')?signedIn:true};};
-  assert.equal(await signIn(fetcher(true),'http://localhost:18789/','owner-token'),false);
-  assert.deepEqual(calls.map(c=>c.url),['http://localhost:18789/ui/session']);
-  calls.length=0;
-  assert.equal(await signIn(fetcher(false),'http://localhost:18789/','owner-token'),true);
-  assert.equal(calls[1].url,'http://localhost:18789/ui/login');assert.equal(calls[1].method,'POST');assert.equal(JSON.parse(calls[1].body).token,'owner-token');
-  assert.ok(calls.every(c=>c.credentials==='include'),'the cookie is kept in the window\'s session');
-  calls.length=0;
-  assert.equal(await signIn(fetcher(false),'http://localhost:18789/',null),false);assert.equal(calls.length,0);
+test('the window signs in through the server\'s own login, confirms it, and never opens unsigned',async()=>{
+  const url='http://localhost:18789/';
+  // A scripted server: each path answers from its own queue of statuses.
+  const server=answers=>{const calls=[];return {calls,fetcher:async(u,o={})=>{calls.push({url:u,...o});const q=answers[new URL(u).pathname];return {ok:q[0]<300,status:q.length>1?q.shift():q[0]};}};};
+  let s=server({'/ui/session':[200]});
+  assert.equal(await signIn(s.fetcher,url,'owner-token'),'already');assert.equal(s.calls.length,1);
+  s=server({'/ui/session':[401,200],'/ui/login':[200]});
+  assert.equal(await signIn(s.fetcher,url,'owner-token'),'signed-in');
+  assert.deepEqual(s.calls.map(c=>new URL(c.url).pathname),['/ui/session','/ui/login','/ui/session'],'the session is confirmed after login');
+  assert.equal(JSON.parse(s.calls[1].body).token,'owner-token');
+  assert.ok(s.calls.every(c=>c.credentials==='include'&&c.redirect==='error'&&c.signal),'cookies kept, no redirects, every request bounded');
+  // Failures throw a reason for the start screen.
+  await assert.rejects(signIn(server({'/ui/session':[401],'/ui/login':[401]}).fetcher,url,'old-token'),/did not accept/);
+  await assert.rejects(signIn(server({'/ui/session':[401],'/ui/login':[200]}).fetcher,url,'owner-token'),/could not stay signed in/);
+  await assert.rejects(signIn(async()=>{throw Error('redirect or timeout');},url,'owner-token'),/did not answer the sign-in/);
+  await assert.rejects(signIn(s.fetcher,url,null),/no owner key/);
+  // A stalled server is cut off by the time bound, not waited on forever.
+  const stalled=(_u,o)=>new Promise((_r,reject)=>o.signal.addEventListener('abort',()=>reject(o.signal.reason)));
+  const awake=setTimeout(()=>{},5000); // AbortSignal.timeout's timer does not hold a bare test process open
+  await assert.rejects(signIn(stalled,url,'owner-token',50),/did not answer the sign-in/);
+  clearTimeout(awake);
 });
 
 test('Linux start-at-login is an autostart entry that starts the AppImage hidden, quoted for spaces, and goes when off',async t=>{

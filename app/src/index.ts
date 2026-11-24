@@ -115,6 +115,7 @@ import { normalizedLevenshtein } from "./levenshtein.js";
 import { isRuntimeSpeculationEnabled, logTurn } from "./turn-logger.js";
 import { makeTurnGate, type TurnGate } from "./voice/turn-gate.js";
 import { setVoiceSttProvider } from "./voice/stt-select.js";
+import { desktopProof } from "./desktop-proof.js";
 
 // ── OS-level singleton ───────────────────────────────────────────────────────
 // BEFORE anything else: enforce that only one gateway process exists. The
@@ -415,7 +416,8 @@ function healthPayload() {
 
 // Health check
 app.get("/health", (c) => {
-  return c.json(healthPayload());
+  const proof = desktopProof(c.req.query("challenge"));
+  return c.json(proof ? { ...healthPayload(), proof } : healthPayload());
 });
 
 app.get("/api/health", (c) => {
