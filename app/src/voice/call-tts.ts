@@ -13,6 +13,7 @@ import {
   upsample2x,
 } from "../voice-tts-eleven.js";
 import { cartesiaLanguage } from "../speech-language.js";
+import type { Language } from "../ui-prefs.js";
 
 /* ============================================================
    call-tts.ts — which voice a call speaks in, and the filler's audio.
@@ -86,6 +87,8 @@ export function createCallTtsStream(
   provider: CallTtsProvider = callTtsProviderFor(bot),
   /** For log lines: the call's id. */
   label?: string,
+  /** The calling user's Settings language: Cartesia's fallback when a turn's text has no letters. */
+  language: () => Language = () => "en",
 ): CallTtsStream {
   if (provider === "gemini") {
     return new GeminiHttpTtsStream({
@@ -98,7 +101,7 @@ export function createCallTtsStream(
   // B3: an ElevenLabs turn that cannot finish — HTTP and its socket
   // both down — speaks its unspoken rest on Cartesia instead of going quiet.
   // Cartesia renders at ElevenLabs' sample rate so the turn's clock holds.
-  const cartesiaAt = (sampleRate: number) => new VoiceTtsStream({ ...bot.cartesia, sampleRate });
+  const cartesiaAt = (sampleRate: number) => new VoiceTtsStream({ ...bot.cartesia, sampleRate }, language);
   if (provider === "elevenlabs" && elevenCallTransport(bot) === "http") {
     return new FailoverTtsStream(
       new ElevenHttpTtsStream({
@@ -124,7 +127,7 @@ export function createCallTtsStream(
       label,
     );
   }
-  return new VoiceTtsStream(bot.cartesia);
+  return new VoiceTtsStream(bot.cartesia, language);
 }
 
 const ELEVEN_BASE = "https://api.elevenlabs.io/v1";

@@ -1,4 +1,6 @@
 import { createVoiceStt, type VoiceSttCallbacks } from "../stt-select.js";
+import { voiceLanguageFor } from "../../users.js";
+import type { Language } from "../../ui-prefs.js";
 import { openScribeEar, type EarStt } from "./scribe-ear.js";
 import { type ScreenFrame } from "../screen-frame.js";
 import { parseSurface, ScreenWatch, type WatchPick } from "../screen-watch.js";
@@ -51,6 +53,8 @@ export interface SideSocket {
 interface Ear {
   socket: SideSocket;
   bot: string;
+  /** The calling user: their Settings language is the recognizer's. */
+  userId: string;
   voiceStreamId: string;
   stt: EarStt | null;
   /** Frames that arrived before the recognizer was open. */
@@ -132,7 +136,7 @@ export function describeAppCtx(raw: unknown): string {
 }
 const ears = new Map<SideSocket, Ear>();
 
-type EarSttFactory = (bot: string, cb: VoiceSttCallbacks) => Promise<EarStt>;
+type EarSttFactory = (bot: string, cb: VoiceSttCallbacks, language: Language) => Promise<EarStt>;
 
 /**
  * The ear's recognizer: ElevenLabs Scribe realtime, which streams his words
@@ -140,12 +144,12 @@ type EarSttFactory = (bot: string, cb: VoiceSttCallbacks) => Promise<EarStt>;
  * only either way. The voice-mode one is OpenAI's synthesised preview,
  * which painted a breath at a time.
  */
-const openEarStt: EarSttFactory = async (bot, cb) => {
+const openEarStt: EarSttFactory = async (bot, cb, language) => {
   try {
     return await openScribeEar(cb);
   } catch (err) {
     console.warn(`[eleven-ear] scribe would not open (${(err as Error)?.message ?? err}) — the voice-mode recognizer instead`);
-    return createVoiceStt(bot, cb);
+    return createVoiceStt(bot, cb, language);
   }
 };
 
@@ -218,6 +222,7 @@ export function handleEarControl(socket: SideSocket, userId: string, msg: Record
   const ear: Ear = {
     socket,
     bot: call.bot,
+    userId,
     voiceStreamId,
     stt: null,
     early: [],
@@ -245,7 +250,7 @@ export function handleEarControl(socket: SideSocket, userId: string, msg: Record
   };
   ear.timer.unref?.();
   ears.set(socket, ear);
-  void sttFactory(call.bot, earCallbacks(ear, 0)).then(
+  void sttFactory(call.bot, earCallbacks(ear, 0), voiceLanguageFor(ear.userId)).then(
     (stt) => {
       if (ear.closed) {
         void stt.close(ear.bot).catch(() => null);
@@ -383,7 +388,7 @@ function retry(ear: Ear): void {
 function fallBack(ear: Ear): void {
   const gen = ++ear.gen;
   console.warn(`[eleven-ear] ${ear.voiceStreamId} scribe would not stay open after ${REOPEN_BACKOFF_MS.length} reopen(s) — the voice-mode recognizer instead`);
-  createVoiceStt(ear.bot, earCallbacks(ear, gen)).then(
+  createVoiceStt(ear.bot, earCallbacks(ear, gen), voiceLanguageFor(ear.userId)).then(
     (stt) => {
       if (ear.closed || ear.gen !== gen) {
         void stt.close(ear.bot).catch(() => null);

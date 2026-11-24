@@ -54,6 +54,7 @@ import {
   type VoiceSessionRecord,
 } from "./websocket.js";
 import type { UserConfig } from "./users.js";
+import { voiceLanguageFor } from "./users.js";
 import { installElevenTransport } from "./voice/eleven/install.js";
 import { elevenTransportOn, staleTransportNote } from "./voice/eleven/config.js";
 import { execFileSync } from "child_process";
@@ -742,7 +743,8 @@ function frontVoiceDeadlineMs(): number {
 }
 
 function connectCallTts(voiceStreamId: string, bot: BotInstance["config"], provider: CallTtsProvider): void {
-  const stream = createCallTtsStream(bot, provider, voiceStreamId);
+  // The caller is read per turn: their Settings language is Cartesia's fallback when a reply has no letters.
+  const stream = createCallTtsStream(bot, provider, voiceStreamId, () => voiceLanguageFor(callUserIds.get(voiceStreamId)));
   voiceTtsStreams.set(voiceStreamId, stream);
   stream.on({
     onError: (err) => console.warn(`[voice-tts] ${voiceStreamId}:`, err.message),
@@ -771,9 +773,10 @@ function connectCallTts(voiceStreamId: string, bot: BotInstance["config"], provi
  */
 const SYNTH_SETTLE_TIMEOUT_MS = 5_000;
 
-setVoiceSessionOpenHandler(({ botName, voiceStreamId, userName }) => {
+setVoiceSessionOpenHandler(({ botName, voiceStreamId, userName, userId }) => {
   const instance = instances.find((i) => i.config.name === botName);
   if (!instance) return;
+  if (userId) callUserIds.set(voiceStreamId, userId);
   if (voiceTtsStreams.has(voiceStreamId)) return;
 
   // Same voice as the voice notes (call-tts.ts), separate plumbing.

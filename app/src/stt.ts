@@ -35,10 +35,11 @@ import { existsSync } from "node:fs";
 import { homedir } from "node:os";
 import { resolve } from "node:path";
 import { ownerLanguage } from "./users.js";
+import type { Language } from "./ui-prefs.js";
 
 const RECOGNIZE_SAMPLE_RATE = 16000;
 /** Google hears the owner's language (Settings → Language): Hebrew or English. */
-const recognizeLanguage = (): string => (ownerLanguage() === "he" ? "he-IL" : "en-US");
+const recognizeLanguage = (lang: Language): string => (lang === "he" ? "he-IL" : "en-US");
 
 // ── Streaming client (gRPC) ───────────────────────────────────────────
 
@@ -132,7 +133,9 @@ export interface StreamingSttCallbacks {
 }
 
 export function startStreamingRecognize(
-  cb: StreamingSttCallbacks
+  cb: StreamingSttCallbacks,
+  /** The calling user's language (users.ts voiceLanguageFor). */
+  language: Language,
 ): StreamingSttHandle {
   const client = getSpeechClient();
 
@@ -141,7 +144,7 @@ export function startStreamingRecognize(
       encoding:
         "LINEAR16" as unknown as protos.google.cloud.speech.v1.RecognitionConfig.AudioEncoding,
       sampleRateHertz: RECOGNIZE_SAMPLE_RATE,
-      languageCode: recognizeLanguage(),
+      languageCode: recognizeLanguage(language),
       enableAutomaticPunctuation: true,
       model: "latest_short",
     },
@@ -228,7 +231,9 @@ const REST_RECOGNIZE_URL = "https://speech.googleapis.com/v1/speech:recognize";
 
 export async function transcribeShort(
   pcm: Buffer,
-  sampleRateHertz = RECOGNIZE_SAMPLE_RATE
+  sampleRateHertz = RECOGNIZE_SAMPLE_RATE,
+  /** The speaker's language; the owner's when no signed-in user is behind the audio (the glasses). */
+  language: Language = ownerLanguage(),
 ): Promise<string> {
   const apiKey = process.env.GOOGLE_STT_API_KEY || process.env.GOOGLE_TTS_API_KEY;
   if (!apiKey) throw new Error("[stt] No GOOGLE_STT_API_KEY or GOOGLE_TTS_API_KEY");
@@ -243,7 +248,7 @@ export async function transcribeShort(
       config: {
         encoding: "LINEAR16",
         sampleRateHertz,
-        languageCode: recognizeLanguage(),
+        languageCode: recognizeLanguage(language),
         enableAutomaticPunctuation: true,
         model: "latest_short",
       },

@@ -38,7 +38,7 @@ import {
   type EnvelopeTelemetry,
   type TemporalEnvelope,
 } from "./temporal-envelope.js";
-import { foremanVisibleTo, readForemanBuilds, type BuildTiming } from "./temporal-events.js";
+import { foremanVisibleTo, readForemanBuilds, sanitizeLabel, type BuildTiming } from "./temporal-events.js";
 import type { UserConfig } from "./users.js";
 import { nonEnglishLanguageName } from "./ui-prefs.js";
 import { CANDLE_MINS_BEFORE_SUNSET, HOLY_END_TZEIT_DEGREES, holyEndFrom, holyEndRule, holyEndSunsetMins, type HolyEndRule, type HolyEndTime } from "./zmanim-rule.js";
@@ -291,7 +291,10 @@ function elapsedLine(user: UserConfig, now: Date): string | null {
 export function languageLine(user: Pick<UserConfig, "userId" | "name">): string | null {
   const name = nonEnglishLanguageName(user.userId);
   if (!name) return null;
-  return `**Language:** ${user.name} uses AHI in ${name}. Answer in ${name} by default; when they write to you in another language, answer in theirs.`;
+  // The display name is the user's own text: one line, no control characters, bounded, and quoted, so it
+  // reads as a name and never as an instruction.
+  const who = JSON.stringify(sanitizeLabel(user.name, 60) ?? user.userId);
+  return `**Language:** ${who} uses AHI in ${name}. Answer in ${name} by default; when they write to you in another language, answer in theirs.`;
 }
 
 interface MomentOptions {

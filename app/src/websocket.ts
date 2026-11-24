@@ -32,6 +32,7 @@ import { lookupByToken, lookupByUserId, userCanAccessAgent, toPublic, type UserC
 import { CallCheckpoints, type CallCheckpoint } from "./voice/call-checkpoint.js";
 import { TurnComposer, type TurnMeta } from "./voice/turn-composer.js";
 import { createVoiceStt, type VoiceSttStream } from "./voice/stt-select.js";
+import { voiceLanguageFor } from "./users.js";
 import type { CallAudioIn, CallTransport, CallTransportKind } from "./voice/call-transport.js";
 import type { MediaRef } from "./media-store.js";
 import type { SearchCardMeta } from "./search/service.js";
@@ -194,6 +195,8 @@ type VoiceSessionLifecycleHandler = (opts: {
   voiceStreamId: string;
   /** Who is calling — the front voice and ack gate speak to them by name. */
   userName?: string;
+  /** …and whose Settings language the call's voice falls back to. */
+  userId?: string;
 }) => void;
 
 let voiceSessionOpenHandler: VoiceSessionLifecycleHandler | null = null;
@@ -1253,7 +1256,7 @@ function handleVoiceStart(ws: WebSocket, msg: Record<string, unknown>): void {
   // first reply does not pay the handshake. Deliberately NOT fired on the
   // repeat-`voice-start` path above: that is the next utterance of a call
   // already in progress, and its socket is already up.
-  voiceSessionOpenHandler?.({ botName: bot, voiceStreamId, userName: user?.name });
+  voiceSessionOpenHandler?.({ botName: bot, voiceStreamId, userName: user?.name, userId: user?.userId });
 }
 
 /**
@@ -1362,7 +1365,7 @@ export function openCall(
     mayDraft: opts.mayDraft,
     direction: opts.direction,
   });
-  voiceSessionOpenHandler?.({ botName: opts.bot, voiceStreamId: opts.voiceStreamId, userName: opts.user.name });
+  voiceSessionOpenHandler?.({ botName: opts.bot, voiceStreamId: opts.voiceStreamId, userName: opts.user.name, userId: opts.user.userId });
   return handle;
 }
 
@@ -1934,7 +1937,7 @@ function startCallSession(
         error: "I can't hear you right now. Hang up and call again.",
       });
     },
-  })
+  }, voiceLanguageFor(user?.userId))
     .then((stream) => {
       if (!current()) {
         // The session was superseded while we were connecting.
@@ -2424,7 +2427,7 @@ function resumeRestoredCall(
     textFollowsVoice: callTextFollowsVoice(),
     hold: holdSnapshot(),
   });
-  voiceSessionOpenHandler?.({ botName: bot, voiceStreamId: id, userName: user.name });
+  voiceSessionOpenHandler?.({ botName: bot, voiceStreamId: id, userName: user.name, userId: user.userId });
   console.log(`[voice] ${id} resumed after a gateway restart (gap ${Math.round(gap / 1000)}s, ${cp.turns} turn(s) carried)`);
 }
 

@@ -214,3 +214,11 @@ export function ownerUserId(): string {
 export function ownerLanguage(): Language {
   return userLanguage(ownerUserId()) ?? "en";
 }
+
+/**
+ * The language a call hears and speaks: the CALLING user's choice, English when they never chose. Only a
+ * voice path with no signed-in user behind it (the glasses) falls back to the owner's.
+ */
+export function voiceLanguageFor(userId: string | null | undefined): Language {
+  return userId ? (userLanguage(userId) ?? "en") : ownerLanguage();
+}

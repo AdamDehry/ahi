@@ -26,7 +26,7 @@ import type { VoiceSttProvider } from "../config.js";
 import { startStreamingRecognize, transcribeShort, type StreamingSttHandle } from "../stt.js";
 import { CartesiaStt, type SttUsage } from "./stt-cartesia.js";
 import { OpenAiStt } from "./stt-openai.js";
-import { ownerLanguage } from "../users.js";
+import type { Language } from "../ui-prefs.js";
 import type { TurnMeta } from "./turn-composer.js";
 
 export interface VoiceSttCallbacks {
@@ -129,23 +129,25 @@ export function __resetVoiceSttFactoryForTests(): void {
 export async function createVoiceStt(
   bot: string,
   cb: VoiceSttCallbacks,
+  /** The calling user's Settings language (users.ts voiceLanguageFor), never the owner's by default. */
+  language: Language,
 ): Promise<VoiceSttStream> {
   if (testFactory) return testFactory(bot, cb);
 
-  const configured = hebrewCapable(voiceSttProviderFor(bot));
+  const configured = hebrewCapable(voiceSttProviderFor(bot), language);
 
   if (configured === "cartesia" || configured === "openai") {
     try {
-      return await startNativeTurnStream(configured, cb, bot);
+      return await startNativeTurnStream(configured, cb, bot, language);
     } catch (err) {
       const reason = (err as Error).message;
       console.warn(`[voice-stt] ${configured} unavailable, falling back to google: ${reason}`);
       cb.onDegraded?.("final-only", `${configured}-unavailable`);
-      return startGoogleStream(cb);
+      return startGoogleStream(cb, language);
     }
   }
 
-  return startGoogleStream(cb);
+  return startGoogleStream(cb, language);
 }
 
 /**
@@ -166,15 +168,16 @@ export function __setSttReopenDelaysForTests(delays: number[] | null): void {
 async function startNativeTurnStream(
   provider: "cartesia" | "openai",
   cb: VoiceSttCallbacks,
-  bot = "unknown",
+  bot: string,
+  language: Language,
 ): Promise<VoiceSttStream> {
   if (provider === "cartesia") return startCartesiaStream(cb, bot);
 
   // VOICE_STT_MODEL (.env) picks the OpenAI transcription model; default stays
   // gpt-4o-mini-transcribe (gpt-transcribe also works).
   const model = process.env.VOICE_STT_MODEL?.trim() || undefined;
-  const language = voiceSttLanguage(bot);
-  const stt = new OpenAiStt({ ...(model ? { model } : {}), ...(language ? { language } : {}) });
+  const hint = voiceSttLanguage(bot, process.env, language);
+  const stt = new OpenAiStt({ ...(model ? { model } : {}), ...(hint ? { language: hint } : {}) });
   wireNativeCallbacks(stt, cb);
   await stt.start();
 
@@ -194,21 +197,21 @@ async function startNativeTurnStream(
 }
 
 /**
- * Cartesia's live model (ink-2) hears English only. When the owner chose Hebrew and an OpenAI key is
+ * Cartesia's live model (ink-2) hears English only. When the caller chose Hebrew and an OpenAI key is
  * there, calls listen through OpenAI instead; without one they stay on Cartesia (Settings → Language says
  * so) rather than failing.
  */
-export function hebrewCapable(provider: VoiceSttProvider, lang = ownerLanguage(), env: NodeJS.ProcessEnv = process.env): VoiceSttProvider {
+export function hebrewCapable(provider: VoiceSttProvider, lang: Language, env: NodeJS.ProcessEnv = process.env): VoiceSttProvider {
   return provider === "cartesia" && lang === "he" && env.OPENAI_API_KEY ? "openai" : provider;
 }
 
 /**
  * The recognizer's language for an agent's calls (voice step 5): <BOT>_STT_LANGUAGE,
- * else VOICE_STT_LANGUAGE, else the owner's language for Michael (English unless they chose Hebrew in
+ * else VOICE_STT_LANGUAGE, else the caller's language for Michael (English unless they chose Hebrew in
  * Settings: a short English "wait, stop" left to guess was heard as French) and the model's own guess
  * for everyone else. "auto" = the model guesses.
  */
-export function voiceSttLanguage(bot: string, env: NodeJS.ProcessEnv = process.env, lang = ownerLanguage()): string | undefined {
+export function voiceSttLanguage(bot: string, env: NodeJS.ProcessEnv, lang: Language): string | undefined {
   const raw = (env[`${bot.toUpperCase()}_STT_LANGUAGE`] ?? env.VOICE_STT_LANGUAGE ?? (bot === "michael" ? lang : "")).trim().toLowerCase();
   return raw && raw !== "auto" ? raw : undefined;
 }
@@ -381,7 +384,7 @@ async function startCartesiaStream(cb: VoiceSttCallbacks, bot: string): Promise<
  * Emitting them as they arrive is the original behaviour that produced
  * the split, out-of-order transcript.
  */
-function startGoogleStream(cb: VoiceSttCallbacks): VoiceSttStream {
+function startGoogleStream(cb: VoiceSttCallbacks, language: Language): VoiceSttStream {
   let handle: StreamingSttHandle | null = null;
   let pcmFallback: Buffer[] | null = null;
   let degraded = false;
@@ -430,7 +433,7 @@ function startGoogleStream(cb: VoiceSttCallbacks): VoiceSttStream {
         pcmFallback = pcmFallback ?? [];
         cb.onDegraded?.("final-only", "streaming-auth-fallback");
       },
-    });
+    }, language);
   } catch (err) {
     console.warn(
       "[voice-stt] could not start streaming STT, using REST fallback:",
@@ -470,7 +473,7 @@ function startGoogleStream(cb: VoiceSttCallbacks): VoiceSttStream {
       // the buffered PCM.
       if (!transcript && pcmFallback && pcmFallback.length > 0) {
         try {
-          transcript = (await transcribeShort(Buffer.concat(pcmFallback))).trim();
+          transcript = (await transcribeShort(Buffer.concat(pcmFallback), undefined, language)).trim();
         } catch (err) {
           console.error("[voice-stt] REST transcribe failed:", (err as Error).message);
         }

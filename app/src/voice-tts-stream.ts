@@ -5,6 +5,7 @@ import type { PieceReason } from "./voice/seam-log.js";
 import { isIncompleteFragment, speechCut, splitSentences } from "./voice/speech-boundary.js";
 import { logSayText, sayText } from "./voice/say-text.js";
 import { cartesiaLanguage } from "./speech-language.js";
+import type { Language } from "./ui-prefs.js";
 
 /* ============================================================
    voice-tts-stream.ts — streaming TTS for VOICE MODE ONLY.
@@ -112,7 +113,14 @@ export class VoiceTtsStream implements CallTtsStream {
   /** Characters sent to synthesis this turn — the billing figure. */
   charsSent = 0;
 
-  constructor(private readonly cartesia: CartesiaConfig) {}
+  /** This turn's spoken language, fixed by its first piece with letters (one context, one language). */
+  private turnLanguage: string | null = null;
+
+  /** `preferred`: the caller's Settings language, read when a turn's text gives nothing to go by. */
+  constructor(
+    private readonly cartesia: CartesiaConfig,
+    private readonly preferred: () => Language = () => "en",
+  ) {}
 
   get sampleRate(): number {
     return this.cartesia.sampleRate;
@@ -190,6 +198,7 @@ export class VoiceTtsStream implements CallTtsStream {
   beginTurn(): string {
     this.contextId = `turn-${randomUUID()}`;
     this.charsSent = 0;
+    this.turnLanguage = null;
     return this.contextId;
   }
 
@@ -199,7 +208,7 @@ export class VoiceTtsStream implements CallTtsStream {
       model_id: this.cartesia.model,
       transcript,
       voice: { mode: "id", id: this.cartesia.voiceId },
-      language: cartesiaLanguage(this.cartesia.language),
+      language: this.languageFor(transcript),
       speed: this.cartesia.speed,
       output_format: {
         container: "raw",
@@ -209,6 +218,17 @@ export class VoiceTtsStream implements CallTtsStream {
       add_timestamps: true,
       continue: cont,
     };
+  }
+
+  /**
+   * The language of the turn, from the first piece that has letters: the reply's own language, the caller's
+   * Settings language until then. Fixed for the rest of the turn, so one context never switches voice mid-way.
+   */
+  private languageFor(transcript: string): string {
+    if (this.turnLanguage) return this.turnLanguage;
+    const lang = cartesiaLanguage(this.cartesia.language, transcript, this.preferred());
+    if (/[\u0590-\u05FFA-Za-z]/.test(transcript)) this.turnLanguage = lang;
+    return lang;
   }
 
   /** Stream a piece of this turn's text. Safe to call before audio starts. */
