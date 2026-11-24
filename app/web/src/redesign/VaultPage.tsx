@@ -9,7 +9,7 @@
  */
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import {
-  ackFlag, deleteDoc, disconnect, fetchVault, importSeed, money, OWNER_LABELS, refreshFeeds, webauthnSupported,
+  ackFlag, deleteDoc, disconnect, fetchVault, importSeed, money, ownerLabel, refreshFeeds, webauthnSupported,
   type Owner, type VaultAccount, type VaultItem, type VaultPicture,
 } from "../lib/vault";
 import { lockVault, unlockVault } from "../lib/vault";
@@ -17,6 +17,7 @@ import { AccountModal, ConnectModal, ItemModal, Modal, NewAccountModal, UploadMo
 import "../styles/vault.css";
 import "./vault-final.css";
 import { Icon } from "./icons";
+import { tn, useLang, useT } from "../i18n";
 import { CATEGORY_TABS, attentionOf, recordsOf, shortDate, type Category, type VRecord } from "./vaultRecords";
 
 /* ── tiny shared state so the header's Lock button and the page agree ── */
@@ -46,6 +47,7 @@ const G = ({ n }: { n: keyof typeof SVG }) => (
 
 /** The page header's Lock (FINAL vaultHeading action). */
 export function VaultLockButton() {
+  const t = useT();
   const st = useLock();
   const [busy, setBusy] = useState(false);
   if (st.locked) return null;
@@ -54,7 +56,7 @@ export function VaultLockButton() {
       type="button"
       className="vault-button"
       disabled={!st.canLock || busy}
-      title={st.canLock ? "Lock the Vault until your passkey opens it" : "Add a passkey in Settings first, so you can unlock it again"}
+      title={st.canLock ? t("vault.lockTitle") : t("vault.lockNeedsPasskey")}
       onClick={async () => {
         setBusy(true);
         const r = await lockVault();
@@ -62,7 +64,7 @@ export function VaultLockButton() {
         if (r.ok) setLock({ locked: true, rev: st.rev + 1 });
       }}
     >
-      <G n="lock" /> Lock
+      <G n="lock" /> {t("vault.lock")}
     </button>
   );
 }
@@ -79,6 +81,8 @@ type Dialog =
   | { kind: "owners" };
 
 export default function VaultPage() {
+  const t = useT();
+  const lang = useLang();
   const lock = useLock();
   const [pic, setPic] = useState<VaultPicture | null>(null);
   const [err, setErr] = useState<{ error: string; code?: string; status?: number } | null>(null);
@@ -109,16 +113,17 @@ export default function VaultPage() {
     void load();
   }, [load, lock.rev]);
 
-  const say = (t: string) => {
-    setToast(t);
-    window.setTimeout(() => setToast((x) => (x === t ? "" : x)), 6000);
+  const say = (msg: string) => {
+    setToast(msg);
+    window.setTimeout(() => setToast((x) => (x === msg ? "" : x)), 6000);
   };
   const close = () => {
     setDialog(null);
     void load();
   };
 
-  const records = useMemo(() => (pic ? recordsOf(pic) : []), [pic]);
+  // Labels are produced in the current language, so the language is part of the memo.
+  const records = useMemo(() => (pic ? recordsOf(pic) : []), [pic, lang]); // eslint-disable-line react-hooks/exhaustive-deps
   const attention = useMemo(() => (pic ? attentionOf(pic, records) : []), [pic, records]);
   const rank = useMemo(() => new Map(attention.filter((a) => a.recordId).map((a) => [a.recordId!, a.score])), [attention]);
   const allAccounts = useMemo(() => (pic ? pic.owners.flatMap((g) => g.accounts) : []), [pic]);
@@ -136,17 +141,17 @@ export default function VaultPage() {
       <section className="native-vault">
         <div className="vault-empty">
           <G n="lock" />
-          <h1>{err.code === "vault-locked" ? "The Vault's key is missing." : err.status === 404 ? "This Vault is private." : "Your picture is still here."}</h1>
+          <h1>{err.code === "vault-locked" ? t("vault.errKeyTitle") : err.status === 404 ? t("vault.errPrivateTitle") : t("vault.errStillHereTitle")}</h1>
           <p>
             {err.code === "vault-locked"
-              ? "The encryption key is missing on the gateway. Nothing is shown until it is back."
+              ? t("vault.errKeyBody")
               : err.status === 404
-                ? "Only its owner can see these financial records."
-                : `The Vault could not load (${err.error}). Saved figures stay intact.`}
+                ? t("vault.errPrivateBody")
+                : t("vault.errCouldNotLoad", { error: err.error })}
           </p>
           {err.status !== 404 && err.code !== "vault-locked" && (
             <button type="button" className="vault-button primary" onClick={() => void load()}>
-              Try again
+              {t("common.tryAgain")}
             </button>
           )}
         </div>
@@ -174,14 +179,21 @@ export default function VaultPage() {
   const inTab = (c: Category | "all") => records.filter((r) => r.archived === archived && (c === "all" || r.category === c));
   const shown = inTab(cat)
     .filter((r) => ownerF === "all" || r.owner === ownerF)
-    .filter((r) => `${r.name} ${r.kind} ${OWNER_LABELS[r.owner]}`.toLowerCase().includes(query.trim().toLowerCase()))
+    .filter((r) => `${r.name} ${r.kind} ${ownerLabel(r.owner)}`.toLowerCase().includes(query.trim().toLowerCase()))
     .sort((a, b) => (sort === "balance" ? Math.abs(b.value ?? 0) - Math.abs(a.value ?? 0) : sort === "attention" ? (rank.get(b.id) ?? 0) - (rank.get(a.id) ?? 0) : a.name.localeCompare(b.name)));
 
   const refresh = async () => {
     setBusy("refresh");
     const r = await refreshFeeds();
     setBusy("");
-    say(r.ok ? `Refreshed ${r.value.refreshed} connection${r.value.refreshed === 1 ? "" : "s"}${r.value.failed ? `, ${r.value.failed} failed` : ""}${r.value.flags.length ? `; ${r.value.flags.length} new to look at` : ""}.` : r.error);
+    say(
+      r.ok
+        ? tn("vault.refreshed", r.value.refreshed, {
+            failed: r.value.failed ? t("vault.refreshedFailed", { n: r.value.failed }) : "",
+            flags: r.value.flags.length ? t("vault.refreshedFlags", { n: r.value.flags.length }) : "",
+          })
+        : r.error,
+    );
     void load();
   };
 
@@ -193,60 +205,64 @@ export default function VaultPage() {
       {dialog?.kind === "connect" && <ConnectModal picture={pic} onClose={close} />}
       {dialog?.kind === "upload" && <UploadModal onClose={close} />}
       {dialog?.kind === "manual" && (
-        <Modal title="Add to your picture." onClose={() => setDialog(null)}>
+        <Modal title={t("vault.addToPicture")} onClose={() => setDialog(null)}>
           <div className="vault-add-choices">
             <button type="button" onClick={() => setDialog({ kind: "new-account" })}>
               <G n="bank" />
-              <strong>Financial account</strong>
-              <span>A bank, credit, loan or investment account entered by hand.</span>
+              <strong>{t("vault.financialAccount")}</strong>
+              <span>{t("vault.financialAccountBody")}</span>
             </button>
             <button type="button" onClick={() => setDialog({ kind: "item", item: null })}>
               <Icon name="home" />
-              <strong>Asset or debt</strong>
-              <span>Property, a vehicle, a business share, or another item.</span>
+              <strong>{t("vault.assetOrDebt")}</strong>
+              <span>{t("vault.assetOrDebtBody")}</span>
             </button>
           </div>
         </Modal>
       )}
       {dialog?.kind === "coverage" && (
-        <Modal title="Minimums, next 30 days." onClose={() => setDialog(null)}>
+        <Modal title={t("vault.coverageTitle")} onClose={() => setDialog(null)}>
           <p className="vault-dialog-p">
-            {money(pic.cash_flow.minimums_30d, 2)} in scheduled minimum payments across {pic.cash_flow.minimums_counted} account{pic.cash_flow.minimums_counted === 1 ? "" : "s"}
-            {pic.cash_flow.minimums_unknown ? `; ${pic.cash_flow.minimums_unknown} more have no minimum on file` : ""}. Each owner’s minimums are set against that owner’s own tracked cash, never someone else’s.
+            {tn("vault.coverageBody", pic.cash_flow.minimums_counted, {
+              amount: money(pic.cash_flow.minimums_30d, 2),
+              unknown: pic.cash_flow.minimums_unknown ? t("vault.coverageUnknown", { n: pic.cash_flow.minimums_unknown }) : "",
+            })}
           </p>
           <div className="vault-coverage">
             {pressure.length ? (
               pressure.map(([o, p]) => (
                 <div key={o}>
-                  <span>{OWNER_LABELS[o]}</span>
-                  <span>
-                    {money(p.minimums, 2)} due · {money(p.cash, 2)} cash
-                  </span>
-                  <strong className={p.shortfall > 0 ? "watch" : "good"}>{p.shortfall > 0 ? `Short ${money(p.shortfall, 2)}` : "Covered"}</strong>
+                  <span>{ownerLabel(o)}</span>
+                  <span>{t("vault.dueCash", { due: money(p.minimums, 2), cash: money(p.cash, 2) })}</span>
+                  <strong className={p.shortfall > 0 ? "watch" : "good"}>{p.shortfall > 0 ? t("vault.short", { amount: money(p.shortfall, 2) }) : t("vault.covered")}</strong>
                 </div>
               ))
             ) : (
-              <p className="vault-muted">No minimums are due in the next 30 days.</p>
+              <p className="vault-muted">{t("vault.noMinimums")}</p>
             )}
           </div>
-          <p className="vault-form-note">Figures as of {shortDate(pic.staleness.oldest_as_of)} to {shortDate(pic.staleness.newest_as_of)}.</p>
+          <p className="vault-form-note">{t("vault.figuresRange", { from: shortDate(pic.staleness.oldest_as_of), to: shortDate(pic.staleness.newest_as_of) })}</p>
         </Modal>
       )}
       {dialog?.kind === "explainer" && (
-        <Modal title="How totals work." onClose={() => setDialog(null)}>
+        <Modal title={t("vault.explainerTitle")} onClose={() => setDialog(null)}>
           <p className="vault-dialog-p">
-            <strong>Your net worth</strong> is only what is yours: your own assets less what you owe. Every figure belongs to one owner and is never netted into anyone else’s.
+            <strong>{t("vault.explNetWorth")}</strong> {t("vault.explNetWorthBody")}
           </p>
           <p className="vault-dialog-p">
-            <strong>Including business ownership</strong> adds your documented share of each business you own, and is always labelled as such: {money(pic.owner.net, 2)} of your own
-            {shares.map((s) => ` + ${s.pct}% of ${OWNER_LABELS[s.owner]} (${money(s.net * (s.pct / 100), 2)})`).join("")} = {money(pic.owner_look_through.net, 2)}.
+            <strong>{t("vault.includingBusiness")}</strong>{" "}
+            {t("vault.explBusinessBody", {
+              own: money(pic.owner.net, 2),
+              shares: shares.map((s) => t("vault.explShare", { pct: String(s.pct), owner: ownerLabel(s.owner), amount: money(s.net * (s.pct / 100), 2) })).join(""),
+              total: money(pic.owner_look_through.net, 2),
+            })}
           </p>
-          <p className="vault-dialog-p">Figures with no amount are left out and counted as unknown, never guessed. A share with no documented split is never assumed.</p>
+          <p className="vault-dialog-p">{t("vault.explUnknown")}</p>
         </Modal>
       )}
       {dialog?.kind === "owners" && (
-        <Modal title="Owners in your picture." onClose={() => setDialog(null)}>
-          <p className="vault-dialog-p">Each record belongs to one owner. Change a record’s owner from the record itself; shares in a business come from its documented split.</p>
+        <Modal title={t("vault.ownersTitle")} onClose={() => setDialog(null)}>
+          <p className="vault-dialog-p">{t("vault.ownersBody")}</p>
           <div className="vault-coverage">
             {pic.owners.map((g) => {
               const sh = pic.owner_look_through.shares.find((s) => s.owner === g.owner);
@@ -262,10 +278,8 @@ export default function VaultPage() {
                     document.querySelector(".vault-records")?.scrollIntoView({ behavior: "smooth", block: "start" });
                   }}
                 >
-                  <span>{g.label}</span>
-                  <span>
-                    {g.accounts.length + g.items.length} records{sh ? ` · your share ${sh.pct}%` : ""}
-                  </span>
+                  <span dir="auto">{g.label}</span>
+                  <span>{t("vault.recordsCount", { n: g.accounts.length + g.items.length, share: sh ? t("vault.yourShare", { pct: String(sh.pct) }) : "" })}</span>
                   <strong>{money(g.totals.net, 2)}</strong>
                 </button>
               );
@@ -280,21 +294,21 @@ export default function VaultPage() {
     return (
       <section className="native-vault">
         <button type="button" className="vault-button vault-back" onClick={() => setSection("overview")}>
-          <Icon name="arrow-left" /> Back to Vault
+          <Icon name="arrow-left" /> {t("vault.backToVault")}
         </button>
         <header className="vault-heading">
           <div>
-            <h1>{section === "connections" ? "Your bank connections." : "The sources behind your picture."}</h1>
-            <p>{section === "connections" ? "Linked accounts stay separate from manual records." : "Statements and credit reports, read before anything changes."}</p>
+            <h1>{section === "connections" ? t("vault.connectionsTitle") : t("vault.documentsTitle")}</h1>
+            <p>{section === "connections" ? t("vault.connectionsSub") : t("vault.documentsSub")}</p>
           </div>
           <div className="vault-heading-actions">
             {section === "connections" ? (
               <button type="button" className="vault-button primary" onClick={() => setDialog({ kind: "connect" })}>
-                Connect account
+                {t("vault.connectAccount")}
               </button>
             ) : (
               <button type="button" className="vault-button primary" onClick={() => setDialog({ kind: "upload" })}>
-                Add statement
+                {t("vault.addStatement")}
               </button>
             )}
           </div>
@@ -307,13 +321,16 @@ export default function VaultPage() {
                 <span className="vault-generic-bank">
                   <G n="bank" />
                 </span>
-                <h2>{c.institution}</h2>
+                <h2 dir="auto">{c.institution}</h2>
                 <p>
-                  {c.status === "active" || c.status === "connected" ? "Linked" : c.status.replace(/_/g, " ")} · {c.accounts} account{c.accounts === 1 ? "" : "s"} · {OWNER_LABELS[c.owner]}
+                  {c.status === "active" || c.status === "connected" ? t("vault.source.linked") : c.status.replace(/_/g, " ")} · {tn("vault.accounts", c.accounts)} · {ownerLabel(c.owner)}
                 </p>
                 <small>
-                  Read only through {c.provider}. Last refreshed {c.last_refresh_at ? shortDate(c.last_refresh_at) : "never"}
-                  {c.last_refresh_ok === false ? " (failed)" : ""}.
+                  {t("vault.readOnlyThrough", {
+                    provider: c.provider,
+                    when: c.last_refresh_at ? shortDate(c.last_refresh_at) : t("vault.never"),
+                    failed: c.last_refresh_ok === false ? t("vault.failedParen") : "",
+                  })}
                 </small>
                 <div>
                   {c.status !== "disconnected" && (
@@ -321,45 +338,45 @@ export default function VaultPage() {
                       type="button"
                       className="vault-button"
                       onClick={async () => {
-                        if (!confirm(`Disconnect ${c.institution}? Its token is deleted; the figures stay as a saved snapshot.`)) return;
+                        if (!confirm(t("vault.confirmDisconnect", { name: c.institution }))) return;
                         const r = await disconnect(c.id);
-                        say(r.ok ? `${c.institution} disconnected; the token is deleted.` : r.error);
+                        say(r.ok ? t("vault.disconnected", { name: c.institution }) : r.error);
                         void load();
                       }}
                     >
-                      Disconnect
+                      {t("vault.disconnect")}
                     </button>
                   )}
                 </div>
               </article>
             ))}
-            {!pic.connections.length && <p className="vault-muted">No bank is connected yet. Connect account signs you in at the bank itself, read only.</p>}
+            {!pic.connections.length && <p className="vault-muted">{t("vault.noBankYet")}</p>}
           </div>
         ) : (
           <div className="vault-document-grid">
             {pic.documents.map((d) => (
               <article key={d.id}>
                 <Icon name="folder" />
-                <strong>{d.filename}</strong>
+                <strong dir="auto">{d.filename}</strong>
                 <small>
-                  {d.kind.replace(/-/g, " ")} · {OWNER_LABELS[d.owner]} · {shortDate(d.uploaded_at)}
+                  {d.kind.replace(/-/g, " ")} · {ownerLabel(d.owner)} · {shortDate(d.uploaded_at)}
                 </small>
-                <p>{d.parsed ? d.parsed.summary : "Stored; nothing was read from it automatically."}</p>
+                <p dir={d.parsed ? "auto" : undefined}>{d.parsed ? d.parsed.summary : t("vault.docNothingRead")}</p>
                 <button
                   type="button"
                   className="vault-button"
                   onClick={async () => {
-                    if (!confirm("Delete this document? Figures already applied stay.")) return;
+                    if (!confirm(t("vault.confirmDeleteDoc"))) return;
                     const r = await deleteDoc(d.id);
-                    say(r.ok ? "Document deleted." : r.error);
+                    say(r.ok ? t("vault.docDeleted") : r.error);
                     void load();
                   }}
                 >
-                  Delete
+                  {t("common.delete")}
                 </button>
               </article>
             ))}
-            {!pic.documents.length && <p className="vault-muted">No documents added yet.</p>}
+            {!pic.documents.length && <p className="vault-muted">{t("vault.noDocs")}</p>}
           </div>
         )}
         {dialogs}
@@ -370,31 +387,33 @@ export default function VaultPage() {
     <section className="native-vault">
       <div className="vault-overview">
         <article className="vault-net-worth">
-          <span className="eyebrow">YOUR NET WORTH</span>
+          <span className="eyebrow">{t("vault.netWorthEyebrow")}</span>
           <strong className={pic.owner.net < 0 ? "neg" : undefined}>{money(pic.owner.net, 2)}</strong>
-          <p>Personal assets, less what you owe.</p>
+          <p>{t("vault.netWorthSub")}</p>
           <div>
             <span>
-              <Icon name="shield" /> Private by design
+              <Icon name="shield" /> {t("vault.privateByDesign")}
             </span>
             <small>
-              Figures as of {shortDate(pic.staleness.newest_as_of)}
-              {pic.owner.unknown_figures ? ` · ${pic.owner.unknown_figures} unknown left out` : ""}
+              {t("vault.figuresAsOf", {
+                date: shortDate(pic.staleness.newest_as_of),
+                unknown: pic.owner.unknown_figures ? t("vault.unknownLeftOut", { n: pic.owner.unknown_figures }) : "",
+              })}
             </small>
           </div>
         </article>
         <div className="vault-overview-side">
           <button type="button" className="vault-summary-card" onClick={() => setDialog({ kind: "explainer" })}>
             <span>
-              Including business ownership <G n="info" />
+              {t("vault.includingBusiness")} <G n="info" />
             </span>
             <strong>{money(pic.owner_look_through.net, 2)}</strong>
-            <small>{shares.length ? shares.map((s) => `${OWNER_LABELS[s.owner]} · ${s.pct}%`).join(" / ") : "No documented business shares"}</small>
+            <small>{shares.length ? shares.map((s) => `${ownerLabel(s.owner)} · ${s.pct}%`).join(" / ") : t("vault.noBusinessShares")}</small>
           </button>
           <button type="button" className="vault-summary-card" onClick={() => setDialog({ kind: "coverage" })}>
-            <span>Minimums · next 30 days</span>
+            <span>{t("vault.minimumsNext30")}</span>
             <strong>{money(pic.cash_flow.minimums_30d, 2)}</strong>
-            <small className={covered ? "good" : "watch"}>{covered ? "Covered by tracked cash for each owner" : "Cash coverage varies by owner"}</small>
+            <small className={covered ? "good" : "watch"}>{covered ? t("vault.coveredByCash") : t("vault.coverageVaries")}</small>
           </button>
           <button
             type="button"
@@ -405,12 +424,12 @@ export default function VaultPage() {
               document.querySelector(".vault-records")?.scrollIntoView({ behavior: "smooth", block: "start" });
             }}
           >
-            <span>Figures to refresh</span>
+            <span>{t("vault.figuresToRefresh")}</span>
             <strong>
               {pic.staleness.stale_count}
               <em> / {pic.staleness.total_known}</em>
             </strong>
-            <small>Older than 45 days</small>
+            <small>{t("vault.olderThan45")}</small>
           </button>
         </div>
       </div>
@@ -418,13 +437,13 @@ export default function VaultPage() {
       <div className="vault-toolbar">
         <div>
           <button type="button" className="vault-button primary" disabled={!!busy} onClick={() => setDialog({ kind: "connect" })}>
-            <Icon name="plus" /> Connect account
+            <Icon name="plus" /> {t("vault.connectAccount")}
           </button>
           <button type="button" className="vault-button" disabled={!!busy} aria-haspopup="dialog" onClick={() => setDialog({ kind: "manual" })}>
-            Add manually <Icon name="chevron" />
+            {t("vault.addManually")} <Icon name="chevron" />
           </button>
           <button type="button" className="vault-button" disabled={!!busy} onClick={() => setDialog({ kind: "upload" })}>
-            <Icon name="upload" /> Add statement
+            <Icon name="upload" /> {t("vault.addStatement")}
           </button>
           {!pic.initialized && (
             <button
@@ -435,11 +454,11 @@ export default function VaultPage() {
                 setBusy("seed");
                 const r = await importSeed();
                 setBusy("");
-                say(r.ok ? `Loaded the snapshot: ${r.value.accounts} accounts, ${r.value.items} items.` : r.error);
+                say(r.ok ? t("vault.seedLoaded", { accounts: r.value.accounts, items: r.value.items }) : r.error);
                 void load();
               }}
             >
-              Load the October snapshot
+              {t("vault.loadOctober")}
             </button>
           )}
         </div>
@@ -447,42 +466,40 @@ export default function VaultPage() {
           type="button"
           className="vault-button"
           disabled={!!busy || !liveConnections.length}
-          title={liveConnections.length ? "Pull fresh balances from every connected bank" : "Connect a bank first"}
+          title={liveConnections.length ? t("vault.refreshTitle") : t("vault.connectBankFirst")}
           onClick={() => void refresh()}
         >
-          <G n="refresh" /> {busy === "refresh" ? "Refreshing…" : "Refresh feeds"}
+          <G n="refresh" /> {busy === "refresh" ? t("vault.refreshing") : t("vault.refreshFeeds")}
         </button>
       </div>
       <div className="vault-inline-links">
         <button type="button" className="vault-button" onClick={() => setSection("connections")}>
-          {liveConnections.length} bank connection{liveConnections.length === 1 ? "" : "s"} <Icon name="arrow-right" />
+          {tn("vault.bankConnections", liveConnections.length)} <Icon name="arrow-right" />
         </button>
         <button type="button" className="vault-button" onClick={() => setSection("documents")}>
-          {pic.documents.length} document{pic.documents.length === 1 ? "" : "s"} <Icon name="arrow-right" />
+          {tn("vault.documents", pic.documents.length)} <Icon name="arrow-right" />
         </button>
       </div>
       {toast && <p className="vault-toast" role="status">{toast}</p>}
 
       {!records.length ? (
         <div className="vault-empty">
-          <h2>Your picture starts with one account.</h2>
-          <p>Connect a bank, or enter an account, asset or debt by hand.</p>
+          <h2>{t("vault.emptyTitle")}</h2>
+          <p>{t("vault.emptyBody")}</p>
           <button type="button" className="vault-button primary" onClick={() => setDialog({ kind: "connect" })}>
-            Connect account
+            {t("vault.connectAccount")}
           </button>
         </div>
       ) : (
         <>
           <div className="vault-section-title">
             <div>
-              <h2>A moment of attention</h2>
-              <span>
-                {attention.length} item{attention.length === 1 ? "" : "s"} · ordered by urgency
-              </span>
+              <h2>{t("vault.attentionTitle")}</h2>
+              <span>{tn("vault.attentionCount", attention.length)}</span>
             </div>
             {attention.length > 4 && (
               <button type="button" className="vault-button" onClick={() => setAllAttention(!allAttention)}>
-                {allAttention ? "Show less" : "See all"}
+                {allAttention ? t("vault.showLess") : t("vault.tab.all")}
               </button>
             )}
           </div>
@@ -492,22 +509,22 @@ export default function VaultPage() {
                 <div key={a.key} className={`vault-flag ${a.tone}`}>
                   <i />
                   <button type="button" className="vault-flag-open" onClick={() => openId(a.recordId)} disabled={!a.recordId}>
-                    <small>{a.label}</small>
-                    <strong>{a.title}</strong>
-                    <p>{a.body}</p>
+                    <small dir="auto">{a.label}</small>
+                    <strong dir="auto">{a.title}</strong>
+                    <p dir="auto">{a.body}</p>
                   </button>
                   {a.flag ? (
                     <button
                       type="button"
                       className="vault-flag-ack"
-                      title="Mark it handled; the figure stays as it is"
+                      title={t("vault.markHandledTitle")}
                       onClick={async () => {
                         const r = await ackFlag(a.flag!.id);
-                        say(r.ok ? "Marked as handled." : r.error);
+                        say(r.ok ? t("vault.markedHandled") : r.error);
                         void load();
                       }}
                     >
-                      Got it
+                      {t("vault.gotIt")}
                     </button>
                   ) : (
                     <G n="out" />
@@ -515,18 +532,18 @@ export default function VaultPage() {
                 </div>
               ))
             ) : (
-              <div className="vault-clear">Nothing needs your attention right now.</div>
+              <div className="vault-clear">{t("vault.nothingNeeds")}</div>
             )}
           </div>
 
           <div className="vault-section-title">
             <div>
-              <h2>The most expensive debts</h2>
-              <span>Simple annual estimate at the current balance; fees and future changes excluded.</span>
+              <h2>{t("vault.debtsTitle")}</h2>
+              <span>{t("vault.debtsSub")}</span>
             </div>
-            <select aria-label="Sort expensive debts" value={debtSort} onChange={(e) => setDebtSort(e.target.value as "apr" | "interest")}>
-              <option value="apr">Highest APR</option>
-              <option value="interest">Estimated interest</option>
+            <select aria-label={t("vault.sortDebts")} value={debtSort} onChange={(e) => setDebtSort(e.target.value as "apr" | "interest")}>
+              <option value="apr">{t("vault.highestApr")}</option>
+              <option value="interest">{t("vault.estimatedInterest")}</option>
             </select>
           </div>
           <div className="vault-debts">
@@ -536,36 +553,36 @@ export default function VaultPage() {
                   <span>
                     {d.institution}
                     {d.last4 ? ` ·· ${d.last4}` : ""}
-                    <small>{OWNER_LABELS[d.owner]}</small>
+                    <small>{ownerLabel(d.owner)}</small>
                   </span>
                   <strong>
-                    {d.apr_pct}% <small>APR</small>
+                    {d.apr_pct}% <small>{t("vault.apr")}</small>
                   </strong>
                   <span>
                     ~{money(d.interest_per_year, 2)}
-                    <small>interest / year</small>
+                    <small>{t("vault.interestPerYear")}</small>
                   </span>
                   <Icon name="chevron-right" />
                 </button>
               ))
             ) : (
-              <p className="vault-muted vault-debts-empty">No interest-bearing debts recorded.</p>
+              <p className="vault-muted vault-debts-empty">{t("vault.noDebts")}</p>
             )}
           </div>
 
           <div className="vault-section-title">
             <div>
-              <h2>Everything, in its place.</h2>
-              <span>Filter by category or owner; See all brings the picture together.</span>
+              <h2>{t("vault.everythingTitle")}</h2>
+              <span>{t("vault.everythingSub")}</span>
             </div>
             <button type="button" className="vault-button" onClick={() => setDialog({ kind: "owners" })}>
-              Manage owners
+              {t("vault.manageOwners")}
             </button>
           </div>
-          <div className="vault-category-tabs" role="tablist" aria-label="Vault categories">
+          <div className="vault-category-tabs" role="tablist" aria-label={t("vault.categoriesAria")}>
             {CATEGORY_TABS.map(([id, label]) => (
               <button key={id} type="button" role="tab" aria-selected={cat === id} onClick={() => setCat(id)}>
-                {label}
+                {t(label)}
                 <small>{inTab(id).length}</small>
               </button>
             ))}
@@ -573,24 +590,24 @@ export default function VaultPage() {
           <div className="vault-list-tools">
             <label>
               <Icon name="search" />
-              <input type="search" aria-label="Search Vault records" placeholder="Find an account or asset…" value={query} onChange={(e) => setQuery(e.target.value)} />
+              <input type="search" dir="auto" aria-label={t("vault.searchAria")} placeholder={t("vault.searchPlaceholder")} value={query} onChange={(e) => setQuery(e.target.value)} />
             </label>
-            <select aria-label="Filter Vault owner" value={ownerF} onChange={(e) => setOwnerF(e.target.value as Owner | "all")}>
-              <option value="all">All owners</option>
+            <select aria-label={t("vault.filterOwnerAria")} value={ownerF} onChange={(e) => setOwnerF(e.target.value as Owner | "all")}>
+              <option value="all">{t("vault.allOwners")}</option>
               {owners.map((o) => (
                 <option key={o} value={o}>
-                  {OWNER_LABELS[o]}
+                  {ownerLabel(o)}
                 </option>
               ))}
             </select>
-            <select aria-label="Sort Vault records" value={sort} onChange={(e) => setSort(e.target.value as "name" | "balance" | "attention")}>
-              <option value="name">Name</option>
-              <option value="balance">Largest balance</option>
-              <option value="attention">Needs attention</option>
+            <select aria-label={t("vault.sortAria")} value={sort} onChange={(e) => setSort(e.target.value as "name" | "balance" | "attention")}>
+              <option value="name">{t("vault.sortName")}</option>
+              <option value="balance">{t("vault.sortBalance")}</option>
+              <option value="attention">{t("vault.sortAttention")}</option>
             </select>
             <label className="vault-archive-filter">
               <input type="checkbox" checked={archived} onChange={(e) => setArchived(e.target.checked)} />
-              Archived
+              {t("vault.archived")}
             </label>
           </div>
           <div className="vault-records">
@@ -598,30 +615,30 @@ export default function VaultPage() {
               <button key={`${r.ref}:${r.id}`} type="button" className="vault-record" onClick={() => open(r)}>
                 <span className="vault-record-icon">{r.category === "cash" ? <G n="bank" /> : r.category === "credit" ? <G n="credit" /> : r.category === "property" ? <Icon name="home" /> : <Icon name="layers" />}</span>
                 <span className="vault-record-main">
-                  <strong>{r.name}</strong>
+                  <strong dir="auto">{r.name}</strong>
                   <small>
-                    {OWNER_LABELS[r.owner]} · {r.kind}
+                    {ownerLabel(r.owner)} · {r.kind}
                     {r.last4 ? ` · •• ${r.last4}` : ""}
                   </small>
                   <em className={r.stale ? "stale" : undefined}>
-                    {r.archived ? "Closed" : r.source} · {shortDate(r.asOf)}
+                    {r.archived ? t("vault.closed") : r.source} · {shortDate(r.asOf)}
                   </em>
                 </span>
                 <span className="vault-record-value">
-                  {r.value === null ? "Unknown" : money(r.value, 2)}
-                  {r.apr !== null && <small>{r.apr}% APR</small>}
+                  {r.value === null ? t("common.unknown") : money(r.value, 2)}
+                  {r.apr !== null && <small>{t("vault.aprValue", { n: String(r.apr) })}</small>}
                 </span>
                 <Icon name="chevron-right" />
               </button>
             ))}
-            {!shown.length && <div className="vault-list-empty">No records match these filters.</div>}
+            {!shown.length && <div className="vault-list-empty">{t("vault.noMatch")}</div>}
           </div>
         </>
       )}
       <footer className="vault-footer">
-        Private to you · figures from your banks, statements and entries ·
+        {t("vault.footer")}
         <button type="button" className="vault-button" onClick={() => setDialog({ kind: "explainer" })}>
-          How totals work
+          {t("vault.howTotalsWork")}
         </button>
       </footer>
       {dialogs}
@@ -630,14 +647,15 @@ export default function VaultPage() {
 }
 
 function LockedView({ onOpen }: { onOpen: () => void }) {
+  const t = useT();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   return (
     <section className="native-vault">
       <div className="vault-empty">
         <G n="lock" />
-        <h1>Your Vault is locked.</h1>
-        <p>Confirm with your passkey to open your financial picture.</p>
+        <h1>{t("vault.lockedTitle")}</h1>
+        <p>{t("vault.lockedBody")}</p>
         <button
           type="button"
           className="vault-button primary"
@@ -651,7 +669,7 @@ function LockedView({ onOpen }: { onOpen: () => void }) {
             else setError(r.error);
           }}
         >
-          <G n="fingerprint" /> {busy ? "Waiting for your passkey…" : "Unlock"}
+          <G n="fingerprint" /> {busy ? t("vault.waitingPasskey") : t("vault.unlock")}
         </button>
         {error && (
           <p className="vault-form-error" role="alert">

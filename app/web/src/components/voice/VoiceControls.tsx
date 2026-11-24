@@ -4,6 +4,8 @@
  * sharing — the record feature stays (the owner: "the share screen should still have the record feature").
  * Accessible names are unchanged (Mute microphone / Share screen / End call / Record for Michael to watch).
  */
+import { useT } from "../../i18n";
+
 const MicIcon = ({ muted }: { muted: boolean }) => (
   <svg viewBox="0 0 24 24" aria-hidden="true">
     <rect x="9" y="3" width="6" height="11" rx="3" />
@@ -59,17 +61,18 @@ export default function VoiceControls({
   standby?: boolean;
   onToggleStandby?: () => void;
 }) {
+  const t = useT();
   return (
     <footer className="voice-controls">
       <button
         type="button"
         className={`voice-control mute${muted ? " on" : ""}`}
-        aria-label={muted ? "Unmute microphone" : "Mute microphone"}
+        aria-label={muted ? t("voice.ctl.unmuteMic") : t("voice.ctl.muteMic")}
         aria-pressed={muted}
         onClick={onToggleMute}
       >
         <MicIcon muted={muted} />
-        <span aria-hidden="true">{muted ? "Unmute" : "Mute"}</span>
+        <span aria-hidden="true">{muted ? t("voice.ctl.unmute") : t("voice.ctl.mute")}</span>
       </button>
 
       {/* Desktop only: phones have no getDisplayMedia, so no button. */}
@@ -77,12 +80,12 @@ export default function VoiceControls({
         <button
           type="button"
           className={`voice-control share${sharing ? " on" : ""}`}
-          aria-label={sharing ? "Stop sharing screen" : "Share screen"}
+          aria-label={sharing ? t("voice.ctl.stopSharingScreen") : t("voice.ctl.shareScreen")}
           aria-pressed={sharing}
           onClick={onToggleShare}
         >
           <MonitorIcon />
-          <span aria-hidden="true">{sharing ? "Stop share" : "Share screen"}</span>
+          <span aria-hidden="true">{sharing ? t("voice.ctl.stopShare") : t("voice.ctl.shareScreen")}</span>
         </button>
       )}
 
@@ -91,30 +94,30 @@ export default function VoiceControls({
         <button
           type="button"
           className={`voice-control rec${recording ? " on" : ""}`}
-          aria-label={recording ? "Stop recording" : "Record for Michael to watch"}
+          aria-label={recording ? t("voice.ctl.stopRecording") : t("voice.ctl.recordForMichael")}
           aria-pressed={recording}
           onClick={onToggleRecord}
         >
           <RecIcon on={recording} />
-          <span aria-hidden="true">{recording ? "Done" : "Record"}</span>
+          <span aria-hidden="true">{recording ? t("common.done") : t("voice.ctl.record")}</span>
         </button>
       )}
 
-      <button type="button" className="voice-control voice-end end" aria-label="End call" onClick={onEnd}>
+      <button type="button" className="voice-control voice-end end" aria-label={t("voice.ctl.endCall")} onClick={onEnd}>
         <XIcon />
-        <span aria-hidden="true">End</span>
+        <span aria-hidden="true">{t("voice.ctl.end")}</span>
       </button>
 
       {onToggleStandby && (
         <button
           type="button"
           className={`voice-control standby${standby ? " on" : ""}`}
-          aria-label={standby ? "Resume — Michael listens again" : "Standby — Michael waits for his name"}
+          aria-label={standby ? t("voice.ctl.resumeLabel") : t("voice.ctl.standbyLabel")}
           aria-pressed={standby}
           onClick={onToggleStandby}
         >
           <ClockIcon />
-          <span aria-hidden="true">{standby ? "Resume" : "Standby"}</span>
+          <span aria-hidden="true">{standby ? t("voice.ctl.resume") : t("voice.ctl.standby")}</span>
         </button>
       )}
     </footer>

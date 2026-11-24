@@ -16,6 +16,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Icon, type IconName } from "./icons";
 import { useEscape } from "../components/FinalDialog";
 import "./gmail-final.css";
+import { locale, t as tr, tn, useT, type Key } from "../i18n";
 
 interface Account {
   id: string;
@@ -48,15 +49,15 @@ interface Letter {
   attachments: Array<{ name: string; size: number }>;
 }
 type Folder = "inbox" | "starred" | "sent" | "drafts" | "archive" | "all" | "spam" | "trash";
-const FOLDERS: Array<[Folder, string, IconName]> = [
-  ["inbox", "Inbox", "inbox"],
-  ["starred", "Starred", "star"],
-  ["sent", "Sent", "forward"],
-  ["drafts", "Drafts", "edit"],
-  ["archive", "Archive", "archive"],
-  ["all", "All mail", "mail"],
-  ["spam", "Spam", "spam"],
-  ["trash", "Trash", "trash"],
+const FOLDERS: Array<[Folder, Key, IconName]> = [
+  ["inbox", "gmail.folder.inbox", "inbox"],
+  ["starred", "gmail.folder.starred", "star"],
+  ["sent", "gmail.folder.sent", "forward"],
+  ["drafts", "gmail.folder.drafts", "edit"],
+  ["archive", "gmail.folder.archive", "archive"],
+  ["all", "gmail.folder.all", "mail"],
+  ["spam", "gmail.folder.spam", "spam"],
+  ["trash", "gmail.folder.trash", "trash"],
 ];
 type Scope = "all" | "account" | "folder";
 
@@ -72,8 +73,8 @@ const avatar = (a: Account) => {
   return <img src={`data:image/svg+xml,${encodeURIComponent(svg)}`} alt="" draggable={false} />;
 };
 const sameDay = (iso: string) => new Date(iso).toDateString() === new Date().toDateString();
-const time = (iso: string) => new Date(iso).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
-const date = (iso: string) => new Date(iso).toLocaleDateString([], { month: "short", day: "numeric" });
+const time = (iso: string) => new Date(iso).toLocaleTimeString(locale(), { hour: "numeric", minute: "2-digit" });
+const date = (iso: string) => new Date(iso).toLocaleDateString(locale(), { month: "short", day: "numeric" });
 const kb = (n: number) => (n > 1024 * 1024 ? `${(n / 1024 / 1024).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1024))} KB`);
 
 function MailButton({ label, icon, onClick, className }: { label: string; icon: IconName; onClick: () => void; className?: string }) {
@@ -86,6 +87,7 @@ function MailButton({ label, icon, onClick, className }: { label: string; icon: 
 
 /** FINAL's "Connect another account": ahi ••• Gmail, then Google's own sign-in in the browser. */
 export function ConnectGmailDialog({ configured, onClose }: { configured: boolean; onClose: () => void }) {
+  const t = useT();
   useEscape(onClose);
   return (
     <div className="connection-dialog-overlay" role="presentation" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
@@ -99,23 +101,21 @@ export function ConnectGmailDialog({ configured, onClose }: { configured: boolea
           </span>
           <img src="/brand/gmail.svg" alt="Gmail" />
         </div>
-        <h2 id="gmail-connect-title">Connect another account</h2>
-        <p>Continue with Google to choose an account and review what AHI can access.</p>
-        <div className="connection-dialog-note">
-          Your account choice and Google’s consent happen in the browser, on Google’s own page. AHI asks to read your mail and save drafts — it never sends from here.
-        </div>
-        {!configured && <p className="rd-dialog-error">Google sign-in isn’t set up on this server yet — it needs the owner’s Google sign-in client.</p>}
+        <h2 id="gmail-connect-title">{t("gmail.connectAnother")}</h2>
+        <p>{t("gmail.connectIntro")}</p>
+        <div className="connection-dialog-note">{t("gmail.connectNote")}</div>
+        {!configured && <p className="rd-dialog-error">{t("gmail.notConfigured")}</p>}
         <footer>
           <button type="button" className="rd-btn" onClick={onClose}>
-            Cancel
+            {t("common.cancel")}
           </button>
           {configured ? (
             <a className="rd-btn rd-btn-accent" href="/app/gmail/oauth/start">
-              Continue with Google
+              {t("gmail.continueWithGoogle")}
             </a>
           ) : (
             <button type="button" className="rd-btn rd-btn-accent" disabled>
-              Continue with Google
+              {t("gmail.continueWithGoogle")}
             </button>
           )}
         </footer>
@@ -130,9 +130,10 @@ function Composer({
   onClose,
 }: {
   accounts: Account[];
-  initial: { account: string; to: string; cc: string; subject: string; body: string; threadId?: string; title: string };
+  initial: { account: string; to: string; cc: string; subject: string; body: string; threadId?: string; title: Key };
   onClose: (saved: boolean) => void;
 }) {
+  const t = useT();
   const [d, setD] = useState(initial);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -140,26 +141,27 @@ function Composer({
     setBusy(true);
     setErr(null);
     try {
-      const r = await fetch("/app/gmail/drafts", { method: "POST", headers: { "Content-Type": "application/json", "X-AHI-Review": "1" }, body: JSON.stringify(d) });
+      // `title` holds a catalog key; the server gets the words, as before.
+      const r = await fetch("/app/gmail/drafts", { method: "POST", headers: { "Content-Type": "application/json", "X-AHI-Review": "1" }, body: JSON.stringify({ ...d, title: tr(d.title) }) });
       const j = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error((j as { error?: string }).error ?? `HTTP ${r.status}`);
       onClose(true);
     } catch (e) {
-      setErr(`Not saved — ${(e as Error).message}`);
+      setErr(t("gmail.notSaved", { error: (e as Error).message }));
       setBusy(false);
     }
   };
   return (
-    <section className="mail-compose-overlay" aria-label="Compose email">
-      <div className="mail-compose-card" role="dialog" aria-modal="true" aria-label="Write an email">
+    <section className="mail-compose-overlay" aria-label={t("gmail.composeEmail")}>
+      <div className="mail-compose-card" role="dialog" aria-modal="true" aria-label={t("gmail.writeEmail")}>
         <header>
           <div>
             <img src="/brand/gmail.svg" alt="" aria-hidden="true" style={{ width: 18, height: 18 }} />
-            <strong>{d.title}</strong>
-            <span>Saves to Gmail Drafts</span>
+            <strong>{t(d.title)}</strong>
+            <span>{t("gmail.savesToDrafts")}</span>
           </div>
           <div>
-            <MailButton label="Discard draft" icon="trash" onClick={() => onClose(false)} />
+            <MailButton label={t("gmail.discardDraft")} icon="trash" onClick={() => onClose(false)} />
           </div>
         </header>
         <form
@@ -169,8 +171,8 @@ function Composer({
           }}
         >
           <label className="mail-compose-line">
-            <span>From</span>
-            <select value={d.account} onChange={(e) => setD({ ...d, account: e.target.value })} aria-label="Account">
+            <span>{t("gmail.from")}</span>
+            <select value={d.account} onChange={(e) => setD({ ...d, account: e.target.value })} aria-label={t("gmail.account")}>
               {accounts.map((a) => (
                 <option key={a.id} value={a.id}>
                   {a.name} · {a.email}
@@ -179,20 +181,20 @@ function Composer({
             </select>
           </label>
           <label className="mail-compose-line">
-            <span>To</span>
-            <input value={d.to} onChange={(e) => setD({ ...d, to: e.target.value })} placeholder="name@example.com" aria-label="Recipients" />
+            <span>{t("gmail.to")}</span>
+            <input dir="ltr" value={d.to} onChange={(e) => setD({ ...d, to: e.target.value })} placeholder="name@example.com" aria-label={t("gmail.recipients")} />
           </label>
           <div className="mail-copy-addresses">
             <label>
-              <span>Cc</span>
-              <input value={d.cc} onChange={(e) => setD({ ...d, cc: e.target.value })} aria-label="Cc recipients" />
+              <span>{t("gmail.cc")}</span>
+              <input dir="ltr" value={d.cc} onChange={(e) => setD({ ...d, cc: e.target.value })} aria-label={t("gmail.ccRecipients")} />
             </label>
           </div>
           <label className="mail-compose-line mail-subject-input">
-            <span>Subject</span>
-            <input value={d.subject} onChange={(e) => setD({ ...d, subject: e.target.value })} placeholder="What’s it about?" aria-label="Email subject" />
+            <span>{t("gmail.subject")}</span>
+            <input dir="auto" value={d.subject} onChange={(e) => setD({ ...d, subject: e.target.value })} placeholder={t("gmail.subjectPlaceholder")} aria-label={t("gmail.subjectAria")} />
           </label>
-          <textarea value={d.body} onChange={(e) => setD({ ...d, body: e.target.value })} placeholder="A little room for your words…" aria-label="Email message" />
+          <textarea dir="auto" value={d.body} onChange={(e) => setD({ ...d, body: e.target.value })} placeholder={t("gmail.bodyPlaceholder")} aria-label={t("gmail.bodyAria")} />
           {err && (
             <p className="rd-dialog-error" role="alert">
               {err}
@@ -201,10 +203,10 @@ function Composer({
           <footer>
             <div>
               <button className="mail-send" type="submit" disabled={busy}>
-                {busy ? "Saving…" : "Save draft"} <Icon name="arrow-up" />
+                {busy ? t("common.saving") : t("gmail.saveDraft")} <Icon name="arrow-up" />
               </button>
             </div>
-            <small>Nothing is sent from the app — the draft waits in that account’s Gmail.</small>
+            <small>{t("gmail.nothingSent")}</small>
           </footer>
         </form>
       </div>
@@ -213,6 +215,7 @@ function Composer({
 }
 
 export default function GmailPage() {
+  const t = useT();
   const [status, setStatus] = useState<{ configured: boolean; standIn: boolean; accounts: Account[] } | null>(null);
   const [account, setAccount] = useState<string>("all");
   const [folder, setFolder] = useState<Folder>("inbox");
@@ -238,7 +241,7 @@ export default function GmailPage() {
     const q = new URLSearchParams(window.location.search);
     const ok = q.get("gmail_connected"), bad = q.get("gmail_error");
     if (ok || bad) {
-      setNote(ok ? "Connected. Your mail is here." : bad);
+      setNote(ok ? tr("gmail.connected") : bad);
       if (ok) setAccount(ok);
       q.delete("gmail_connected");
       q.delete("gmail_error");
@@ -293,7 +296,7 @@ export default function GmailPage() {
   const reply = (mode: "reply" | "reply-all" | "forward") => {
     if (!selected || !thread) return;
     const last = thread.letters[thread.letters.length - 1];
-    const quote = `\n\nOn ${date(last.at)}, ${last.from} wrote:\n> ${last.body.split("\n").join("\n> ")}`;
+    const quote = `\n\n${t("gmail.quoteHeader", { date: date(last.at), from: last.from })}\n> ${last.body.split("\n").join("\n> ")}`;
     setCompose({
       account: selected.account,
       to: mode === "forward" ? "" : last.fromEmail,
@@ -301,21 +304,21 @@ export default function GmailPage() {
       subject: `${mode === "forward" ? "Fwd" : "Re"}: ${thread.subject.replace(/^(re|fwd):\s*/i, "")}`,
       body: quote,
       threadId: mode === "forward" ? undefined : selected.id,
-      title: mode === "forward" ? "Forward" : "Reply",
+      title: mode === "forward" ? "gmail.forward" : "gmail.reply",
     });
   };
-  const newMail = () => accounts.length && setCompose({ account: acct?.id ?? accounts[0].id, to: "", cc: "", subject: "", body: "", title: "New message" });
+  const newMail = () => accounts.length && setCompose({ account: acct?.id ?? accounts[0].id, to: "", cc: "", subject: "", body: "", title: "gmail.newMessage" });
   const needle = find.trim().toLowerCase();
   const mark = (text: string) => {
     if (!needle) return text;
     const parts = text.split(new RegExp(`(${needle.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})`, "ig"));
     return parts.map((p, i) => (p.toLowerCase() === needle ? <mark key={i}>{p}</mark> : p));
   };
-  const heading = applied.trim() ? "Search results" : FOLDERS.find((f) => f[0] === folder)![1];
+  const heading = applied.trim() ? t("gmail.searchResults") : t(FOLDERS.find((f) => f[0] === folder)![1]);
 
   return (
     <div className="rd-page" data-page="gmail">
-      <section className={`mail-app${foldersOpen ? " folders-open" : ""}${readerOpen ? " reader-open" : ""}`} aria-label="Gmail multi-inbox workspace">
+      <section className={`mail-app${foldersOpen ? " folders-open" : ""}${readerOpen ? " reader-open" : ""}`} aria-label={t("gmail.workspaceAria")}>
         <header className="mail-topbar">
           <div className="mail-brand">
             <img src="/brand/gmail.svg" alt="" aria-hidden="true" />
@@ -325,8 +328,9 @@ export default function GmailPage() {
             <Icon name="search" />
             <input
               type="search"
-              placeholder="Search your mail"
-              aria-label="Search mail"
+              dir="auto"
+              placeholder={t("gmail.searchPlaceholder")}
+              aria-label={t("gmail.searchAria")}
               value={query}
               onChange={(e) => {
                 setQuery(e.target.value);
@@ -334,25 +338,25 @@ export default function GmailPage() {
               }}
               onKeyDown={(e) => e.key === "Enter" && setApplied(query)}
             />
-            <select aria-label="Mail search scope" value={scope} onChange={(e) => setScope(e.target.value as Scope)}>
-              <option value="all">All accounts</option>
-              <option value="account">This account</option>
-              <option value="folder">This folder</option>
+            <select aria-label={t("gmail.scopeAria")} value={scope} onChange={(e) => setScope(e.target.value as Scope)}>
+              <option value="all">{t("gmail.scope.all")}</option>
+              <option value="account">{t("gmail.scope.account")}</option>
+              <option value="folder">{t("gmail.scope.folder")}</option>
             </select>
           </label>
-          <MailButton label="Manage connected accounts" icon="people" onClick={() => setConnect(true)} />
+          <MailButton label={t("gmail.manageAccounts")} icon="people" onClick={() => setConnect(true)} />
         </header>
         {note && (
           <p className="mail-banner" role="status">
-            {note}{" "}
-            <button type="button" onClick={() => setNote(null)} aria-label="Dismiss">
+            <span dir="auto">{note}</span>{" "}
+            <button type="button" onClick={() => setNote(null)} aria-label={t("gmail.dismiss")}>
               ✕
             </button>
           </p>
         )}
         <div className="mail-body">
-          <aside className="mail-account-rail" aria-label="Gmail accounts">
-            <button type="button" className={`mail-account${account === "all" ? " active" : ""}`} aria-label="All inboxes" title="All inboxes" onClick={() => (setAccount("all"), setSelected(null), setReaderOpen(false))}>
+          <aside className="mail-account-rail" aria-label={t("gmail.accountsAria")}>
+            <button type="button" className={`mail-account${account === "all" ? " active" : ""}`} aria-label={t("gmail.allInboxes")} title={t("gmail.allInboxes")} onClick={() => (setAccount("all"), setSelected(null), setReaderOpen(false))}>
               <Icon name="inbox" />
             </button>
             <span className="mail-rail-gap" />
@@ -362,75 +366,75 @@ export default function GmailPage() {
                 <i style={{ background: a.color }} />
               </button>
             ))}
-            <button type="button" className="mail-account mail-add-account" aria-label="Connect another account" title="Connect another account" onClick={() => setConnect(true)}>
+            <button type="button" className="mail-account mail-add-account" aria-label={t("gmail.connectAnother")} title={t("gmail.connectAnother")} onClick={() => setConnect(true)}>
               <Icon name="plus" />
             </button>
             <span className="mail-account-rail-foot">
               <Icon name="shield" />
             </span>
           </aside>
-          <aside className="mail-folders" aria-label="Mail folders">
+          <aside className="mail-folders" aria-label={t("gmail.foldersAria")}>
             <div className="mail-folder-identity">
-              <strong>{acct?.name ?? "All inboxes"}</strong>
-              <small>{acct?.email ?? `${accounts.length} account${accounts.length === 1 ? "" : "s"}, one place`}</small>
+              <strong dir="auto">{acct?.name ?? t("gmail.allInboxes")}</strong>
+              <small dir={acct ? "ltr" : undefined}>{acct?.email ?? tn("gmail.accountsOnePlace", accounts.length)}</small>
             </div>
             <button type="button" className="mail-compose-button" onClick={newMail} disabled={!accounts.length}>
               <Icon name="edit" />
-              Compose
+              {t("gmail.compose")}
             </button>
             <nav>
               {FOLDERS.map(([key, label, glyph]) => (
                 <button key={key} type="button" className={folder === key ? "active" : ""} aria-current={folder === key ? "page" : undefined} onClick={() => (setFolder(key), setApplied(""), setQuery(""), setUnread(false), setSelected(null), setReaderOpen(false), setFoldersOpen(false))}>
                   <Icon name={glyph} />
-                  <span>{label}</span>
+                  <span>{t(label)}</span>
                   {!!counts[key] && <small>{counts[key]}</small>}
                 </button>
               ))}
             </nav>
             <div className="mail-folder-note">
               <span className="mail-sync-dot" />
-              {status?.standIn ? "Preview stand-in" : "Live Gmail"}
-              <small>{status?.standIn ? "Sample Google accounts · not your mail" : "Read and drafts · nothing is sent from here"}</small>
+              {status?.standIn ? t("gmail.standIn") : t("gmail.liveGmail")}
+              <small>{status?.standIn ? t("gmail.standInNote") : t("gmail.liveNote")}</small>
             </div>
           </aside>
-          <section className="mail-list-pane" aria-label="Email list">
+          <section className="mail-list-pane" aria-label={t("gmail.listAria")}>
             <header className="mail-list-heading">
               <div>
-                <MailButton label="Show mail folders" icon="menu" onClick={() => setFoldersOpen((o) => !o)} />
+                <MailButton label={t("gmail.showFolders")} icon="menu" onClick={() => setFoldersOpen((o) => !o)} />
                 <h1>{heading}</h1>
                 <span>{rows ? shown.length : ""}</span>
               </div>
               <div>
-                <MailButton label="Compose email" icon="edit" onClick={newMail} />
-                <MailButton label="Refresh mail" icon="refresh" onClick={() => setRev((n) => n + 1)} />
+                <MailButton label={t("gmail.composeEmail")} icon="edit" onClick={newMail} />
+                <MailButton label={t("gmail.refreshMail")} icon="refresh" onClick={() => setRev((n) => n + 1)} />
               </div>
             </header>
             <div className="mail-list-controls">
               <button type="button" className={`mail-filter${unread ? " active" : ""}`} aria-pressed={unread} onClick={() => setUnread((u) => !u)}>
-                Unread
+                {t("gmail.unread")}
               </button>
-              <span className="mail-list-sort">Newest first</span>
+              <span className="mail-list-sort">{t("gmail.newestFirst")}</span>
             </div>
             <div className="mail-message-list">
-              {shown.map((t) => {
-                const a = accountOf(t.account);
+              {shown.map((row) => {
+                const a = accountOf(row.account);
                 return (
-                  <article key={`${t.account}:${t.id}`} className={`mail-row${t.unread ? " unread" : ""}${selected?.id === t.id && selected.account === t.account ? " selected" : ""}`}>
+                  <article key={`${row.account}:${row.id}`} className={`mail-row${row.unread ? " unread" : ""}${selected?.id === row.id && selected.account === row.account ? " selected" : ""}`}>
                     <div className="mail-row-tools">
-                      <span className={`mail-star${t.starred ? " starred" : ""}`} aria-label={t.starred ? "Starred" : "Not starred"}>
+                      <span className={`mail-star${row.starred ? " starred" : ""}`} aria-label={row.starred ? t("gmail.starred") : t("gmail.notStarred")}>
                         <Icon name="star" />
                       </span>
                     </div>
-                    <button type="button" className="mail-row-open" aria-label={`Open ${t.subject}`} onClick={() => (setSelected(t), setReaderOpen(true), setFind(""))}>
+                    <button type="button" className="mail-row-open" aria-label={t("gmail.openNamed", { subject: row.subject })} onClick={() => (setSelected(row), setReaderOpen(true), setFind(""))}>
                       <div>
-                        <strong>{t.from}</strong>
-                        <time>{sameDay(t.at) ? time(t.at) : date(t.at)}</time>
+                        <strong dir="auto">{row.from}</strong>
+                        <time>{sameDay(row.at) ? time(row.at) : date(row.at)}</time>
                       </div>
-                      <h2>
-                        {t.subject}
-                        {t.count > 1 && <small> {t.count}</small>}
+                      <h2 dir="auto">
+                        {row.subject}
+                        {row.count > 1 && <small> {row.count}</small>}
                       </h2>
-                      <p>{t.snippet}</p>
+                      <p dir="auto">{row.snippet}</p>
                       <footer>
                         {a && (
                           <span className="mail-account-label">
@@ -438,8 +442,8 @@ export default function GmailPage() {
                             {a.name}
                           </span>
                         )}
-                        {t.attachments && <Icon name="paperclip" />}
-                        {t.label && <span className="mail-label">{t.label}</span>}
+                        {row.attachments && <Icon name="paperclip" />}
+                        {row.label && <span className="mail-label">{row.label}</span>}
                       </footer>
                     </button>
                   </article>
@@ -448,51 +452,51 @@ export default function GmailPage() {
               {rows && !shown.length && (
                 <div className="mail-empty">
                   <Icon name={!accounts.length ? "plus" : applied ? "search" : "inbox"} />
-                  <h2>{!accounts.length ? "Connect a Gmail account." : folder === "drafts" ? "Drafts stay in Gmail." : applied ? "No matching mail" : "A little breathing room."}</h2>
-                  <p>{!accounts.length ? "Every inbox you add sits here, each kept separate." : folder === "drafts" ? "Drafts you save here are in that account’s Gmail Drafts." : applied ? "Try another phrase or search scope." : "Nothing here right now."}</p>
+                  <h2>{!accounts.length ? t("gmail.emptyConnectTitle") : folder === "drafts" ? t("gmail.emptyDraftsTitle") : applied ? t("gmail.emptySearchTitle") : t("gmail.emptyTitle")}</h2>
+                  <p>{!accounts.length ? t("gmail.emptyConnectBody") : folder === "drafts" ? t("gmail.emptyDraftsBody") : applied ? t("gmail.emptySearchBody") : t("gmail.emptyBody")}</p>
                   {!accounts.length && (
                     <button type="button" className="rd-btn rd-btn-accent" onClick={() => setConnect(true)}>
-                      Connect Gmail <Icon name="arrow-right" />
+                      {t("gmail.connectGmail")} <Icon name="arrow-right" />
                     </button>
                   )}
                 </div>
               )}
-              {!rows && <div className="mail-empty"><p>Opening your mail…</p></div>}
+              {!rows && <div className="mail-empty"><p>{t("gmail.openingMail")}</p></div>}
               {err && <p className="rd-dialog-error" role="alert">{err}</p>}
             </div>
           </section>
-          <section className="mail-reader" aria-label="Email reader">
+          <section className="mail-reader" aria-label={t("gmail.readerAria")}>
             {selected ? (
               <>
                 <header className="mail-reader-toolbar">
                   <div>
-                    <MailButton label="Back to email list" icon="arrow-left" onClick={() => setReaderOpen(false)} />
+                    <MailButton label={t("gmail.backToList")} icon="arrow-left" onClick={() => setReaderOpen(false)} />
                   </div>
                   <label className="mail-find">
                     <Icon name="search" />
-                    <input aria-label="Find in this conversation" placeholder="Find in this email" value={find} onChange={(e) => setFind(e.target.value)} />
+                    <input dir="auto" aria-label={t("gmail.findAria")} placeholder={t("gmail.findPlaceholder")} value={find} onChange={(e) => setFind(e.target.value)} />
                   </label>
                 </header>
                 <div className="mail-reader-scroll">
                   <div className="mail-reader-content">
                     <div className="mail-subject">
                       <span className="mail-eyebrow">
-                        {accountOf(selected.account)?.name} <span> / </span> {FOLDERS.find((f) => f[0] === folder)![1]}
+                        {accountOf(selected.account)?.name} <span> / </span> {t(FOLDERS.find((f) => f[0] === folder)![1])}
                       </span>
-                      <h1>{thread?.subject ?? selected.subject}</h1>
+                      <h1 dir="auto">{thread?.subject ?? selected.subject}</h1>
                       <div>{selected.label && <span className="mail-label">{selected.label}</span>}</div>
                     </div>
-                    {!thread && <p className="rd-quiet">Opening…</p>}
+                    {!thread && <p className="rd-quiet">{t("gmail.opening")}</p>}
                     {thread?.letters.map((m) => (
                       <article key={m.id} className="mail-letter">
                         <header>
                           <span className="mail-sender-avatar">{initials(m.from)}</span>
                           <div>
-                            <strong>{m.from}</strong>
-                            <small>{m.fromEmail}</small>
+                            <strong dir="auto">{m.from}</strong>
+                            <small dir="ltr">{m.fromEmail}</small>
                             <span>
-                              to {m.to}
-                              {m.cc ? ` · cc ${m.cc}` : ""}
+                              {t("gmail.toLine", { to: m.to })}
+                              {m.cc ? t("gmail.ccLine", { cc: m.cc }) : ""}
                             </span>
                           </div>
                           <time>
@@ -501,17 +505,17 @@ export default function GmailPage() {
                             {time(m.at)}
                           </time>
                         </header>
-                        <div className="mail-letter-body" style={{ whiteSpace: "pre-wrap" }}>
+                        <div className="mail-letter-body" dir="auto" style={{ whiteSpace: "pre-wrap" }}>
                           {mark(m.body)}
                         </div>
                         {m.attachments.length > 0 && (
                           <div className="mail-attachments">
                             {m.attachments.map((f, i) => (
-                              <span key={i} className="mail-attachment" title="Open it in Gmail">
+                              <span key={i} className="mail-attachment" title={t("gmail.openInGmail")}>
                                 <Icon name="folder" />
                                 <span>
-                                  <strong>{f.name}</strong>
-                                  <small>{kb(f.size)}</small>
+                                  <strong dir="auto">{f.name}</strong>
+                                  <small dir="ltr">{kb(f.size)}</small>
                                 </span>
                               </span>
                             ))}
@@ -523,21 +527,21 @@ export default function GmailPage() {
                       <div className="mail-reply-actions">
                         <button type="button" onClick={() => reply("reply")}>
                           <Icon name="reply" />
-                          Reply
+                          {t("gmail.reply")}
                         </button>
                         <button type="button" onClick={() => reply("reply-all")}>
                           <Icon name="reply" />
-                          Reply all
+                          {t("gmail.replyAll")}
                         </button>
                         <button type="button" onClick={() => reply("forward")}>
                           <Icon name="forward" />
-                          Forward
+                          {t("gmail.forward")}
                         </button>
                       </div>
                     )}
                     <p className="mail-reading-note">
                       <Icon name="shield" />
-                      Mail stays with {accountOf(selected.account)?.email}.
+                      {t("gmail.mailStaysWith", { email: accountOf(selected.account)?.email ?? "" })}
                     </p>
                   </div>
                 </div>
@@ -545,16 +549,16 @@ export default function GmailPage() {
             ) : (
               <div className="mail-empty mail-reader-empty">
                 <Icon name="mail" />
-                <h2>A place to give it your attention.</h2>
-                <p>Choose an email to read it here.</p>
+                <h2>{t("gmail.readerEmptyTitle")}</h2>
+                <p>{t("gmail.readerEmptyBody")}</p>
                 <button type="button" onClick={newMail} disabled={!accounts.length}>
-                  Write an email <Icon name="arrow-right" />
+                  {t("gmail.writeEmailButton")} <Icon name="arrow-right" />
                 </button>
               </div>
             )}
           </section>
         </div>
-        <button type="button" className="mail-mobile-compose" aria-label="Compose email" onClick={newMail}>
+        <button type="button" className="mail-mobile-compose" aria-label={t("gmail.composeEmail")} onClick={newMail}>
           <Icon name="edit" />
         </button>
       </section>
@@ -565,7 +569,7 @@ export default function GmailPage() {
           initial={compose}
           onClose={(saved) => {
             setCompose(null);
-            if (saved) setNote("Draft saved to Gmail Drafts.");
+            if (saved) setNote(t("gmail.draftSaved"));
           }}
         />
       )}

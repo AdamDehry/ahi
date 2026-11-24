@@ -1,5 +1,6 @@
 import { useEffect, useRef, type ReactNode } from "react";
 import { Tally, type TallyCell } from "./Bits";
+import { useT } from "../../i18n";
 
 /** 52px buttons in the thumb zone (= .rv-actionbar / .rv-btn), with an optional note under them. */
 export function ActionBar({ children, note, error }: { children: ReactNode; note?: ReactNode; error?: string | null }) {
@@ -23,33 +24,35 @@ export function ActionBar({ children, note, error }: { children: ReactNode; note
  * Undo just never sends it, so there is no reopen endpoint (BUILD-NOTES §2.3).
  */
 export function UndoToast({ id, text, onUndo, onExpire, ms = 6000 }: { id?: string | number; text: string; onUndo: () => void; onExpire: () => void; ms?: number }) {
+  const t = useT();
   const expire = useRef(onExpire);
   expire.current = onExpire;
   // Each action gets its full window: keyed on the action's id, not its text (two can read alike).
   const key = id ?? text;
   useEffect(() => {
-    const t = setTimeout(() => expire.current(), ms);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => expire.current(), ms);
+    return () => clearTimeout(timer);
   }, [ms, key]);
   return (
     <div className="pf-toast" role="status">
-      <span className="pf-toast-text">{text}</span>
+      <span className="pf-toast-text" dir="auto">{text}</span>
       <button type="button" className="pf-toast-undo" onClick={onUndo}>
-        Undo
+        {t("ops.undo")}
       </button>
     </div>
   );
 }
 
 /** C19: the last good board stays, dimmed, under this — never a blank screen. */
-export function StaleBanner({ lastGoodAt, onRetry, what = "Can't reach the gateway." }: { lastGoodAt: string; onRetry: () => void; what?: string }) {
+export function StaleBanner({ lastGoodAt, onRetry, what }: { lastGoodAt: string; onRetry: () => void; what?: string }) {
+  const t = useT();
   return (
     <div className="pf-banner" role="status">
       <span>
-        <b>{what}</b> Showing what was true at {lastGoodAt}.
+        <b>{what ?? t("ops.cantReachGateway")}</b> {t("ops.staleShowing", { when: lastGoodAt })}
       </span>
       <button type="button" className="retry" onClick={onRetry}>
-        Retry
+        {t("common.retry")}
       </button>
     </div>
   );
@@ -69,6 +72,7 @@ export function EmptyState({ title, em, body }: { title: string; em: string; bod
 
 /** Skeleton rows in the real layout: tally, a head, two rows, a head, a row. */
 export function SkeletonRows({ n = 3 }: { n?: number }) {
+  const t = useT();
   const row = (i: number) => (
     <div className="pf-skel-row" key={i}>
       <div className="pf-skel-split">
@@ -81,7 +85,7 @@ export function SkeletonRows({ n = 3 }: { n?: number }) {
     </div>
   );
   return (
-    <div className="pf-skeleton" aria-busy="true" aria-label="Loading">
+    <div className="pf-skeleton" aria-busy="true" aria-label={t("ops.loading")}>
       <div className="pf-tally">
         {[0, 1, 2].map((i) => (
           <div key={i}>
@@ -124,26 +128,28 @@ export function DigestCard({
   toClose: { count: number; oldest: string | null } | null;
   onOpen: () => void;
 }) {
+  const t = useT();
   const shown = needsYou.slice(0, 3);
   const extra = more ?? Math.max(0, needsYou.length - 3);
   return (
     <button type="button" className="pf-digest" onClick={onOpen}>
       <span className="pf-digest-top">
-        <span className="mono-label">Builds</span>
-        <span className="mono-label go">Open →</span>
+        <span className="mono-label">{t("ops.digest.builds")}</span>
+        <span className="mono-label go">{t("ops.digest.open")}</span>
       </span>
       <Tally cells={cells} />
       {shown.length > 0 && (
         <span className="pf-digest-you">
           {shown.map((n) => (
-            <span key={n}>{n}</span>
+            <span key={n} dir="auto">{n}</span>
           ))}
-          {extra > 0 && <span>+{extra} more</span>}
+          {extra > 0 && <span>{t("ops.digest.more", { n: extra })}</span>}
         </span>
       )}
       {toClose && toClose.count > 0 && (
         <span className="pf-digest-close">
-          {toClose.count} built and waiting for your close{toClose.oldest ? ` · oldest ${toClose.oldest}` : ""}
+          {t("ops.digest.toClose", { n: toClose.count })}
+          {toClose.oldest ? t("ops.digest.oldest", { age: toClose.oldest }) : ""}
         </span>
       )}
     </button>

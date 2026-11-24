@@ -1,6 +1,7 @@
 import { BOT_LABELS } from "../../lib/types";
 import { formatElapsed, type VoicePhase } from "../../lib/voicelayer";
 import type { FloorState } from "../../lib/voicebus";
+import { t, tn, useT } from "../../i18n";
 
 /**
  * The minimized call (call-minimize-pill): a floating pill in the
@@ -47,19 +48,20 @@ export function pillTone(p: Pick<CallPillProps, "phase" | "link" | "speaking">):
  */
 export function callStateLabel(p: Pick<CallPillProps, "phase" | "link" | "working" | "floor" | "muted"> & { name?: string; speaking?: boolean }): string {
   const name = p.name ?? "Michael";
-  if (p.phase === "ended") return "Call ended";
-  if (p.phase === "connecting") return "Connecting";
-  if (p.link === "reconnecting") return "Reconnecting";
+  if (p.phase === "ended") return t("voice.state.ended");
+  if (p.phase === "connecting") return t("voice.state.connecting");
+  if (p.link === "reconnecting") return t("voice.state.reconnecting");
   if (p.working) {
     const n = p.working.steps;
-    return `Working · ${n > 0 ? `${n} task${n === 1 ? "" : "s"} · ` : ""}${formatElapsed(p.working.sec)}`;
+    const elapsed = formatElapsed(p.working.sec);
+    return n > 0 ? tn("voice.state.workingTasks", n, { elapsed }) : t("voice.state.working", { elapsed });
   }
-  if (p.muted) return "Microphone muted";
-  if (p.floor === "standby") return `Standby · say ${name}`;
-  if (p.phase === "speaking") return `${name} is speaking`;
-  if (p.phase === "thinking") return "Thinking";
-  if (p.speaking) return "Listening to you";
-  return "Listening";
+  if (p.muted) return t("voice.state.muted");
+  if (p.floor === "standby") return t("voice.state.standby", { name });
+  if (p.phase === "speaking") return t("voice.state.speaking", { name });
+  if (p.phase === "thinking") return t("voice.state.thinking");
+  if (p.speaking) return t("voice.state.listeningToYou");
+  return t("voice.state.listening");
 }
 
 /** The pill's line (kept for callers and tests). */
@@ -68,6 +70,7 @@ export function pillLabel(p: Pick<CallPillProps, "phase" | "link" | "working" | 
 }
 
 export default function CallPill(props: CallPillProps) {
+  const t = useT();
   const { bot, elapsedSec, onRestore } = props;
   const tone = pillTone(props);
   const name = BOT_LABELS[bot] ?? bot;
@@ -76,7 +79,7 @@ export default function CallPill(props: CallPillProps) {
     <button
       type="button"
       className={`call-pill tone-${tone}${props.working ? " working" : ""}`}
-      aria-label={`Return to the call with ${name}`}
+      aria-label={t("voice.returnToCall", { name })}
       title={`${name} · ${label} · ${formatElapsed(elapsedSec)}`}
       onClick={onRestore}
     >
@@ -85,11 +88,11 @@ export default function CallPill(props: CallPillProps) {
         <span className="cp-core" />
       </span>
       <span className="cp-text mono" role="status" aria-live="polite">
-        <span className="cp-name">With {name}</span>
+        <span className="cp-name">{t("voice.withName", { name })}</span>
         <span className="cp-label">{label}</span>
         <span className="cp-timer">{formatElapsed(elapsedSec)}</span>
       </span>
-      <svg className="cp-go" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h16m-6-6 6 6-6 6" /></svg>
+      <svg className="cp-go flip-rtl" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h16m-6-6 6 6-6 6" /></svg>
     </button>
   );
 }

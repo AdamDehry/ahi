@@ -46,6 +46,7 @@ import {
 import { confirmsBargeIn } from "./barge";
 import { canShareScreen, startScreenShare, stopScreenShare } from "./screenshare";
 import { uploadStaged } from "./staging";
+import { t as translate } from "../i18n";
 
 /* ============================================================
    voicelayer.ts — the voice screen's state machine.
@@ -396,8 +397,8 @@ export function useVoiceLayer(bot: string, active: boolean): VoiceLayerApi {
     setErrorText(
       err
         ? err.stage === "mic"
-          ? `The microphone would not open (${err.name}). Tap retry; if it keeps failing, close and reopen the app.`
-          : `The call's audio would not start (${err.name}). Tap retry.`
+          ? translate("voice.err.micWouldNotOpen", { name: err.name })
+          : translate("voice.err.audioWouldNotStart", { name: err.name })
         : null,
     );
     setPhase("failed");
@@ -599,7 +600,7 @@ export function useVoiceLayer(bot: string, active: boolean): VoiceLayerApi {
     const iv = window.setInterval(() => {
       if (!linkDownAt.current) return;
       if (Date.now() - linkDownAt.current >= linkGraceMs.current) {
-        failCall("The connection dropped and did not come back.", "connection-lost");
+        failCall(translate("voice.err.droppedNoReturn"), "connection-lost");
       }
     }, 1000);
     return () => window.clearInterval(iv);
@@ -650,7 +651,7 @@ export function useVoiceLayer(bot: string, active: boolean): VoiceLayerApi {
               setLink("reconnecting");
             }
           } else {
-            failCall("The connection dropped.", "connection-lost");
+            failCall(translate("voice.err.connectionDropped"), "connection-lost");
           }
           break;
 
@@ -756,7 +757,7 @@ export function useVoiceLayer(bot: string, active: boolean): VoiceLayerApi {
           break;
 
         case "call-drop-ack":
-          if (ev.ok === false) setDropError(typeof ev.error === "string" ? ev.error : "That didn't go through.");
+          if (ev.ok === false) setDropError(typeof ev.error === "string" ? ev.error : translate("voice.err.dropFailed"));
           break;
 
         case "stt-health":
@@ -901,7 +902,7 @@ export function useVoiceLayer(bot: string, active: boolean): VoiceLayerApi {
           break;
 
         case "voice-error": {
-          const text = typeof ev.error === "string" ? ev.error : "Something went wrong.";
+          const text = typeof ev.error === "string" ? ev.error : translate("common.somethingWrong");
           if (ev.code === "no-such-call" || ev.code === "not-your-call") {
             // A resume the gateway refused: the grace window ran out, or it
             // restarted. The call is over; say so and end it honestly.
@@ -1042,7 +1043,7 @@ export function useVoiceLayer(bot: string, active: boolean): VoiceLayerApi {
       // drop naming any call but the live one.
       const callId = activeVoiceStreamId();
       if (!callId) {
-        setDropError("The call isn't connected.");
+        setDropError(translate("voice.err.notConnected"));
         return;
       }
       if (drop.mediaId && !drop.image) {
@@ -1062,7 +1063,7 @@ export function useVoiceLayer(bot: string, active: boolean): VoiceLayerApi {
         .then((r) => {
           if (activeVoiceStreamId() !== callId) return; // that call is over
           if (!r.ok) {
-            setDropError(`The image didn't upload (${r.error}).`);
+            setDropError(translate("voice.err.imageUpload", { error: r.error }));
             return;
           }
           sendVoiceControl({ type: "call-drop", bot, text: drop.text, mediaId: r.mediaId, voiceStreamId: callId });

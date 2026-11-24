@@ -38,7 +38,7 @@ async function startHeadless({dataDir,node,npmCli,keyring,port=4189,parentDefaul
     const result=method==='remote-install'?await remote.install():method==='remote-login'?await remote.login():method==='remote-create'?await remote.create():method==='remote-route'?await remote.route(arg):method==='remote-start'?await remote.start():method==='remote-stop'?await remote.stop():await service.invoke(method,arg);
     res.setHeader('Content-Type','application/json');res.end(JSON.stringify({ok:true,value:result}));return;
    }
-   const files={'/':'index.html','/index.html':'index.html','/app.js':'app.js','/styles.css':'styles.css'};const file=files[req.url];if(!file){res.writeHead(404);res.end('Not found');return;}
+   const files={'/':'index.html','/index.html':'index.html','/app.js':'app.js','/i18n.js':'i18n.js','/styles.css':'styles.css'};const file=files[req.url];if(!file){res.writeHead(404);res.end('Not found');return;}
    res.setHeader('Content-Type',file.endsWith('.js')?'text/javascript':file.endsWith('.css')?'text/css':'text/html');res.end(await fs.readFile(path.join(__dirname,'../ui',file)));
   }catch(e){res.setHeader('Content-Type','application/json');res.end(JSON.stringify({ok:false,error:e.message}));}
  });

@@ -9,6 +9,7 @@
  * app store's snapshot. Writes carry `X-AHI-Review: 1` + a JSON body.
  */
 import { useSyncExternalStore } from "react";
+import { getLang, locale, t, type Key } from "../i18n";
 
 export const SCHEDULE_URL = "/app/schedule";
 
@@ -119,7 +120,7 @@ async function post<T>(path: string, body: unknown): Promise<Result<T>> {
     if (!res.ok) return { ok: false, error: typeof json.error === "string" ? json.error : `HTTP ${res.status}` };
     return { ok: true, ...(json as T) };
   } catch {
-    return { ok: false, error: "Can't reach the gateway." };
+    return { ok: false, error: t("calendar.cantReachGateway") };
   }
 }
 
@@ -278,33 +279,49 @@ export const scheduleUi = {
 
 // ── formatting ────────────────────────────────────────────────────────
 
+/** "2 PM" · "2:30 PM" in English; the language's own clock (24-hour "14:00" in Hebrew) elsewhere. */
 export function clock(iso: string, zone: string): string {
-  return new Intl.DateTimeFormat("en-US", { timeZone: zone, hour: "numeric", minute: "2-digit" }).format(new Date(iso)).replace(":00", "");
+  const s = new Intl.DateTimeFormat(locale(), { timeZone: zone, hour: "numeric", minute: "2-digit" }).format(new Date(iso));
+  return getLang() === "en" ? s.replace(":00", "") : s;
 }
 
-/** "just now" · "12 min ago" · "3 h ago" · "2 days ago". */
+/** An hour-grid label: "2 PM" in English, "14:00" in Hebrew. */
+export function hourLabel(h: number): string {
+  if (getLang() === "en") return `${h % 12 || 12} ${h < 12 || h === 24 ? "AM" : "PM"}`;
+  return `${String(h % 24).padStart(2, "0")}:00`;
+}
+
+/** The narrow rail's hour: "2p" in English, "14" in Hebrew. */
+export function hourShort(h: number): string {
+  if (getLang() === "en") return `${h % 12 || 12}${h < 12 ? "a" : "p"}`;
+  return String(h % 24);
+}
+
+/** "just now" · "12 min ago" · "3 h ago" · "2 days ago". Numbers stay raw (no grouping), as before. */
 export function ago(iso: string, now = Date.now()): string {
   const mins = Math.max(0, Math.round((now - Date.parse(iso)) / 60_000));
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins} min ago`;
+  if (mins < 1) return t("common.justNow");
+  if (mins < 60) return t("calendar.minAgo", { n: String(mins) });
   const h = Math.round(mins / 60);
-  if (h < 36) return `${h} h ago`;
-  return `${Math.round(h / 24)} days ago`;
+  if (h < 36) return t("calendar.hAgo", { n: String(h) });
+  return t("calendar.daysAgo", { n: String(Math.round(h / 24)) });
 }
 
 /** "in 25 min" · "in 2 h 5 min". */
 export function until(iso: string, now = Date.now()): string {
   const mins = Math.max(0, Math.round((Date.parse(iso) - now) / 60_000));
-  if (mins < 60) return `in ${Math.max(1, mins)} min`;
+  if (mins < 60) return t("calendar.inMin", { n: String(Math.max(1, mins)) });
   const h = Math.floor(mins / 60);
   const m = mins % 60;
-  return `in ${h} h${m ? ` ${m} min` : ""}`;
+  return m ? t("calendar.inHMin", { h: String(h), m: String(m) }) : t("calendar.inH", { h: String(h) });
 }
 
-export const WEEKDAY = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Shabbat"];
-export const WEEKDAY_LONG = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Shabbat"];
+/** Weekday names as catalog keys (Sunday first; the seventh day is Shabbat). Translate at render: t(WEEKDAY[i]). */
+export const WEEKDAY: Key[] = ["calendar.wd.sun", "calendar.wd.mon", "calendar.wd.tue", "calendar.wd.wed", "calendar.wd.thu", "calendar.wd.fri", "calendar.wd.sat"];
+export const WEEKDAY_LONG: Key[] = ["calendar.wdl.sun", "calendar.wdl.mon", "calendar.wdl.tue", "calendar.wdl.wed", "calendar.wdl.thu", "calendar.wdl.fri", "calendar.wdl.sat"];
 
+/** "Nov 24" in English, "24 בנוב׳" in Hebrew. */
 export function dayLabel(date: string): string {
   const [y, m, d] = date.split("-").map(Number);
-  return new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", timeZone: "UTC" }).format(new Date(Date.UTC(y, m - 1, d, 12)));
+  return new Intl.DateTimeFormat(locale(), { month: "short", day: "numeric", timeZone: "UTC" }).format(new Date(Date.UTC(y, m - 1, d, 12)));
 }

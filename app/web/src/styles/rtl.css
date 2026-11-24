@@ -7,6 +7,8 @@
 /* Glyphs that point along the reading direction (back, forward, send, chevrons). `scale` composes with
    any `transform` the glyph already has (a rotated chevron stays rotated). */
 :root[dir="rtl"] .flip-rtl { scale: -1 1; }
+/* `scale` does nothing on a plain inline box: a text glyph (‹ ›) needs one of its own. */
+span.flip-rtl { display: inline-block; }
 
 /* Hebrew needs a face that has Hebrew letters: Inter and SF Pro don't, so name the system's Hebrew faces
    before the generic fallback. Latin runs inside Hebrew keep the AHI face through the same stack. */
@@ -36,3 +38,6 @@
 /* A message decides its direction per paragraph, so Hebrew and English paragraphs in one message each
    read their own way (the bubble itself keeps its side). */
 .msg-text :is(p, li, h1, h2, h3, h4, blockquote, td, th) { unicode-bidi: plaintext; }
+
+/* The "ahi." wordmark is a logo, not a sentence: its dot stays after the letters in every language. */
+:is(.setup-wordmark, .rd-dialog-wordmark) { direction: ltr; unicode-bidi: isolate; }

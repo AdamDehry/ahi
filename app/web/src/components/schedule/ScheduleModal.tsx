@@ -5,6 +5,7 @@ import {
   clock,
   dayLabel,
   fetchBriefing,
+  hourShort,
   scheduleUi,
   SCHEDULE_URL,
   startBriefingPoll,
@@ -22,6 +23,7 @@ import {
   type ScheduleView,
   type WorkRow,
 } from "../../lib/schedule";
+import { t as tr, useT, type Key } from "../../i18n";
 
 /**
  * The Schedule: his approved week as a live calendar.
@@ -70,7 +72,7 @@ export function useView(week: number, rev: number): { view: ScheduleView | null;
     const mine = ++seq.current;
     fetch(`${SCHEDULE_URL}?week=${week}`, { cache: "no-store" })
       .then(async (r) => {
-        if (!r.ok) throw new Error(r.status === 401 ? "Signed out." : `HTTP ${r.status}`);
+        if (!r.ok) throw new Error(r.status === 401 ? tr("calendar.signedOut") : `HTTP ${r.status}`);
         return (await r.json()) as ScheduleView;
       })
       .then((v) => {
@@ -79,7 +81,7 @@ export function useView(week: number, rev: number): { view: ScheduleView | null;
         setError(null);
         scheduleUi.setUnread(v.unread);
       })
-      .catch((e: unknown) => mine === seq.current && setError(e instanceof Error ? e.message : "Can't reach the gateway."));
+      .catch((e: unknown) => mine === seq.current && setError(e instanceof Error ? e.message : tr("calendar.cantReachGateway")));
   }, [week]);
   useEffect(reload, [reload, rev]);
   useEffect(() => {
@@ -91,17 +93,18 @@ export function useView(week: number, rev: number): { view: ScheduleView | null;
 
 const kindColor = (v: { kinds: ScheduleView["kinds"] }, kind: string) => v.kinds[kind]?.color ?? "#7a776f";
 const range = (b: BlockOut, zone: string) => `${b.approx ? "~" : ""}${clock(b.start, zone)} – ${clock(b.end, zone)}`;
-const STATUS_WORD: Record<BlockOut["status"], string> = { now: "Now", next: "Next", past: "Done", later: "Later" };
+const STATUS_WORD: Record<BlockOut["status"], Key> = { now: "calendar.status.now", next: "calendar.status.next", past: "calendar.status.past", later: "calendar.status.later" };
 
 // ── small pieces ──────────────────────────────────────────────────────
 
 function Lines({ lines, now, empty }: { lines: BriefLine[]; now: number; empty?: string }) {
+  useT();
   if (!lines.length) return empty ? <p className="sc-quiet">{empty}</p> : null;
   return (
     <ul className="sc-lines">
       {lines.map((l) => (
         <li key={l.id} className="sc-line">
-          <span className="sc-line-text">{l.text}</span>
+          <span className="sc-line-text" dir="auto">{l.text}</span>
           <span className="sc-line-meta">
             {l.who} · {ago(l.at, now)}
           </span>
@@ -112,13 +115,14 @@ function Lines({ lines, now, empty }: { lines: BriefLine[]; now: number; empty?:
 }
 
 export function AttentionList({ rows, now, onOpen }: { rows: AttentionRow[]; now: number; onOpen: (r: AttentionRow) => void }) {
+  const t = useT();
   return (
     <ul className="sc-attn">
       {rows.map((a) => (
         <li key={a.id}>
           <button className={`sc-attn-row${a.unread ? " unread" : ""}${a.urgent ? " urgent" : ""}`} onClick={() => onOpen(a)}>
-            <span className="sc-dot" aria-label={a.unread ? "new" : "seen"} />
-            <span className="sc-attn-text">{a.text}</span>
+            <span className="sc-dot" aria-label={a.unread ? t("calendar.dotNew") : t("calendar.dotSeen")} />
+            <span className="sc-attn-text" dir="auto">{a.text}</span>
             <span className="sc-line-meta">{ago(a.at, now)}</span>
           </button>
         </li>
@@ -128,17 +132,18 @@ export function AttentionList({ rows, now, onOpen }: { rows: AttentionRow[]; now
 }
 
 export function WorkList({ rows, now }: { rows: WorkRow[]; now: number }) {
+  const t = useT();
   return (
     <ul className="sc-work">
       {rows.map((w) => (
         <li key={w.build} className={`sc-work-row${w.for ? ` for-${w.for}` : ""}`}>
           <div className="sc-work-top">
             <span className="sc-work-agent">{w.agent}</span>
-            <span className="sc-chip">{w.for === "now" ? "This block" : w.for === "next" ? "Next block" : w.tagLabel}</span>
+            <span className="sc-chip">{w.for === "now" ? t("calendar.thisBlock") : w.for === "next" ? t("calendar.nextBlock") : w.tagLabel}</span>
             <span className="sc-line-meta">{ago(w.at, now)}</span>
           </div>
-          <div className="sc-work-title">{w.title}</div>
-          <div className="sc-work-now">{w.now}</div>
+          <div className="sc-work-title" dir="auto">{w.title}</div>
+          <div className="sc-work-now" dir="auto">{w.now}</div>
         </li>
       ))}
     </ul>
@@ -146,6 +151,7 @@ export function WorkList({ rows, now }: { rows: WorkRow[]; now: number }) {
 }
 
 export function Decisions({ rows, now }: { rows: DecisionRow[]; now: number }) {
+  const t = useT();
   const [asking, setAsking] = useState<string | null>(null);
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
@@ -154,7 +160,7 @@ export function Decisions({ rows, now }: { rows: DecisionRow[]; now: number }) {
     setBusy(true);
     const r = await scheduleUi.overrule(id, note.trim() || null);
     setBusy(false);
-    setMsg((m) => ({ ...m, [id]: r.ok ? (r.woke ? "Overruled. Michael has it." : "Overruled. Michael hasn't got it yet; it retries on its own.") : `Didn't go through: ${r.error}` }));
+    setMsg((m) => ({ ...m, [id]: r.ok ? (r.woke ? t("calendar.overruledWoke") : t("calendar.overruledPending")) : t("calendar.didntGoThrough", { error: r.error ?? "" }) }));
     if (r.ok) {
       setAsking(null);
       setNote("");
@@ -168,38 +174,38 @@ export function Decisions({ rows, now }: { rows: DecisionRow[]; now: number }) {
             <span className="sc-chip">{d.tagLabel}</span>
             <span className="sc-line-meta">{ago(d.at, now)}</span>
           </div>
-          <div className="sc-decision-text">{d.decision}</div>
-          {d.why && <div className="sc-work-now">Why: {d.why}</div>}
+          <div className="sc-decision-text" dir="auto">{d.decision}</div>
+          {d.why && <div className="sc-work-now">{t("calendar.why", { why: d.why })}</div>}
           {d.overruled ? (
             <>
-              <div className="sc-overruled">Overruled{d.overruled.note ? `: ${d.overruled.note}` : ""}</div>
+              <div className="sc-overruled">{d.overruled.note ? t("calendar.overruledNote", { note: d.overruled.note }) : t("calendar.overruled")}</div>
               {!d.overruled.delivered && (
                 <div className="sc-undelivered">
-                  <span className="sc-quiet">Michael hasn't got this yet. It retries on its own.</span>
+                  <span className="sc-quiet">{t("calendar.notDelivered")}</span>
                   <button className="sc-btn-ghost" onClick={() => void send(d.id)} disabled={busy}>
-                    {busy ? "Sending…" : "Retry now"}
+                    {busy ? t("calendar.sending") : t("calendar.retryNow")}
                   </button>
                 </div>
               )}
             </>
           ) : asking === d.id ? (
             <div className="sc-overrule-form">
-              <input className="sc-input" placeholder="What should happen instead? (optional)" value={note} maxLength={300} onChange={(e) => setNote(e.target.value)} />
+              <input className="sc-input" dir="auto" placeholder={t("calendar.overrulePlaceholder")} value={note} maxLength={300} onChange={(e) => setNote(e.target.value)} />
               <div className="sc-row-actions">
                 <button className="sc-btn-ghost" onClick={() => setAsking(null)} disabled={busy}>
-                  Keep it
+                  {t("calendar.keepIt")}
                 </button>
                 <button className="sc-btn-warn" onClick={() => void send(d.id)} disabled={busy}>
-                  {busy ? "Sending…" : "Overrule"}
+                  {busy ? t("calendar.sending") : t("calendar.overrule")}
                 </button>
               </div>
             </div>
           ) : (
             <button className="sc-btn-ghost sc-overrule" onClick={() => (setAsking(d.id), setNote(""))}>
-              Overrule
+              {t("calendar.overrule")}
             </button>
           )}
-          {msg[d.id] && <div className="sc-quiet">{msg[d.id]}</div>}
+          {msg[d.id] && <div className="sc-quiet" dir="auto">{msg[d.id]}</div>}
         </li>
       ))}
     </ul>
@@ -209,22 +215,23 @@ export function Decisions({ rows, now }: { rows: DecisionRow[]; now: number }) {
 // ── the now card ──────────────────────────────────────────────────────
 
 function NowCard({ view, now, onOpen, onLane }: { view: ScheduleView; now: number; onOpen: (id: string) => void; onLane: () => void }) {
+  const t = useT();
   const cur = view.current ? view.blocks[view.current.block] : null;
   const next = view.next ? view.blocks[view.next] : null;
   const working = view.background.work.length;
   if (!cur) {
     return (
       <section className="sc-now idle">
-        <div className="sc-kicker">Now</div>
-        <div className="sc-now-title">Nothing scheduled</div>
+        <div className="sc-kicker">{t("calendar.status.now")}</div>
+        <div className="sc-now-title">{t("calendar.nothingScheduled")}</div>
         {next && (
           <button className="sc-now-next" onClick={() => onOpen(next.id)}>
-            Next: {next.title} · {WEEKDAY[new Date(`${next.date}T12:00:00Z`).getUTCDay()]} {clock(next.start, view.zone)}
+            {t("calendar.nextOn", { title: next.title, day: t(WEEKDAY[new Date(`${next.date}T12:00:00Z`).getUTCDay()]), time: clock(next.start, view.zone) })}
           </button>
         )}
         {working > 0 && (
           <button className="sc-link" onClick={onLane}>
-            {working} running in the background
+            {t("calendar.runningBackground", { n: working })}
           </button>
         )}
       </section>
@@ -236,23 +243,23 @@ function NowCard({ view, now, onOpen, onLane }: { view: ScheduleView; now: numbe
     <section className="sc-now" style={{ ["--sc-kind" as string]: kindColor(view, cur.kind) }}>
       <button className="sc-now-head" onClick={() => onOpen(cur.id)}>
         <div className="sc-kicker">
-          Now · {range(cur, view.zone)} · ends {until(cur.end, now)}
+          {t("calendar.nowEnds", { range: range(cur, view.zone), until: until(cur.end, now) })}
         </div>
-        <div className="sc-now-title">{cur.title}</div>
+        <div className="sc-now-title" dir="auto">{cur.title}</div>
         <div className="sc-progress" aria-hidden="true">
           <span style={{ width: `${pct}%` }} />
         </div>
       </button>
-      {cur.sacred ? <p className="sc-quiet">{cur.detail}</p> : <Lines lines={view.current!.lines} now={now} empty={cur.tags.length ? "Nothing has come in for this block yet." : undefined} />}
+      {cur.sacred ? <p className="sc-quiet" dir="auto">{cur.detail}</p> : <Lines lines={view.current!.lines} now={now} empty={cur.tags.length ? t("calendar.nothingInYet") : undefined} />}
       <div className="sc-now-foot">
         {next && (
           <button className="sc-now-next" onClick={() => onOpen(next.id)}>
-            Next: {next.title} at {clock(next.start, view.zone)}
+            {t("calendar.nextAtShort", { title: next.title, time: clock(next.start, view.zone) })}
           </button>
         )}
         {working > 0 && (
           <button className="sc-link" onClick={onLane}>
-            {working} running in the background
+            {t("calendar.runningBackground", { n: working })}
           </button>
         )}
       </div>
@@ -266,7 +273,8 @@ const PX_PER_MIN_DAY = 0.85;
 const MIN_ROW = 52;
 
 function DayAgenda({ view, day, now, onOpen }: { view: ScheduleView; day: DayOut; now: number; onOpen: (id: string) => void }) {
-  if (!day.segments.length) return <p className="sc-quiet">Nothing on the calendar this day.</p>;
+  const t = useT();
+  if (!day.segments.length) return <p className="sc-quiet">{t("calendar.nothingThisDay")}</p>;
   return (
     <ol className="sc-agenda">
       {day.segments.map((s) => {
@@ -282,13 +290,13 @@ function DayAgenda({ view, day, now, onOpen }: { view: ScheduleView; day: DayOut
               className={`sc-block ${b.status}${b.sacred ? " sacred" : ""}`}
               style={{ minHeight: h, ["--sc-kind" as string]: kindColor(view, b.kind) }}
               onClick={() => onOpen(b.id)}
-              aria-label={`${b.title}, ${range(b, view.zone)}${isNow ? ", now" : ""}${b.unread ? `, ${b.unread} new` : ""}`}
+              aria-label={`${b.title}, ${range(b, view.zone)}${isNow ? t("calendar.ariaNow") : ""}${b.unread ? t("calendar.ariaNew", { n: b.unread }) : ""}`}
             >
-              <span className="sc-block-title">{b.title}</span>
+              <span className="sc-block-title" dir="auto">{b.title}</span>
               <span className="sc-block-meta">
                 {range(b, view.zone)}
-                {isNow && <em> · now</em>}
-                {b.clipped && !b.sacred && " · cut short for Shabbat"}
+                {isNow && <em>{t("calendar.nowLowerSuffix")}</em>}
+                {b.clipped && !b.sacred && t("calendar.cutShort")}
               </span>
               {b.unread > 0 && <span className="sc-block-badge">{b.unread > 9 ? "9+" : b.unread}</span>}
               {isNow && <span className="sc-nowline" style={{ top: `${nowPct}%` }} aria-hidden="true" />}
@@ -307,6 +315,7 @@ const GRID_TO = 23 * 60;
 const PX_PER_MIN_WEEK = 0.95;
 
 function WeekGrid({ view, now, onOpen, onDay }: { view: ScheduleView; now: number; onOpen: (id: string) => void; onDay: (date: string) => void }) {
+  const t = useT();
   const hours: number[] = [];
   for (let h = 7; h <= 22; h++) hours.push(h);
   const y = (min: number) => (Math.max(GRID_FROM, Math.min(GRID_TO, min)) - GRID_FROM) * PX_PER_MIN_WEEK;
@@ -319,8 +328,8 @@ function WeekGrid({ view, now, onOpen, onDay }: { view: ScheduleView; now: numbe
         <span />
         {view.days.map((d) => (
           <button key={d.date} className={`sc-week-day${d.isToday ? " today" : ""}`} onClick={() => onDay(d.date)}>
-            <span>{WEEKDAY[d.weekday]}</span>
-            <span className="sc-week-date">{dayLabel(d.date).split(" ")[1]}</span>
+            <span>{t(WEEKDAY[d.weekday])}</span>
+            <span className="sc-week-date">{Number(d.date.slice(8))}</span>
           </button>
         ))}
       </div>
@@ -328,8 +337,7 @@ function WeekGrid({ view, now, onOpen, onDay }: { view: ScheduleView; now: numbe
         <div className="sc-week-rail">
           {hours.map((h) => (
             <span key={h} style={{ top: y(h * 60) }}>
-              {h % 12 || 12}
-              {h < 12 ? "a" : "p"}
+              {hourShort(h)}
             </span>
           ))}
         </div>
@@ -350,7 +358,7 @@ function WeekGrid({ view, now, onOpen, onDay }: { view: ScheduleView; now: numbe
                   style={{ top, height: h, ["--sc-kind" as string]: kindColor(view, b.kind) }}
                   onClick={() => onOpen(b.id)}
                   title={`${b.title} · ${range(b, view.zone)}`}
-                  aria-label={`${WEEKDAY_LONG[d.weekday]} ${b.title}, ${range(b, view.zone)}`}
+                  aria-label={`${t(WEEKDAY_LONG[d.weekday])} ${b.title}, ${range(b, view.zone)}`}
                 >
                   <span className="sc-wblock-title">
                     <span className="sc-long">{b.title}</span>
@@ -371,6 +379,7 @@ function WeekGrid({ view, now, onOpen, onDay }: { view: ScheduleView; now: numbe
 // ── the briefing ──────────────────────────────────────────────────────
 
 export function BriefingView({ id, zone, kinds, now, rev }: { id: string; zone: string; kinds: ScheduleView["kinds"]; now: number; rev: number }) {
+  const t = useT();
   const [b, setB] = useState<Briefing | null>(null);
   const [missing, setMissing] = useState(false);
   // Read marks for what this briefing shows: recorded only once the gateway says yes (a failed write is
@@ -399,30 +408,30 @@ export function BriefingView({ id, zone, kinds, now, rev }: { id: string; zone: 
       }),
     [id, rev],
   );
-  if (missing) return <p className="sc-quiet sc-pad">That block isn't on the calendar any more.</p>;
+  if (missing) return <p className="sc-quiet sc-pad">{t("calendar.blockGone")}</p>;
   if (!b) return <div className="sc-skeleton sc-pad" />;
   const blk = b.block;
   return (
     <div className="sc-briefing" style={{ ["--sc-kind" as string]: kinds[blk.kind]?.color ?? "#7a776f" }}>
       <header className="sc-brief-head">
         <div className="sc-kicker">
-          {STATUS_WORD[blk.status]} · {WEEKDAY_LONG[new Date(`${blk.date}T12:00:00Z`).getUTCDay()]} {dayLabel(blk.date)}
+          {t(STATUS_WORD[blk.status])} · {t(WEEKDAY_LONG[new Date(`${blk.date}T12:00:00Z`).getUTCDay()])} {dayLabel(blk.date)}
         </div>
-        <h2 className="sc-brief-title">{blk.title}</h2>
+        <h2 className="sc-brief-title" dir="auto">{blk.title}</h2>
         <div className="sc-brief-time">
           {range(blk, zone)}
-          {blk.status === "now" && ` · ends ${until(blk.end, now)}`}
-          {blk.status === "next" && ` · starts ${until(blk.start, now)}`}
+          {blk.status === "now" && t("calendar.endsSuffix", { until: until(blk.end, now) })}
+          {blk.status === "next" && t("calendar.startsSuffix", { until: until(blk.start, now) })}
         </div>
       </header>
       {b.attention.length > 0 && (
         <section className="sc-section">
-          <h3 className="sc-h3">Needs you</h3>
+          <h3 className="sc-h3">{t("calendar.needsYou")}</h3>
           <ul className="sc-attn">
             {b.attention.map((a) => (
               <li key={a.id} className={`sc-attn-row static${a.urgent ? " urgent" : ""}`}>
                 <span className="sc-dot seen" />
-                <span className="sc-attn-text">{a.text}</span>
+                <span className="sc-attn-text" dir="auto">{a.text}</span>
                 <span className="sc-line-meta">{ago(a.at, now)}</span>
               </li>
             ))}
@@ -431,23 +440,23 @@ export function BriefingView({ id, zone, kinds, now, rev }: { id: string; zone: 
       )}
       {b.lines.length > 0 && (
         <section className="sc-section">
-          <h3 className="sc-h3">{blk.status === "now" ? "Live" : "What happened"}</h3>
+          <h3 className="sc-h3">{blk.status === "now" ? t("calendar.live") : t("calendar.whatHappened")}</h3>
           <Lines lines={b.lines} now={now} />
         </section>
       )}
       {b.prepping.length > 0 && (
         <section className="sc-section">
-          <h3 className="sc-h3">{blk.status === "now" ? "Working on it" : "Being prepped"}</h3>
+          <h3 className="sc-h3">{blk.status === "now" ? t("calendar.workingOnIt") : t("calendar.beingPrepped")}</h3>
           <WorkList rows={b.prepping} now={now} />
         </section>
       )}
       {b.decisions.length > 0 && (
         <section className="sc-section">
-          <h3 className="sc-h3">Michael's calls</h3>
+          <h3 className="sc-h3">{t("calendar.michaelsCalls")}</h3>
           <Decisions rows={b.decisions} now={now} />
         </section>
       )}
-      {b.quiet && <p className="sc-quiet">{b.quiet}</p>}
+      {b.quiet && <p className="sc-quiet" dir="auto">{b.quiet}</p>}
     </div>
   );
 }
@@ -455,6 +464,7 @@ export function BriefingView({ id, zone, kinds, now, rev }: { id: string; zone: 
 // ── the window ────────────────────────────────────────────────────────
 
 export function ScheduleWindow() {
+  const t = useT();
   const { block, rev, unread } = useScheduleUi();
   const phone = useIsPhone();
   const tick = useNow();
@@ -511,39 +521,39 @@ export function ScheduleWindow() {
     const r = await scheduleUi.clearAll();
     if (!r.ok) {
       setSeen(before);
-      setClearErr(`Didn't clear: ${r.error}`);
+      setClearErr(t("calendar.didntClearStraight", { error: r.error ?? "" }));
     }
   };
 
   const inBriefing = !!block && !!view;
-  const title = inBriefing ? "Calendar" : view?.title ?? "Schedule";
+  const title = inBriefing ? t("calendar.calendar") : view?.title ?? t("calendar.schedule");
 
   return (
     <div className={`sc-scrim${phone ? " phone" : ""}`} onClick={(e) => e.target === e.currentTarget && (block ? back() : scheduleUi.close())}>
-      <div className="sc-window" role="dialog" aria-modal="true" aria-label="Schedule">
+      <div className="sc-window" role="dialog" aria-modal="true" aria-label={t("calendar.schedule")}>
         <header className="sc-head">
           {inBriefing ? (
-            <button className="sc-headbtn sc-back" onClick={back} aria-label="Back to the calendar">
+            <button className="sc-headbtn sc-back" onClick={back} aria-label={t("calendar.backToCalendar")}>
               <IconBack />
               <span>{title}</span>
             </button>
           ) : (
             <div className="sc-head-title">
-              <span className="sc-title">{title}</span>
-              {view && <span className="sc-sub">{mode === "day" && shownDay ? `${WEEKDAY_LONG[shownDay.weekday]}, ${dayLabel(shownDay.date)}` : `Week of ${dayLabel(view.weekStart)}`}</span>}
+              <span className="sc-title" dir="auto">{title}</span>
+              {view && <span className="sc-sub">{mode === "day" && shownDay ? `${t(WEEKDAY_LONG[shownDay.weekday])}, ${dayLabel(shownDay.date)}` : t("calendar.weekOf", { date: dayLabel(view.weekStart) })}</span>}
             </div>
           )}
           {!inBriefing && (
-            <div className="sc-seg" role="tablist" aria-label="View">
+            <div className="sc-seg" role="tablist" aria-label={t("calendar.viewShort")}>
               <button role="tab" aria-selected={mode === "day"} className={mode === "day" ? "on" : ""} onClick={() => setMode("day")}>
-                Today
+                {t("common.today")}
               </button>
               <button role="tab" aria-selected={mode === "week"} className={mode === "week" ? "on" : ""} onClick={() => setMode("week")}>
-                Week
+                {t("calendar.week")}
               </button>
             </div>
           )}
-          <button ref={closeRef} className="sc-headbtn sc-x" onClick={() => scheduleUi.close()} aria-label="Close the schedule">
+          <button ref={closeRef} className="sc-headbtn sc-x" onClick={() => scheduleUi.close()} aria-label={t("calendar.closeSchedule")}>
             <IconClose />
           </button>
         </header>
@@ -554,7 +564,7 @@ export function ScheduleWindow() {
               <div className="sc-pad">
                 <p className="sc-quiet">{error}</p>
                 <button className="sc-btn-ghost" onClick={reload}>
-                  Try again
+                  {t("common.tryAgain")}
                 </button>
               </div>
             ) : (
@@ -564,8 +574,8 @@ export function ScheduleWindow() {
             <BriefingView id={block!} zone={view.zone} kinds={view.kinds} now={now} rev={rev} />
           ) : (
             <div className={`sc-layout ${mode}`}>
-              {error && <p className="sc-stale">Showing the last good copy — {error}</p>}
-              {view.error && <p className="sc-stale">The week file has a problem, so the last good copy is showing: {view.error}</p>}
+              {error && <p className="sc-stale">{t("calendar.lastGoodCopy", { error })}</p>}
+              {view.error && <p className="sc-stale">{t("calendar.weekFileProblem", { error: view.error })}</p>}
               <div className="sc-main">
                 <NowCard view={view} now={now} onOpen={openBlock} onLane={() => laneRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })} />
 
@@ -573,10 +583,11 @@ export function ScheduleWindow() {
                   <section className="sc-section sc-needs">
                     <div className="sc-section-head">
                       <h3 className="sc-h3">
-                        Needs you{unread > 0 && <span className="sc-count">{unread > 9 ? "9+" : unread} new</span>}
+                        {t("calendar.needsYou")}
+                        {unread > 0 && <span className="sc-count">{t("calendar.newCount", { n: unread > 9 ? "9+" : String(unread) })}</span>}
                       </h3>
                       <button className="sc-btn-ghost sc-clear" onClick={() => void clearAll()} disabled={unread === 0}>
-                        Clear all
+                        {t("calendar.clearAll")}
                       </button>
                     </div>
                     <AttentionList rows={attention} now={now} onOpen={openItem} />
@@ -586,11 +597,11 @@ export function ScheduleWindow() {
 
                 {mode === "day" && shownDay ? (
                   <section className="sc-section">
-                    <div className="sc-daypick" role="tablist" aria-label="Day">
+                    <div className="sc-daypick" role="tablist" aria-label={t("calendar.day")}>
                       {view.days.map((d) => (
                         <button key={d.date} role="tab" aria-selected={d.date === shownDay.date} className={`${d.date === shownDay.date ? "on" : ""}${d.isToday ? " today" : ""}`} onClick={() => setDay(d.date)}>
-                          <span>{WEEKDAY[d.weekday] === "Shabbat" ? "Shab" : WEEKDAY[d.weekday]}</span>
-                          <span className="sc-daypick-n">{dayLabel(d.date).split(" ")[1]}</span>
+                          <span>{d.weekday === 6 ? t("calendar.shab") : t(WEEKDAY[d.weekday])}</span>
+                          <span className="sc-daypick-n">{Number(d.date.slice(8))}</span>
                         </button>
                       ))}
                     </div>
@@ -599,14 +610,14 @@ export function ScheduleWindow() {
                 ) : (
                   <section className="sc-section">
                     <div className="sc-weeknav">
-                      <button className="sc-btn-ghost" onClick={() => setWeek((w) => w - 1)} aria-label="Previous week">
-                        ‹
+                      <button className="sc-btn-ghost" onClick={() => setWeek((w) => w - 1)} aria-label={t("calendar.prevWeek")}>
+                        {t("calendar.prevGlyph")}
                       </button>
                       <button className="sc-btn-ghost" onClick={() => setWeek(0)} disabled={week === 0}>
-                        This week
+                        {t("calendar.thisWeek")}
                       </button>
-                      <button className="sc-btn-ghost" onClick={() => setWeek((w) => w + 1)} aria-label="Next week">
-                        ›
+                      <button className="sc-btn-ghost" onClick={() => setWeek((w) => w + 1)} aria-label={t("calendar.nextWeek")}>
+                        {t("calendar.nextGlyph")}
                       </button>
                     </div>
                     <WeekGrid view={view} now={now} onOpen={openBlock} onDay={(d) => (setDay(d), setMode("day"))} />
@@ -616,16 +627,16 @@ export function ScheduleWindow() {
 
               <aside className="sc-lane" ref={laneRef}>
                 <section className="sc-section">
-                  <h3 className="sc-h3">In the background</h3>
-                  {view.background.work.length ? <WorkList rows={view.background.work} now={now} /> : <p className="sc-quiet">No agent work running right now.</p>}
+                  <h3 className="sc-h3">{t("calendar.inBackground")}</h3>
+                  {view.background.work.length ? <WorkList rows={view.background.work} now={now} /> : <p className="sc-quiet">{t("calendar.noAgentWork")}</p>}
                 </section>
                 {view.background.decisions.length > 0 && (
                   <section className="sc-section">
-                    <h3 className="sc-h3">Michael's own calls</h3>
+                    <h3 className="sc-h3">{t("calendar.michaelsOwnCalls")}</h3>
                     <Decisions rows={view.background.decisions} now={now} />
                   </section>
                 )}
-                {view.note && <p className="sc-quiet sc-note">{view.note}</p>}
+                {view.note && <p className="sc-quiet sc-note" dir="auto">{view.note}</p>}
               </aside>
             </div>
           )}

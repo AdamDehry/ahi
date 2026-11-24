@@ -4,7 +4,8 @@ const path=require('node:path');
 const {pathToFileURL}=require('node:url');
 const {SetupService}=require('./service.cjs');
 const {RemoteSetup}=require('./remote.cjs');
-const {allowedCall,signIn,linuxAutostart}=require('./desktop.cjs');
+const {allowedCall,signIn,sessionLanguage,linuxAutostart}=require('./desktop.cjs');
+const {t,systemLang}=require('../ui/i18n.js');
 let win,winKind,tray,service,remote,starting=null,startAbort=null,stopping=null,stopped=false,quitting=false,trayHintShown=false;
 const headless=app.commandLine.hasSwitch('headless-setup')||process.argv.includes('--headless-setup');
 if(headless){app.commandLine.appendSwitch('ozone-platform','headless');app.disableHardwareAcceleration();}
@@ -20,6 +21,9 @@ app.setPath('userData',sandbox?path.join(sandbox,'desktop-data'):path.join(app.g
 const hiddenStart=process.argv.includes('--hidden')||(process.platform==='darwin'&&app.getLoginItemSettings().wasOpenedAtLogin);
 const setupUrl=pathToFileURL(path.join(__dirname,'../ui/index.html')).href,startUrl=pathToFileURL(path.join(__dirname,'../ui/start.html')).href;
 const logFile=()=>path.join(app.getPath('userData'),'ahi.log');
+// The owner's language (setup's choice, then AHI's Settings); before setup has loaded, the system's.
+const systemLanguages=()=>app.getPreferredSystemLanguages?.()||[app.getLocale()];
+const L=()=>service?service.language:systemLang(systemLanguages());
 const logLine=line=>{try{fs.appendFileSync(logFile(),`${new Date().toISOString()} ${line}\n`);}catch{}};
 // One AHI per computer: a second launch (Start menu, login item, a double click) shows the one already running.
 const primary=headless||app.requestSingleInstanceLock();
@@ -56,6 +60,8 @@ function openWindow(kind,url,{show}={}){
   win=new BrowserWindow({width:1240,height:900,minWidth:820,minHeight:680,backgroundColor:'#0c1917',title:'AHI',autoHideMenuBar:true,show:visible,webPreferences});winKind=kind;
   if(kind==='ahi'){
     const origin=new URL(url).origin;ahiSession(origin);
+    // Leaving the window is when a language change in AHI's Settings has to reach the tray menu.
+    win.on('blur',()=>void followLanguage(url));win.on('hide',()=>void followLanguage(url));
     const external=u=>{if(/^https?:/i.test(u))shell.openExternal(u);};
     win.webContents.setWindowOpenHandler(({url:u})=>{try{if(new URL(u).origin===origin)return {action:'allow',overrideBrowserWindowOptions:{autoHideMenuBar:true}};}catch{}external(u);return {action:'deny'};});
     win.webContents.on('will-navigate',(event,u)=>{try{if(new URL(u).origin===origin)return;}catch{}event.preventDefault();external(u);});
@@ -68,7 +74,7 @@ function openWindow(kind,url,{show}={}){
   const w=win;w.on('close',event=>{
     if(quitting)return;
     event.preventDefault();w.hide();
-    if(tray&&!trayHintShown&&process.platform==='win32'){trayHintShown=true;tray.displayBalloon({title:'AHI is still running',content:'Open it again from here. To stop AHI, right-click this icon and choose Quit AHI.'});}
+    if(tray&&!trayHintShown&&process.platform==='win32'){trayHintShown=true;tray.displayBalloon({title:t(L(),'tray.stillRunningTitle'),content:t(L(),'tray.stillRunningBody')});}
   });
   old?.destroy();
   return win.loadURL(url);
@@ -85,8 +91,9 @@ function startAhi(){
     startAbort=new AbortController();
     try{
       const url=await service.ensureAhi({signal:startAbort.signal});
-      if(quitting)throw Error('AHI is quitting.');
-      await signIn((u,o)=>ahiSession(new URL(url).origin).fetch(u,o),url,await service.ownerToken());
+      if(quitting)throw Error(t(L(),'error.quitting'));
+      await signIn((u,o)=>ahiSession(new URL(url).origin).fetch(u,o),url,await service.ownerToken(),undefined,L());
+      await followLanguage(url);
       // If the server stops by itself later, say so and offer Retry (a deliberate restart replaces ahiChild first).
       const child=service.ahiChild;
       child?.once('exit',code=>{if(quitting||service.ahiChild!==child)return;logLine(`AHI stopped unexpectedly (exit ${code}).`);if(winKind==='ahi')openWindow('start',startUrl);});
@@ -94,6 +101,11 @@ function startAhi(){
     }catch(error){logLine(`AHI could not start: ${error.message}`);throw error;}
     finally{starting=null;}
   })();
+}
+/** Follow the language the owner saved in AHI's Settings: the tray menu, dialogs and start screen speak it. */
+async function followLanguage(url){
+  const lang=await sessionLanguage((u,o)=>ahiSession(new URL(url).origin).fetch(u,o),url);
+  if(lang&&service&&await service.setLanguage(lang).catch(()=>false))buildTray();
 }
 /** Started at login: AHI comes up with its window hidden; a failure shows the start screen (which retries once and
  * then gives the reason and Retry). */
@@ -112,16 +124,17 @@ async function applyLoginItem(){
 }
 function buildTray(){
   const icon=nativeImage.createFromPath(path.join(__dirname,'../ui/icon.png')).resize({width:process.platform==='darwin'?18:32});
-  tray??=new Tray(icon);tray.setToolTip('AHI');
+  const fresh=!tray;tray??=new Tray(icon);tray.setToolTip('AHI');
+  const lang=L();
   tray.setContextMenu(Menu.buildFromTemplate([
-    {label:'Open AHI',click:showMain},
-    {label:'Setup…',click:()=>openWindow('setup',setupUrl,{show:true})},
+    {label:t(lang,'tray.open'),click:showMain},
+    {label:t(lang,'tray.setup'),click:()=>openWindow('setup',setupUrl,{show:true})},
     {type:'separator'},
-    {label:'Start AHI when I log in',type:'checkbox',checked:service.startAtLogin,click:async item=>{await service.setStartAtLogin(item.checked);await applyLoginItem();}},
+    {label:t(lang,'tray.startAtLogin'),type:'checkbox',checked:service.startAtLogin,click:async item=>{await service.setStartAtLogin(item.checked);await applyLoginItem();}},
     {type:'separator'},
-    {label:'Quit AHI',click:()=>app.quit()},
+    {label:t(lang,'tray.quit'),click:()=>app.quit()},
   ]));
-  if(process.platform!=='darwin')tray.on('click',showMain);
+  if(fresh&&process.platform!=='darwin')tray.on('click',showMain);
 }
 
 if(primary)app.whenReady().then(async()=>{
@@ -140,8 +153,8 @@ if(primary)app.whenReady().then(async()=>{
     const child=require('node:child_process').spawn(runtimeNode,[runner,dataDir],{stdio:'inherit',env:{...process.env,...(!app.isPackaged?{AHI_SETUP_NATIVE_BINDING:require.resolve('@napi-rs/keyring')}:{})}});
     const keepAlive=setInterval(()=>{},1000);child.once('error',()=>app.quit());child.once('exit',()=>app.quit());app.on('before-quit',()=>{clearInterval(keepAlive);child.kill();});process.once('SIGTERM',()=>{child.kill();app.quit();});process.once('SIGINT',()=>{child.kill();app.quit();});return;
   }
-  service=new SetupService({dataDir,node:runtimeNode,npmCli:app.isPackaged?path.join(process.resourcesPath,'app.asar.unpacked/node_modules/npm/bin/npm-cli.js'):undefined,keyring,sandboxRoot:sandbox,inWindow:true,
-    chooseFolder:async()=>{const picked=await dialog.showOpenDialog(win,{title:'Choose where AHI will live',properties:['openDirectory','createDirectory']});return picked.canceled?null:picked.filePaths[0];},
+  service=new SetupService({dataDir,systemLanguages:systemLanguages(),node:runtimeNode,npmCli:app.isPackaged?path.join(process.resourcesPath,'app.asar.unpacked/node_modules/npm/bin/npm-cli.js'):undefined,keyring,sandboxRoot:sandbox,inWindow:true,
+    chooseFolder:async()=>{const picked=await dialog.showOpenDialog(win,{title:t(L(),'dialog.chooseFolder'),properties:['openDirectory','createDirectory']});return picked.canceled?null:picked.filePaths[0];},
     openExternal:url=>shell.openExternal(url),
     // The bundled AHI server and the hidden OS folder's seed: packaged resources, or this repo while developing.
     ahi:{serverDir:app.isPackaged?path.join(process.resourcesPath,'ahi-server'):(sandbox&&process.env.AHI_SETUP_TEST_SERVER_DIR)||path.resolve(__dirname,'../..'),seed:app.isPackaged?path.join(process.resourcesPath,'ahi-seed'):path.resolve(__dirname,'../../..'),port:Number(process.env.AHI_PORT)||18789}});
@@ -156,6 +169,7 @@ if(primary)app.whenReady().then(async()=>{
       else if(method==='setup'){setImmediate(()=>openWindow('setup',setupUrl));result={};}
       else result=method==='remote-install'?await remote.install():method==='remote-login'?await remote.login():method==='remote-create'?await remote.create():method==='remote-route'?await remote.route(arg):method==='remote-start'?await remote.start():method==='remote-stop'?await remote.stop():await service.invoke(method,arg);
       if(method==='complete')await applyLoginItem();
+      if(method==='patch'&&arg?.language&&tray)buildTray();
       return {ok:true,value:result};
     }catch(error){
       if(method==='start'||method==='open-ahi')win?.show(); // a failed start is shown, even from the tray
@@ -168,7 +182,7 @@ if(primary)app.whenReady().then(async()=>{
   app.on('activate',showMain); // the Mac dock icon
   // Set up already: AHI itself (the start screen starts it, then hands over). First run: the setup screens.
   if(!service.state.completed)await openWindow('setup',setupUrl);else if(hiddenStart)await startHidden();else await openWindow('start',startUrl);
-}).catch(error=>{logLine(`AHI could not open: ${error.stack||error.message}`);if(headless)process.stderr.write(`AHI Setup server could not start. Check application folder access and that port 4189 is free. Error class: ${error.code||error.name}\n`);else dialog.showErrorBox('AHI could not open','Your saved setup has been kept. Check folder access, then reopen the app.');quitting=true;app.quit();});
+}).catch(error=>{logLine(`AHI could not open: ${error.stack||error.message}`);if(headless)process.stderr.write(`AHI Setup server could not start. Check application folder access and that port 4189 is free. Error class: ${error.code||error.name}\n`);else dialog.showErrorBox(t(L(),'dialog.couldNotOpenTitle'),t(L(),'dialog.couldNotOpenBody'));quitting=true;app.quit();});
 // Closing the window keeps AHI running, so the last window closing is not a quit.
 app.on('window-all-closed',()=>{if(headless)app.quit();});
 // A real quit stops the server cleanly first (it removes its own lock), then lets the app exit.

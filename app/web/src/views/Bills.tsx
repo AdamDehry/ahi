@@ -5,17 +5,19 @@ import { createBill, deleteBill, fetchBills, saveBillSettings, updateBill, type 
 import type { Bill, BillSettings } from "../lib/types";
 import { IconPlus } from "../components/icons";
 import { Icon } from "../redesign/icons";
+import { getLang, locale, t as tr, tn, useT, type Key } from "../i18n";
 
 /** Bills: the signed-in user's OWN private bills. Nobody else's are
  *  ever loaded here — the gateway scopes every call to the session's user.
  *  Her agent (Miriam) can add and edit them from chat; the tab updates live. */
 
-const RECURRING: Array<{ key: Bill["recurring"]; label: string }> = [
-  { key: "monthly", label: "Monthly" },
-  { key: "yearly", label: "Yearly" },
-  { key: "weekly", label: "Weekly" },
-  { key: "once", label: "One time" },
+const RECURRING: Array<{ key: Bill["recurring"]; label: Key }> = [
+  { key: "monthly", label: "money.recur.monthly" },
+  { key: "yearly", label: "money.recur.yearly" },
+  { key: "weekly", label: "money.recur.weekly" },
+  { key: "once", label: "money.recur.once" },
 ];
+const RECUR: Record<Bill["recurring"], Key> = { monthly: "money.recur.monthly", yearly: "money.recur.yearly", weekly: "money.recur.weekly", once: "money.recur.once" };
 
 function ordinal(n: number): string {
   const s = ["th", "st", "nd", "rd"];
@@ -26,7 +28,7 @@ function ordinal(n: number): string {
 function money(n: number | null, currency: string): string {
   if (n === null) return "—";
   try {
-    return new Intl.NumberFormat(undefined, { style: "currency", currency }).format(n);
+    return new Intl.NumberFormat(locale(), { style: "currency", currency }).format(n);
   } catch {
     return `$${n.toFixed(2)}`;
   }
@@ -41,10 +43,11 @@ export function perMonth(b: Pick<Bill, "amount" | "recurring" | "active">): numb
   return b.amount;
 }
 
+/** Called at render: "the 5th" in English, the plain day number elsewhere. */
 function dueLabel(b: Bill): string {
-  if (b.dueDate) return new Date(`${b.dueDate}T12:00:00`).toLocaleDateString(undefined, { month: "short", day: "numeric" });
-  if (b.dueDay) return `the ${ordinal(b.dueDay)}`;
-  return "no due date";
+  if (b.dueDate) return new Date(`${b.dueDate}T12:00:00`).toLocaleDateString(locale(), { month: "short", day: "numeric" });
+  if (b.dueDay) return tr("money.theDay", { ord: getLang() === "en" ? ordinal(b.dueDay) : String(b.dueDay) });
+  return tr("money.noDueDateLower");
 }
 
 /** Days until the next due day, for monthly bills with a due day. */
@@ -118,99 +121,100 @@ function toPayload(f: FormState): BillPayload {
 }
 
 function BillModal({ bill, onClose }: { bill: Bill | null; onClose: () => void }) {
+  const t = useT();
   const [form, setForm] = useState<FormState>(bill ? toForm(bill) : EMPTY);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const set = <K extends keyof FormState>(k: K, v: FormState[K]) => setForm((f) => ({ ...f, [k]: v }));
 
   async function save() {
-    if (!form.name.trim()) return setError("Give the bill a name.");
+    if (!form.name.trim()) return setError(t("money.giveBillName"));
     setBusy(true);
     const r = bill ? await updateBill(bill.id, toPayload(form)) : await createBill(toPayload(form));
     setBusy(false);
     if (r.ok) onClose();
-    else setError(r.error || "Couldn’t save. Your changes are still here.");
+    else setError(r.error || t("money.couldNotSaveKept"));
   }
 
   async function remove() {
-    if (!bill || !confirm(`Delete "${bill.name}"?`)) return;
+    if (!bill || !confirm(t("money.confirmDeleteBill", { name: bill.name }))) return;
     setBusy(true);
     const r = await deleteBill(bill.id);
     setBusy(false);
     if (r.ok) onClose();
-    else setError(r.error || "Couldn’t delete. Try again.");
+    else setError(r.error || t("money.couldNotDelete"));
   }
 
   // FINAL "Add a bill" (finance.js billForm): Bill name; Amount (USD) + Repeats; Due by; the day or date;
   // Autopay is on; Billing link; Notes; Active; foot Delete · Cancel · Save bill.
   return (
-    <Modal title={bill ? "Edit your bill" : "Add a bill"} eyebrow="AHI · PRIVATE WORKSPACE" variant="fin-dialog" onClose={onClose}>
+    <Modal title={bill ? t("money.editBill") : t("money.addBill")} eyebrow={t("money.privateWorkspace")} variant="fin-dialog" onClose={onClose}>
       <label className="modal-field">
-        <span className="mono-label">Bill name</span>
-        <input type="text" required value={form.name} onChange={(e) => set("name", e.target.value)} placeholder="e.g. Coastline Mobile" />
+        <span className="mono-label">{t("money.billName")}</span>
+        <input type="text" required dir="auto" value={form.name} onChange={(e) => set("name", e.target.value)} placeholder={t("money.billNamePlaceholder")} />
       </label>
       <div className="form-grid">
         <label className="modal-field">
-          <span className="mono-label">Amount (USD)</span>
-          <input type="text" inputMode="decimal" value={form.amount} onChange={(e) => set("amount", e.target.value)} placeholder="0.00" />
+          <span className="mono-label">{t("money.amountUsd")}</span>
+          <input type="text" inputMode="decimal" dir="ltr" value={form.amount} onChange={(e) => set("amount", e.target.value)} placeholder="0.00" />
         </label>
         <label className="modal-field">
-          <span className="mono-label">Repeats</span>
+          <span className="mono-label">{t("money.repeats")}</span>
           <select value={form.recurring} onChange={(e) => set("recurring", e.target.value as Bill["recurring"])}>
             {RECURRING.map((r) => (
               <option key={r.key} value={r.key}>
-                {r.label}
+                {t(r.label)}
               </option>
             ))}
           </select>
         </label>
       </div>
       <label className="modal-field">
-        <span className="mono-label">Due by</span>
+        <span className="mono-label">{t("money.dueBy")}</span>
         <select value={form.dueKind} onChange={(e) => set("dueKind", e.target.value as "day" | "date")}>
-          <option value="day">Day of the month</option>
-          <option value="date">A date</option>
+          <option value="day">{t("money.dayOfMonth")}</option>
+          <option value="date">{t("money.aDate")}</option>
         </select>
       </label>
       {form.dueKind === "day" ? (
         <label className="modal-field">
-          <span className="mono-label">Day (1–31)</span>
+          <span className="mono-label">{t("money.dayRange")}</span>
           <input type="number" min={1} max={31} value={form.dueDay} onChange={(e) => set("dueDay", e.target.value)} />
         </label>
       ) : (
         <label className="modal-field">
-          <span className="mono-label">Due date</span>
+          <span className="mono-label">{t("money.dueDate")}</span>
           <input type="date" value={form.dueDate} onChange={(e) => set("dueDate", e.target.value)} />
         </label>
       )}
       <label className="modal-check">
         <input type="checkbox" checked={form.autopay} onChange={(e) => set("autopay", e.target.checked)} />
-        Autopay is on
+        {t("money.autopayOn")}
       </label>
       <label className="modal-field">
-        <span className="mono-label">Billing link</span>
-        <input type="url" value={form.link} onChange={(e) => set("link", e.target.value)} placeholder="https://…" />
+        <span className="mono-label">{t("money.billingLink")}</span>
+        <input type="url" dir="ltr" value={form.link} onChange={(e) => set("link", e.target.value)} placeholder="https://…" />
       </label>
       <label className="modal-field">
-        <span className="mono-label">Notes</span>
-        <textarea value={form.notes} onChange={(e) => set("notes", e.target.value)} />
+        <span className="mono-label">{t("money.notes")}</span>
+        <textarea dir="auto" value={form.notes} onChange={(e) => set("notes", e.target.value)} />
       </label>
       <label className="modal-check">
         <input type="checkbox" checked={form.active} onChange={(e) => set("active", e.target.checked)} />
-        Active
+        {t("money.active")}
       </label>
       {error && <p className="modal-error">{error}</p>}
       <div className="modal-foot">
         {bill && (
           <button className="btn-text" onClick={remove} disabled={busy}>
-            Delete
+            {t("common.delete")}
           </button>
         )}
         <button className="btn-quiet" onClick={onClose} disabled={busy}>
-          Cancel
+          {t("common.cancel")}
         </button>
         <button className="btn-accent" onClick={save} disabled={busy}>
-          {busy ? "Saving…" : "Save bill"}
+          {busy ? t("common.saving") : t("money.saveBill")}
         </button>
       </div>
     </Modal>
@@ -218,20 +222,21 @@ function BillModal({ bill, onClose }: { bill: Bill | null; onClose: () => void }
 }
 
 function SettingsModal({ settings, onClose }: { settings: BillSettings; onClose: () => void }) {
+  const t = useT();
   const [currency, setCurrency] = useState(settings.currency);
   const [remind, setRemind] = useState(settings.remindDaysBefore === null ? "" : String(settings.remindDaysBefore));
   const [error, setError] = useState("");
   async function save() {
     const r = await saveBillSettings({ currency: currency.trim().toUpperCase(), remindDaysBefore: remind === "" ? null : Number(remind) });
     if (r.ok) onClose();
-    else setError(r.error || "Couldn’t save. Your changes are still here.");
+    else setError(r.error || t("money.couldNotSaveKept"));
   }
   // FINAL "Bill reminders" (finance.js billSettings).
   const codes = ["USD", "EUR", "GBP"].includes(currency.toUpperCase()) ? ["USD", "EUR", "GBP"] : ["USD", "EUR", "GBP", currency.toUpperCase()];
   return (
-    <Modal title="Bill reminders" eyebrow="AHI · PRIVATE WORKSPACE" variant="fin-dialog" onClose={onClose}>
+    <Modal title={t("money.billReminders")} eyebrow={t("money.privateWorkspace")} variant="fin-dialog" onClose={onClose}>
       <label className="modal-field">
-        <span className="mono-label">Currency</span>
+        <span className="mono-label">{t("money.currency")}</span>
         <select value={currency.toUpperCase()} onChange={(e) => setCurrency(e.target.value)}>
           {codes.map((c) => (
             <option key={c} value={c}>
@@ -241,17 +246,17 @@ function SettingsModal({ settings, onClose }: { settings: BillSettings; onClose:
         </select>
       </label>
       <label className="modal-field">
-        <span className="mono-label">Remind me this many days before</span>
+        <span className="mono-label">{t("money.remindDaysBefore")}</span>
         <input type="number" min={0} max={30} value={remind} onChange={(e) => setRemind(e.target.value)} />
       </label>
-      <p className="vault-form-note">Leave blank to turn reminders off.</p>
+      <p className="vault-form-note">{t("money.blankTurnsOff")}</p>
       {error && <p className="modal-error">{error}</p>}
       <div className="modal-foot">
         <button className="btn-quiet" onClick={onClose}>
-          Cancel
+          {t("common.cancel")}
         </button>
         <button className="btn-accent" onClick={save}>
-          Save
+          {t("common.save")}
         </button>
       </div>
     </Modal>
@@ -259,6 +264,7 @@ function SettingsModal({ settings, onClose }: { settings: BillSettings; onClose:
 }
 
 export default function Bills() {
+  const t = useT();
   const { bills, billSettings, user } = useAppState();
   const [modal, setModal] = useState<{ open: boolean; bill: Bill | null }>({ open: false, bill: null });
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -296,32 +302,29 @@ export default function Bills() {
     return (daysUntil(a) ?? 999) - (daysUntil(b) ?? 999);
   });
 
-  const RECUR: Record<Bill["recurring"], string> = { monthly: "Monthly", yearly: "Yearly", weekly: "Weekly", once: "One time" };
   const nextDue = (bill: Bill): Date | null => {
     if (bill.dueDate) return new Date(`${bill.dueDate}T12:00:00`);
     const d = daysUntil(bill);
     if (d === null) return null;
-    const t = new Date();
-    t.setHours(12, 0, 0, 0);
-    t.setDate(t.getDate() + d);
-    return t;
+    const day = new Date();
+    day.setHours(12, 0, 0, 0);
+    day.setDate(day.getDate() + d);
+    return day;
   };
   const remind = billSettings.remindDaysBefore;
   return (
     <div className="tool-page fin-costs fin-bills">
       <div className="fin-costs-head">
-        <h2>
-          Bills, taken care of.
-        </h2>
+        <h2>{t("money.billsTitle")}</h2>
         <button className="btn-accent fin-add" onClick={() => setModal({ open: true, bill: null })}>
-          <IconPlus /> Add a bill
+          <IconPlus /> {t("money.addBill")}
         </button>
       </div>
       <div className="fin-bills-watch">
         <span className="service-symbol miriam" aria-hidden="true">M</span>
-        <span>{remind === null ? "Reminders are off. Turn them on and Miriam keeps an eye on the dates." : `Miriam is keeping an eye on the dates · ${remind === 0 ? "on the day" : `${remind} day${remind === 1 ? "" : "s"} before`}.`}</span>
+        <span>{remind === null ? t("money.remindersOff") : t("money.watching", { when: remind === 0 ? t("money.onTheDay") : tn("money.daysBefore", remind) })}</span>
         <button className="fin-reminders" onClick={() => setSettingsOpen(true)}>
-          <Icon name="bell" /> Reminders
+          <Icon name="bell" /> {t("money.reminders")}
         </button>
       </div>
 
@@ -330,13 +333,13 @@ export default function Bills() {
           {sorted.map((bill) => {
             const d = daysUntil(bill);
             const due = nextDue(bill);
-            const when = d === null ? (bill.dueDay ? `Due ${dueLabel(bill)}` : "") : d === 0 ? "Due today" : d === 1 ? "Due tomorrow" : d > 0 && d <= 14 ? `In ${d} days` : "";
+            const when = d === null ? (bill.dueDay ? t("money.dueOn", { when: dueLabel(bill) }) : "") : d === 0 ? t("money.dueToday") : d === 1 ? t("money.dueTomorrow") : d > 0 && d <= 14 ? t("money.inDays", { n: d }) : "";
             return (
               <div key={bill.id} className={`money-row${bill.active ? "" : " inactive"}`}>
-                <span className="date-tile" aria-label={due ? due.toDateString() : "No due date"}>
+                <span className="date-tile" aria-label={due ? (getLang() === "en" ? due.toDateString() : due.toLocaleDateString(locale(), { dateStyle: "full" })) : t("money.noDueDate")}>
                   {due ? (
                     <>
-                      <small>{due.toLocaleDateString("en-US", { month: "short" }).toUpperCase()}</small>
+                      <small>{due.toLocaleDateString(locale(), { month: "short" }).toUpperCase()}</small>
                       <b>{due.getDate()}</b>
                     </>
                   ) : (
@@ -344,12 +347,12 @@ export default function Bills() {
                   )}
                 </span>
                 <div className="grow">
-                  <strong>{bill.name}</strong>
-                  <p>{[RECUR[bill.recurring], when, bill.active ? null : "Paused"].filter(Boolean).join(" · ")}</p>
-                  {bill.autopay && <span className="tag autopay">Autopay</span>}
+                  <strong dir="auto">{bill.name}</strong>
+                  <p>{[t(RECUR[bill.recurring]), when, bill.active ? null : t("money.paused")].filter(Boolean).join(" · ")}</p>
+                  {bill.autopay && <span className="tag autopay">{t("money.autopay")}</span>}
                 </div>
                 <span className="amount">{money(bill.amount, cur)}</span>
-                <button className="money-btn" aria-label={`Edit ${bill.name}`} title="Edit" onClick={() => setModal({ open: true, bill })}>
+                <button className="money-btn" aria-label={t("money.editNamed", { name: bill.name })} title={t("common.edit")} onClick={() => setModal({ open: true, bill })}>
                   <svg viewBox="0 0 24 24" aria-hidden="true" fill="currentColor" stroke="none">
                     <circle cx="6" cy="12" r="1.4" />
                     <circle cx="12" cy="12" r="1.4" />
@@ -357,7 +360,7 @@ export default function Bills() {
                   </svg>
                 </button>
                 {bill.link ? (
-                  <a className="money-link" href={bill.link} target="_blank" rel="noopener noreferrer" aria-label={`Open ${bill.name}`} title="Open billing page">
+                  <a className="money-link" href={bill.link} target="_blank" rel="noopener noreferrer" aria-label={t("money.openNamed", { name: bill.name })} title={t("money.openBillingPage")}>
                     <Icon name="link" />
                   </a>
                 ) : (
@@ -370,7 +373,7 @@ export default function Bills() {
           })}
         </div>
       )}
-      {bills.length === 0 && <p className="fin-empty">No bills yet. Add one, or ask Miriam: “Add my phone bill, $85 on the 5th, autopay.”</p>}
+      {bills.length === 0 && <p className="fin-empty">{t("money.noBills")}</p>}
 
       {modal.open && <BillModal bill={modal.bill} onClose={() => setModal({ open: false, bill: null })} />}
       {settingsOpen && <SettingsModal settings={billSettings} onClose={() => setSettingsOpen(false)} />}

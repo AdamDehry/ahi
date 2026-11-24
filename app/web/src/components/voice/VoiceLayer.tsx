@@ -14,6 +14,7 @@ import {
 } from "../../lib/voicelayer";
 import { useCallLayer } from "../../lib/callLayer";
 import { registerCallAnswerSink } from "../../lib/studioBus";
+import { tn, useT } from "../../i18n";
 
 /**
  * The immersive voice screen (frames 3B–3F).
@@ -60,6 +61,7 @@ export default function VoiceLayer({
   onRestore?: () => void;
 }) {
   // Native, or ElevenLabs when the gateway says so (lib/callLayer.ts) — one screen for both.
+  const tr = useT();
   const call = useCallLayer(bot, viaEleven);
   const recorded = useRef(false);
 
@@ -183,7 +185,7 @@ export default function VoiceLayer({
     // ("completed turns are saved") is the one the owner needs to read.
     if (!interruptedRef.current) {
       const name = BOT_LABELS[bot] ?? bot;
-      showToast(countTurns(latest.current.turns) > 0 ? `Voice conversation saved in ${name}’s chat.` : "Call ended.", 2600);
+      showToast(countTurns(latest.current.turns) > 0 ? tr("voice.toast.saved", { name }) : tr("voice.toast.ended"), 2600);
     }
     const t = window.setTimeout(() => latest.current.onExit(), interruptedRef.current ? EXIT_DELAY_MS : QUICK_EXIT_MS);
     return () => window.clearTimeout(t);
@@ -229,7 +231,7 @@ export default function VoiceLayer({
       className={`voice s-${phase}${barging ? " barge" : ""}${provisional.length > 0 ? " user-talking" : ""}${phase === "ended" && !interrupted ? " quick-end" : ""}`}
       role="dialog"
       aria-modal="true"
-      aria-label={`Voice call with ${BOT_LABELS[bot] ?? bot}`}
+      aria-label={tr("voice.callWith", { name: BOT_LABELS[bot] ?? bot })}
     >
       {/* Stacked glow layers, crossfaded by opacity only (3I). Bone until the
           call connects — hues are reserved for active states (3L). */}
@@ -241,14 +243,14 @@ export default function VoiceLayer({
       <header className="voice-head">
         {/* Minimize: the screen goes, the call stays (the pill takes over). */}
         {canMinimize && (
-          <button type="button" className="vh-min" aria-label="Minimize call" title="Minimize (Esc)" onClick={onMinimize}>
+          <button type="button" className="vh-min" aria-label={tr("voice.minimizeCall")} title={tr("voice.minimizeTitle")} onClick={onMinimize}>
             {/* A small down arrow, as FINAL — not the spelled-out word. */}
             <IconChevronDown />
           </button>
         )}
         <span className={`agent-dot live${floor === "standby" ? " standby" : ""}${link === "reconnecting" ? " link-down" : ""}`} />
         <strong>{BOT_LABELS[bot] ?? bot}</strong>
-        {/* Mono system labels stay English always — chrome, not speech (3J). */}
+        {/* Mono system labels — chrome, not speech (3J); translated with the app language. */}
         {/* WORKING: a turn is in flight and the agent has gone quiet over it.
             The glance that tells "busy" from "frozen" (voice-call-drop). */}
         <span className={`mono vh-label${stateClass}`}>{stateLabel}</span>
@@ -258,16 +260,16 @@ export default function VoiceLayer({
       {/* While sharing, say so plainly and keep STOP one tap away. */}
       {/* Recording ("watch this" or REC): a red dot and a running timer; one tap stops it and he reviews it. */}
       {sharing && recording && !preCall && phase !== "ended" && (
-        <button type="button" className="share-banner recording mono" onClick={toggleRecord} aria-label="Stop recording" role="status">
+        <button type="button" className="share-banner recording mono" onClick={toggleRecord} aria-label={tr("voice.ctl.stopRecording")} role="status">
           <span className="rec-dot" />
-          <span className="rec-timer">REC {formatElapsed(Math.max(0, Math.floor((Date.now() - recording.since) / 1000)))}</span>
-          · MICHAEL IS WATCHING · TAP TO STOP
+          <span className="rec-timer">{tr("voice.recTimer", { time: formatElapsed(Math.max(0, Math.floor((Date.now() - recording.since) / 1000))) })}</span>
+          {tr("voice.michaelWatching")}
         </button>
       )}
       {sharing && !recording && !preCall && phase !== "ended" && (
-        <button type="button" className="share-banner mono" onClick={toggleShare} aria-label="Stop sharing screen">
+        <button type="button" className="share-banner mono" onClick={toggleShare} aria-label={tr("voice.ctl.stopSharingScreen")}>
           <span className="share-dot" />
-          MICHAEL CAN SEE YOUR SCREEN · TAP TO STOP
+          {tr("voice.michaelSeesScreen")}
         </button>
       )}
 
@@ -275,13 +277,14 @@ export default function VoiceLayer({
 
       {working && phase !== "ended" && (
         <div className="work-note mono" role="status">
-          {`${(BOT_LABELS[bot] ?? bot).toUpperCase()} IS WORKING · ${formatElapsed(working.sec)}` +
-            (working.steps ? ` · ${working.steps} STEP${working.steps === 1 ? "" : "S"}` : "")}
+          {working.steps
+            ? tn("voice.workNoteSteps", working.steps, { name: (BOT_LABELS[bot] ?? bot).toUpperCase(), elapsed: formatElapsed(working.sec) })
+            : tr("voice.workNote", { name: (BOT_LABELS[bot] ?? bot).toUpperCase(), elapsed: formatElapsed(working.sec) })}
         </div>
       )}
 
       {phase === "connecting" && (
-        <div className="center-note mono">{"ALLOW MICROPHONE\nTO START THE CALL"}</div>
+        <div className="center-note mono">{tr("voice.allowMic")}</div>
       )}
       {/* An interrupted call says so. Reporting a plain "CALL ENDED" for a
           call that was cut off is what left the owner unsure whether anything had
@@ -290,8 +293,8 @@ export default function VoiceLayer({
       {phase === "ended" && (
         <div className="center-note mono">
           {interrupted
-            ? `CALL INTERRUPTED · ${formatElapsed(elapsedSec)}\n${errorText ?? "The connection dropped."}\nCOMPLETED TURNS ARE SAVED`
-            : `MIC OFF · CALL ENDED · ${formatElapsed(elapsedSec)}`}
+            ? tr("voice.callInterrupted", { elapsed: formatElapsed(elapsedSec), reason: errorText ?? tr("voice.err.connectionDropped") })
+            : tr("voice.callEnded", { elapsed: formatElapsed(elapsedSec) })}
         </div>
       )}
 
@@ -301,10 +304,10 @@ export default function VoiceLayer({
       {!preCall && phase !== "ended" && hearing !== "ok" && (
         <div className="center-note mono" role="status">
           {hearing === "lost"
-            ? "CAN'T HEAR YOU · SPEECH LINE DROPPED\nHANG UP AND CALL AGAIN"
+            ? tr("voice.hearing.lost")
             : hearing === "gap"
-              ? "MISSED A FEW SECONDS WHILE RECONNECTING\nSAY THAT AGAIN"
-              : "RECONNECTING THE MIC LINE…"}
+              ? tr("voice.hearing.gap")
+              : tr("voice.hearing.reconnecting")}
         </div>
       )}
 
@@ -314,19 +317,19 @@ export default function VoiceLayer({
       {(phase === "denied" || phase === "failed") && (
         <div className="perm-card">
           <div className="mono perm-title">
-            {phase === "denied" ? "MICROPHONE BLOCKED" : "CALL FAILED TO START"}
+            {phase === "denied" ? tr("voice.micBlocked") : tr("voice.failedToStart")}
           </div>
           <p>
             {phase === "denied"
-              ? "Enable the microphone in your browser's site settings, then try again."
-              : (errorText ?? "Something went wrong starting the call.")}
+              ? tr("voice.enableMic")
+              : (errorText ?? tr("voice.startWentWrong"))}
           </p>
           <div className="perm-actions mono">
             <button type="button" className="perm-retry" onClick={retryMic}>
-              RETRY
+              {tr("voice.retry")}
             </button>
             <button type="button" className="perm-back" onClick={onExit}>
-              BACK TO CHAT
+              {tr("voice.backToChat")}
             </button>
           </div>
         </div>

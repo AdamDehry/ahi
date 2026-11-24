@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { useT } from "../../i18n";
 import { voiceCutPosition, voiceStreamPosition } from "../../lib/voicebus";
 import {
   activeIndex,
@@ -60,6 +61,7 @@ export default function KaraokeLine({
   /** More of the reply became visible — the transcript keeps it in view. */
   onGrow?: () => void;
 }) {
+  const tr = useT();
   const ref = useRef<HTMLDivElement>(null);
   const follows = textFollowsVoice();
   const growRef = useRef(onGrow);
@@ -108,6 +110,7 @@ export default function KaraokeLine({
   return (
     <div
       ref={ref}
+      dir="auto"
       className={`vturn-agent${settled ? " settled" : ""}${interrupted ? " interrupted" : ""}${follows ? " follows" : ""}`}
     >
       {settled ? (
@@ -132,7 +135,7 @@ export default function KaraokeLine({
           )}
         </>
       )}
-      {interrupted && <span className="int-tag mono">INTERRUPTED</span>}
+      {interrupted && <span className="int-tag mono">{tr("voice.interrupted")}</span>}
     </div>
   );
 }

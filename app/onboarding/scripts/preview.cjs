@@ -23,7 +23,7 @@ async function start({port=4189,dataDir=path.resolve(__dirname,'../evidence/sand
         const result=method.startsWith('remote-')?{message:'Preview only. Use the desktop app for Cloudflare sign-in and tunnel setup.'}:await service.invoke(method,arg);
         res.setHeader('Content-Type','application/json');res.end(JSON.stringify({ok:true,value:result}));return;
       }
-      const files={'/':'index.html','/index.html':'index.html','/app.js':'app.js','/styles.css':'styles.css'};
+      const files={'/':'index.html','/index.html':'index.html','/app.js':'app.js','/i18n.js':'i18n.js','/styles.css':'styles.css'};
       const file=files[req.url];if(!file){res.writeHead(404);res.end('Not found');return;}
       res.setHeader('Content-Type',file.endsWith('.css')?'text/css':file.endsWith('.js')?'text/javascript':'text/html');
       res.end(await fs.readFile(path.join(__dirname,'../ui',file)));

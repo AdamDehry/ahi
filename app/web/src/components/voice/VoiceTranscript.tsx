@@ -1,19 +1,20 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import KaraokeLine from "./KaraokeLine";
 import type { VoiceTurn } from "../../lib/voicelayer";
+import { useT, type Key } from "../../i18n";
 
 /** Manual scroll past this many px from the bottom pauses auto-follow. */
 const FOLLOW_SLACK_PX = 24;
 
 /** What the work gate did with a remark said into running work (voicelayer.ts `tag`). */
-const GATE_TAGS: Record<string, string> = {
-  status: "ANSWERED FROM THE BEAT",
-  addition: "QUEUED · AFTER THIS",
-  queued: "QUEUED · AFTER THIS",
-  ask: "ASKED BACK",
-  "stop-for": "STOPPED FOR THIS",
-  name: "FLOOR OPEN",
-  merged: "SAME THOUGHT",
+const GATE_TAGS: Record<string, Key> = {
+  status: "voice.gate.status",
+  addition: "voice.gate.queued",
+  queued: "voice.gate.queued",
+  ask: "voice.gate.ask",
+  "stop-for": "voice.gate.stopFor",
+  name: "voice.gate.name",
+  merged: "voice.gate.merged",
 };
 
 /**
@@ -28,13 +29,14 @@ const GATE_TAGS: Record<string, string> = {
  * reply and visibly NOT spoken — muted, italic, a hairline rule and a label.
  */
 function WorkLines({ lines }: { lines: string[] }) {
+  const t = useT();
   const shown = lines.map((l) => l.trim()).filter(Boolean);
   if (!shown.length) return null;
   return (
-    <div className="vwork" aria-label="Work notes, not spoken">
-      <span className="vwork-label mono">NOT SPOKEN</span>
+    <div className="vwork" aria-label={t("voice.workNotesLabel")}>
+      <span className="vwork-label mono">{t("voice.notSpoken")}</span>
       {shown.map((line, i) => (
-        <div key={i} className={`vwork-line${/[\u0590-\u05FF]/.test(line) ? " has-hebrew" : ""}`}>
+        <div key={i} dir="auto" className={`vwork-line${/[\u0590-\u05FF]/.test(line) ? " has-hebrew" : ""}`}>
           {line}
         </div>
       ))}
@@ -49,6 +51,7 @@ export default function VoiceTranscript({
   turns: VoiceTurn[];
   provisional: string;
 }) {
+  const t = useT();
   const paneRef = useRef<HTMLDivElement>(null);
   const [following, setFollowing] = useState(true);
   const followingRef = useRef(following);
@@ -89,22 +92,22 @@ export default function VoiceTranscript({
         {turns.map((turn) =>
           turn.kind === "aside" ? (
             // Heard, not for him (always-on): greyed, labelled, kept nowhere else.
-            <div key={turn.id} className="vturn-aside" aria-label="Not for Michael">
-              <span className="aside-tag mono">(NOT FOR ME)</span>
-              {turn.text}
+            <div key={turn.id} className="vturn-aside" aria-label={t("voice.notForMichael")}>
+              <span className="aside-tag mono">{t("voice.notForMe")}</span>
+              <span dir="auto">{turn.text}</span>
             </div>
           ) : turn.kind === "user" ? (
             // Bubble sides are SEMANTIC and never flip — outgoing is right in
             // any language. Only the text inside takes its script's direction.
             <div key={turn.id} className={`vturn-user${turn.dropped ? " dropped" : ""}${turn.tag ? " gated" : ""}`}>
-              {turn.dropped && <span className="drop-tag mono">DROPPED IN</span>}
-              {turn.tag && <span className="drop-tag mono">{GATE_TAGS[turn.tag] ?? turn.tag.toUpperCase()}</span>}
-              {turn.image && <img className="drop-img" src={turn.image} alt="Image dropped into the call" />}
-              {turn.text}
+              {turn.dropped && <span className="drop-tag mono">{t("voice.droppedIn")}</span>}
+              {turn.tag && <span className="drop-tag mono">{Object.prototype.hasOwnProperty.call(GATE_TAGS, turn.tag) ? t(GATE_TAGS[turn.tag]) : turn.tag.toUpperCase()}</span>}
+              {turn.image && <img className="drop-img" src={turn.image} alt={t("voice.droppedImageAlt")} />}
+              <span dir="auto">{turn.text}</span>
             </div>
           ) : turn.failed ? (
             <div key={turn.id} className="vturn-agent failed">
-              <span className="fail-msg">⚠ {turn.failed}</span>
+              <span className="fail-msg" dir="auto">⚠ {turn.failed}</span>
             </div>
           ) : (
             <div key={turn.id} className="vturn-agent-wrap">
@@ -127,7 +130,7 @@ export default function VoiceTranscript({
             if (el) el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
           }}
         >
-          FOLLOWING PAUSED · TAP TO RESUME
+          {t("voice.followingPaused")}
         </button>
       )}
     </>

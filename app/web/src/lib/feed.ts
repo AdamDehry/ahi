@@ -7,6 +7,7 @@
  * client sends the raw authenticator response and never claims "verified".
  */
 import { startAuthentication } from "@simplewebauthn/browser";
+import { t } from "../i18n";
 
 /** The one browser call (navigator.credentials.get) — behind an object so a node test can stand in for the phone. */
 export const webauthn = { start: startAuthentication };
@@ -81,15 +82,15 @@ async function post<T>(url: string, body: unknown): Promise<Result<T>> {
     if (!res.ok) return { ok: false, error: json.error ?? `HTTP ${res.status}`, code: json.code };
     return { ok: true, value: json as T };
   } catch {
-    return { ok: false, error: "No connection — nothing was sent.", code: "network" };
+    return { ok: false, error: t("builds.noConnSent"), code: "network" };
   }
 }
 
 function fingerprintError(err: unknown): string {
   const name = (err as { name?: string })?.name;
-  if (name === "NotAllowedError") return "Fingerprint cancelled or timed out — nothing was started.";
-  if (name === "SecurityError") return "Passkeys only work on the app's own address.";
-  return "The fingerprint didn't go through — nothing was started.";
+  if (name === "NotAllowedError") return t("builds.fp.cancelled.started");
+  if (name === "SecurityError") return t("builds.fp.security");
+  return t("builds.fp.failed.started");
 }
 
 /** Start: server challenge → phone fingerprint → server verifies and launches out of process. */

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useT } from "../../i18n";
 
 /**
  * Drop something into the call without hanging up (part six):
@@ -23,6 +24,7 @@ export default function DropBar({
   busy: boolean;
   error: string | null;
 }) {
+  const t = useT();
   const [text, setText] = useState("");
   const [image, setImage] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
@@ -56,9 +58,9 @@ export default function DropBar({
   }, [stage]);
 
   const send = () => {
-    const t = text.trim();
-    if ((!t && !image) || busy) return;
-    onSend({ text: t, image });
+    const note = text.trim();
+    if ((!note && !image) || busy) return;
+    onSend({ text: note, image });
     setText("");
     setImage(null);
   };
@@ -78,8 +80,8 @@ export default function DropBar({
     >
       {preview && (
         <div className="drop-chip">
-          <img src={preview} alt="Image to drop into the call" />
-          <button type="button" aria-label="Remove image" onClick={() => setImage(null)}>
+          <img src={preview} alt={t("voice.drop.imageAlt")} />
+          <button type="button" aria-label={t("voice.drop.removeImage")} onClick={() => setImage(null)}>
             ✕
           </button>
         </div>
@@ -88,7 +90,7 @@ export default function DropBar({
         <button
           type="button"
           className="drop-attach"
-          aria-label="Attach an image"
+          aria-label={t("voice.drop.attachImage")}
           onClick={() => fileRef.current?.click()}
         >
           <svg viewBox="0 0 20 20" aria-hidden="true">
@@ -114,13 +116,14 @@ export default function DropBar({
         <input
           className="drop-text"
           type="text"
-          aria-label="Drop a link or a note into the call"
-          placeholder="Paste a link or type a note"
+          dir="auto"
+          aria-label={t("voice.drop.fieldLabel")}
+          placeholder={t("voice.drop.placeholder")}
           value={text}
           onChange={(e) => setText(e.target.value)}
         />
         <button type="submit" className="drop-send mono" disabled={busy || (!text.trim() && !image)}>
-          {busy ? "…" : "SEND"}
+          {busy ? "…" : t("voice.drop.send")}
         </button>
       </div>
       {error && <div className="drop-error mono">{error}</div>}

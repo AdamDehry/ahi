@@ -89,6 +89,16 @@ describe("desktop catalog", () => {
     assert.ok(used.size > 10);
   });
 
+  it("the browser setup servers serve every script the setup page loads (the catalog included)", () => {
+    const root = resolve(import.meta.dirname, "../onboarding");
+    const scripts = [...readFileSync(join(root, "ui/index.html"), "utf8").matchAll(/<script src="([\w.-]+)"/g)].map((m) => m[1]);
+    assert.ok(scripts.includes("i18n.js"));
+    for (const server of ["src/headless.cjs", "scripts/preview.cjs"]) {
+      const src = readFileSync(join(root, server), "utf8");
+      for (const s of scripts) assert.ok(src.includes(`'/${s}':'${s}'`), `${server} does not serve ${s}`);
+    }
+  });
+
   it("follows the system language and isolates values in Hebrew", () => {
     assert.equal(desktop.systemLang(["he-IL", "en-US"]), "he");
     assert.equal(desktop.systemLang(["iw"]), "he");

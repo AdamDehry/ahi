@@ -7,6 +7,7 @@
  * fetches the delta over HTTP. HTTP is the truth, so a missed frame costs at
  * most one poll.
  */
+import { t, type Key } from "../i18n";
 
 export type LiveEvent =
   | { seq: number; at: string; kind: "say"; text: string; final: boolean }
@@ -63,7 +64,7 @@ export function merge(prev: LiveState, next: LiveView): LiveState {
 
 export async function fetchLive(build: string, after: number): Promise<LiveView> {
   const res = await fetch(liveUrl(build, after), { cache: "no-store" });
-  if (!res.ok) throw new Error(res.status === 401 ? "Signed out." : res.status === 404 ? "That build is gone." : `HTTP ${res.status}`);
+  if (!res.ok) throw new Error(res.status === 401 ? t("builds.signedOut") : res.status === 404 ? t("ops.cl.buildGone") : `HTTP ${res.status}`);
   return (await res.json()) as LiveView;
 }
 
@@ -93,19 +94,20 @@ export function elapsedLabel(ms: number): string {
   const h = Math.floor(s / 3600);
   const m = Math.floor((s % 3600) / 60);
   const sec = s % 60;
-  if (h) return `${h}h ${String(m).padStart(2, "0")}m`;
-  if (m) return `${m}m ${String(sec).padStart(2, "0")}s`;
-  return `${sec}s`;
+  if (h) return t("ops.cl.el.h", { h: String(h), m: String(m).padStart(2, "0") });
+  if (m) return t("ops.cl.el.m", { m: String(m), s: String(sec).padStart(2, "0") });
+  return t("ops.cl.el.s", { s: String(sec) });
 }
 
-export const STATUS_WORD: Record<LiveStatus, string> = {
-  starting: "Starting",
-  running: "Working",
-  waiting: "Waiting",
-  done: "Done",
-  failed: "Failed",
-  stopped: "Stopped",
-  stalled: "Went quiet",
-  "not-codex": "Not a Codex build",
-  "no-session": "No session found",
+/** Status → its word's key, translated at render. */
+export const STATUS_WORD: Record<LiveStatus, Key> = {
+  starting: "ops.cl.status.starting",
+  running: "ops.cl.status.running",
+  waiting: "ops.cl.status.waiting",
+  done: "ops.cl.status.done",
+  failed: "ops.cl.status.failed",
+  stopped: "ops.cl.status.stopped",
+  stalled: "ops.cl.status.stalled",
+  "not-codex": "ops.cl.status.notCodex",
+  "no-session": "ops.cl.status.noSession",
 };

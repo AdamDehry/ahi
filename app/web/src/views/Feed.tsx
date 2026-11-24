@@ -3,6 +3,7 @@ import { actions, useAppState } from "../store";
 import { Age, EmptyState, SkeletonRows, StaleBanner, UndoToast } from "../components/panel";
 import { AGENT_LABEL, clockLabel } from "../components/panel/format";
 import { usePanelFeed } from "../lib/usePanelFeed";
+import { t, tn, useT, type Key } from "../i18n";
 import { askForBrief, closeRow, FEED_URL, fileRow, startWithFingerprint, type FeedRow, type FeedView } from "../lib/feed";
 
 /**
@@ -29,36 +30,36 @@ type Pending = { id: string; what: string; kind: "closed" | "cancelled" };
 
 // ── words ─────────────────────────────────────────────────────────────
 
-const KIND_LABEL: Record<FeedRow["kind"], string> = { needs_you: "Needs you", parked: "Started & parked", idea: "Ideas" };
+const KIND_LABEL: Record<FeedRow["kind"], Key> = { needs_you: "builds.section.needsYou", parked: "builds.feed.kind.parked", idea: "builds.feed.kind.ideas" };
 
 function kickerWord(r: FeedRow): string {
   switch (r.status) {
     case "question":
-      return "Question";
+      return t("builds.kicker.question");
     case "review":
-      return "In Review";
+      return t("builds.feed.inReview");
     case "your-step":
-      return "Your step";
+      return t("builds.kicker.yourStep");
     case "hold":
-      return "Parked";
+      return t("builds.feed.parked");
     case "built":
-      return "Built · not closed";
+      return t("builds.feed.builtNotClosed");
     case "stuck":
-      return "Stuck";
+      return t("builds.section.stuck");
     case "queued":
-      return "Queued";
+      return t("builds.section.queued");
     case "brief":
-      return "Brief ready";
+      return t("builds.feed.briefReady");
     case "starting":
-      return "Starting";
+      return t("builds.feed.starting");
     case "running":
-      return "Running";
+      return t("builds.feed.running");
     case "failed":
-      return "Didn't start";
+      return t("builds.feed.didntStart");
     case "idea":
-      return r.note ? `Idea · ${r.note}` : "Idea";
+      return r.note ? t("builds.feed.ideaNote", { note: r.note }) : t("builds.feed.idea");
     case "gone":
-      return "Gone from its source";
+      return t("builds.feed.gone");
     default:
       return r.status;
   }
@@ -66,25 +67,26 @@ function kickerWord(r: FeedRow): string {
 
 function agoWord(iso: string, now: number): string {
   const m = Math.round((now - Date.parse(iso)) / 60_000);
-  if (m < 2) return "just now";
-  if (m < 60) return `${m} min ago`;
-  if (m < 36 * 60) return `${Math.round(m / 60)} h ago`;
+  if (m < 2) return t("common.justNow");
+  if (m < 60) return t("builds.feed.minAgo", { n: m });
+  if (m < 36 * 60) return t("builds.feed.hAgo", { n: Math.round(m / 60) });
   return clockLabel(iso, DESK_TZ);
 }
 
 // ── slot strip ────────────────────────────────────────────────────────
 
 function SlotStrip({ view, now }: { view: FeedView; now: number }) {
+  const t = useT();
   const { running, cap, free, builds } = view.slots;
   return (
     <>
-      <section className={`fd-strip${free === 0 ? " full" : ""}`} aria-label="Build slots">
+      <section className={`fd-strip${free === 0 ? " full" : ""}`} aria-label={t("builds.feed.slots")}>
         <div>
           <strong>
             {running}
             <span> / {cap}</span>
           </strong>
-          <p>Build slots in use</p>
+          <p>{t("builds.feed.slotsInUse")}</p>
         </div>
         <div className="fd-slots" aria-hidden="true">
           {Array.from({ length: cap }, (_, i) => (
@@ -92,16 +94,16 @@ function SlotStrip({ view, now }: { view: FeedView; now: number }) {
           ))}
         </div>
         <span className="fd-grow" />
-        <span className={`rd-tag ${free === 0 ? "gold" : "green"}`}>{free === 0 ? `All ${cap === 5 ? "five" : cap} busy` : `${free} available`}</span>
+        <span className={`rd-tag ${free === 0 ? "gold" : "green"}`}>{free === 0 ? (cap === 5 ? t("builds.feed.allFiveBusy") : t("builds.feed.allBusy", { n: cap })) : t("builds.feed.available", { n: free })}</span>
       </section>
-      {free === 0 && <p className="fd-banner">All {cap} agents are busy. Start will be available when a slot opens.</p>}
-      {view.restricted && <p className="fd-banner warn">{view.restricted} — new builds wait for nightfall.</p>}
+      {free === 0 && <p className="fd-banner">{t("builds.feed.agentsBusy", { n: cap })}</p>}
+      {view.restricted && <p className="fd-banner warn">{t("builds.feed.restricted", { reason: view.restricted })}</p>}
       {builds.length > 0 && (
         <div className="fd-running">
           {builds.map((b) => (
-            <button key={b.id} type="button" className="fd-run-chip" onClick={() => b.card && actions.openBuilds(b.card)} disabled={!b.card} title={`${AGENT_LABEL[b.agent] ?? b.agent} · since ${clockLabel(b.since, view.tz)}`}>
+            <button key={b.id} type="button" className="fd-run-chip" onClick={() => b.card && actions.openBuilds(b.card)} disabled={!b.card} title={t("builds.feed.since", { agent: AGENT_LABEL[b.agent] ?? b.agent, time: clockLabel(b.since, view.tz) })}>
               <Layers />
-              {b.name}
+              <bdi>{b.name}</bdi>
               <Age ms={ms(b.since, now)} />
             </button>
           ))}
@@ -138,6 +140,7 @@ function RowAction({
   onFile: (track: string) => void;
   onAsk: () => void;
 }) {
+  const t = useT();
   const a = row.action;
   switch (a.kind) {
     case "start": {
@@ -145,9 +148,9 @@ function RowAction({
       return (
         <div className="fd-act">
           <button type="button" className={`fd-btn primary${s.ok ? "" : " shaded"}`} disabled={!s.ok || busy} onClick={onStart}>
-            {busy ? "Starting…" : row.status === "failed" ? "Start again" : "Start"}
+            {busy ? t("builds.feed.startingEllipsis") : row.status === "failed" ? t("builds.feed.startAgain") : t("builds.feed.start")}
           </button>
-          {s.why && !busy && <span className="fd-why">{s.why}</span>}
+          {s.why && !busy && <span className="fd-why" dir="auto">{s.why}</span>}
           {s.ok && !busy && s.brief && (
             <span className="fd-why faint">
               {AGENT_LABEL[s.brief.agent] ?? s.brief.agent} · {s.brief.runtime} · {s.brief.model}
@@ -159,22 +162,22 @@ function RowAction({
     case "brief-needed":
       return (
         <div className="fd-act">
-          <span className="fd-label">Brief needed</span>
-          <span className="fd-why faint">Michael writes it; Start appears here</span>
+          <span className="fd-label">{t("builds.feed.briefNeeded")}</span>
+          <span className="fd-why faint">{t("builds.feed.michaelWrites")}</span>
         </div>
       );
     case "close":
       return (
         <div className="fd-act">
           <button type="button" className="fd-btn" disabled={busy} onClick={onClose}>
-            Close
+            {t("common.close")}
           </button>
           {a.file_under.length > 0 && (
-            <select className="fd-file" value="" disabled={busy} onChange={(e) => e.target.value && onFile(e.target.value)} aria-label="File under a track">
-              <option value="">File under…</option>
-              {a.file_under.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.title}
+            <select className="fd-file" value="" disabled={busy} onChange={(e) => e.target.value && onFile(e.target.value)} aria-label={t("builds.feed.fileUnderTrack")}>
+              <option value="">{t("builds.fileUnderEllipsis")}</option>
+              {a.file_under.map((tr) => (
+                <option key={tr.id} value={tr.id}>
+                  {tr.title}
                 </option>
               ))}
             </select>
@@ -185,7 +188,7 @@ function RowAction({
       return (
         <div className="fd-act">
           <button type="button" className="fd-btn you" onClick={() => actions.openReview(a.item)}>
-            Open in Review
+            {t("builds.openInReview")}
           </button>
         </div>
       );
@@ -193,7 +196,7 @@ function RowAction({
       return (
         <div className="fd-act">
           <button type="button" className={`fd-btn${row.kind === "needs_you" ? " you" : ""}`} onClick={() => actions.answerInThread("michael", `${row.what}\n${row.where}`, { build: a.question_build, record: a.question_record })}>
-            Answer
+            {t("builds.attn.answer")}
           </button>
         </div>
       );
@@ -201,16 +204,16 @@ function RowAction({
       return (
         <div className="fd-act">
           <button type="button" className="fd-btn" onClick={() => actions.openBuilds(`bld-${a.build}`)}>
-            Watch
+            {t("builds.feed.watch")}
           </button>
-          {row.pre_approved && <span className="fd-why faint">runs to a preview — you hear about it when one exists</span>}
+          {row.pre_approved && <span className="fd-why faint">{t("builds.feed.runsToPreview")}</span>}
         </div>
       );
     case "ask-brief":
       return (
         <div className="fd-act">
           <button type="button" className="fd-btn ghost" disabled={!!a.asked_at || busy} onClick={onAsk}>
-            {a.asked_at ? `Asked Michael ${agoWord(a.asked_at, Date.now())}` : "Ask Michael for a brief"}
+            {a.asked_at ? t("builds.feed.askedMichael", { ago: agoWord(a.asked_at, Date.now()) }) : t("builds.feed.askBrief")}
           </button>
         </div>
       );
@@ -220,6 +223,7 @@ function RowAction({
 }
 
 function Row({ row, n, now, busy, error, onStart, onClose, onFile, onAsk }: { row: FeedRow; n: number; now: number; busy: boolean; error: string | null; onStart: () => void; onClose: () => void; onFile: (t: string) => void; onAsk: () => void }) {
+  const t = useT();
   const needs = row.kind === "needs_you";
   return (
     <article className={`${needs ? "fd-decision" : "fd-frow"} ${row.kind} ${row.status}${row.pre_approved ? " pre" : ""}`}>
@@ -233,11 +237,11 @@ function Row({ row, n, now, busy, error, onStart, onClose, onFile, onAsk }: { ro
           </span>
         </div>
         <h3>
-          {row.what}
-          {row.pre_approved && row.status !== "running" && <span className="fd-pre">→ preview</span>}
+          <span dir="auto">{row.what}</span>
+          {row.pre_approved && row.status !== "running" && <span className="fd-pre">{t("builds.feed.preview")}</span>}
         </h3>
-        <p>{row.where}</p>
-        {row.note && row.kind !== "idea" && <small>{row.note}</small>}
+        <p dir="auto">{row.where}</p>
+        {row.note && row.kind !== "idea" && <small dir="auto">{row.note}</small>}
         {error && (
           <p className="fd-error" role="alert">
             {error}
@@ -254,6 +258,7 @@ function Row({ row, n, now, busy, error, onStart, onClose, onFile, onAsk }: { ro
 // ── the list ──────────────────────────────────────────────────────────
 
 export function FeedList() {
+  const t = useT();
   const { buildsRev } = useAppState();
   const [rev, setRev] = useState(0);
   const feed = usePanelFeed<FeedView>(FEED_URL, buildsRev + rev);
@@ -285,26 +290,26 @@ export function FeedList() {
     fail(row.id, null);
     const r = await startWithFingerprint(row.id);
     mark(row.id, false);
-    if (!r.ok) fail(row.id, r.code === "cancelled" ? r.error : `Didn't start — ${r.error}`);
+    if (!r.ok) fail(row.id, r.code === "cancelled" ? r.error : t("builds.feed.didntStartErr", { error: r.error }));
     refresh();
   };
   const ask = async (row: FeedRow) => {
     mark(row.id, true);
     const r = await askForBrief(row.id);
     mark(row.id, false);
-    if (!r.ok) fail(row.id, `Didn't reach Michael — ${r.error}`);
+    if (!r.ok) fail(row.id, t("builds.feed.didntReach", { error: r.error }));
     refresh();
   };
   const file = async (row: FeedRow, track: string) => {
     mark(row.id, true);
     const r = await fileRow(row.id, track);
     mark(row.id, false);
-    if (!r.ok) fail(row.id, `Didn't file — ${r.error}`);
+    if (!r.ok) fail(row.id, t("builds.feed.didntFile", { error: r.error }));
     refresh();
   };
   const sendClose = async (p: Pending) => {
     const r = await closeRow(p.id, p.kind);
-    if (!r.ok && r.error !== "already closed") fail(p.id, `Didn't close — ${r.error}`);
+    if (!r.ok && r.error !== "already closed") fail(p.id, t("builds.didntClose", { error: r.error }));
     refresh();
   };
   const requestClose = (row: FeedRow) => {
@@ -327,7 +332,7 @@ export function FeedList() {
       <div className="tool-page rv-page pf-page fd-page rd-feed">
         <div className="rv-col">
           <FeedHead />
-          {feed.error ? <StaleBanner lastGoodAt="nothing yet" what="Can't reach the gateway." onRetry={feed.reload} /> : <SkeletonRows n={4} />}
+          {feed.error ? <StaleBanner lastGoodAt={t("builds.nothingYet")} what={t("ops.cantReachGateway")} onRetry={feed.reload} /> : <SkeletonRows n={4} />}
         </div>
       </div>
     );
@@ -337,12 +342,12 @@ export function FeedList() {
   const asOf = feed.lastGoodAt ? clockLabel(new Date(feed.lastGoodAt).toISOString(), view.tz) : "";
   const kinds: FeedRow["kind"][] = ["needs_you", "parked", "idea"];
   const rowEl = (r: FeedRow, i: number) => (
-    <Row key={r.id} row={r} n={i + 1} now={now} busy={busy.has(r.id)} error={errors.get(r.id) ?? null} onStart={() => void start(r)} onClose={() => requestClose(r)} onFile={(t) => void file(r, t)} onAsk={() => void ask(r)} />
+    <Row key={r.id} row={r} n={i + 1} now={now} busy={busy.has(r.id)} error={errors.get(r.id) ?? null} onStart={() => void start(r)} onClose={() => requestClose(r)} onFile={(tr) => void file(r, tr)} onAsk={() => void ask(r)} />
   );
   const list = (
     <>
       <SlotStrip view={view} now={now} />
-      {view.rows.length === 0 && <EmptyState title="Nothing needs" em="you." body={<>New work will find its place here.</>} />}
+      {view.rows.length === 0 && <EmptyState title={t("builds.feed.empty.title")} em={t("builds.feed.empty.em")} body={<>{t("builds.feed.empty.body")}</>} />}
       {kinds.map((k) => {
         const rows = view.rows.filter((r) => r.kind === k);
         if (rows.length === 0) return null;
@@ -350,8 +355,8 @@ export function FeedList() {
         return (
           <section key={k} className={`fd-section ${k}`}>
             <div className="fd-section-head">
-              <h2>{KIND_LABEL[k]}</h2>
-              {k !== "needs_you" && <span className="rd-tag">{count} {k === "idea" ? (count === 1 ? "idea" : "ideas") : count === 1 ? "track" : "tracks"}</span>}
+              <h2>{t(KIND_LABEL[k])}</h2>
+              {k !== "needs_you" && <span className="rd-tag">{k === "idea" ? tn("builds.feed.ideas", count) : tn("builds.feed.tracks", count)}</span>}
             </div>
             <div className={k === "needs_you" ? "fd-decisions" : "fd-list"}>{rows.map(rowEl)}</div>
           </section>
@@ -359,7 +364,7 @@ export function FeedList() {
       })}
       {view.briefs_invalid.length > 0 && (
         <p className="pf-quiet pf-quiet-end">
-          {view.briefs_invalid.length} brief{view.briefs_invalid.length === 1 ? "" : "s"} in the folder without a machine header — no Start until Michael adds one.
+          {tn("builds.feed.briefsInvalid", view.briefs_invalid.length)}
         </p>
       )}
     </>
@@ -370,27 +375,29 @@ export function FeedList() {
       <div className="rv-col">
         <FeedHead />
         {stale && <StaleBanner lastGoodAt={asOf} onRetry={feed.reload} />}
-        {!stale && view.partial.length > 0 && <StaleBanner what="Part of the feed couldn't be read." lastGoodAt={`${asOf}, without the ${view.partial.map(sourceWord).join(" and the ")}`} onRetry={feed.reload} />}
+        {!stale && view.partial.length > 0 && <StaleBanner what={t("builds.feed.partial")} lastGoodAt={t("builds.withoutSources", { time: asOf, sources: view.partial.map(sourceWord).join(t("builds.sourcesJoin")) })} onRetry={feed.reload} />}
         {stale ? <div className="stale-feed">{list}</div> : list}
       </div>
-      {pending && <UndoToast id={pending.id} text={`Closed ${pending.what}`} onUndo={() => setPending(null)} onExpire={commitPending} />}
+      {pending && <UndoToast id={pending.id} text={t("builds.toast.closed", { title: pending.what })} onUndo={() => setPending(null)} onExpire={commitPending} />}
     </div>
   );
 }
 
 function FeedHead() {
+  const t = useT();
   return (
     <div className="rd-builds-head">
-      <div className="rd-eyebrow">MAKE ROOM FOR WHAT’S NEXT</div>
+      <div className="rd-eyebrow">{t("builds.feed.eyebrow")}</div>
       <h2>
-        The feed<span className="rd-title-dot">.</span>
+        {t("builds.feed.title")}<span className="rd-title-dot">.</span>
       </h2>
-      <p>Good ideas, moving forward.</p>
+      <p>{t("builds.feed.subtitle")}</p>
     </div>
   );
 }
 
-const sourceWord = (s: string) => ({ ledger: "build ledger", timeline: "status records", tracks: "track registry", ideas: "idea vault", briefs: "briefs folder" })[s] ?? s;
+const SOURCE_WORD: Record<string, Key> = { ledger: "builds.source.ledger", timeline: "builds.source.timeline", tracks: "builds.source.tracks", ideas: "builds.source.ideas", briefs: "builds.source.briefs" };
+const sourceWord = (s: string) => (Object.prototype.hasOwnProperty.call(SOURCE_WORD, s) ? t(SOURCE_WORD[s]) : s);
 
 export default function Feed() {
   return <FeedList />;

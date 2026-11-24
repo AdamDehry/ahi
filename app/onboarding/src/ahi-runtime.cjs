@@ -10,6 +10,7 @@ const crypto = require('node:crypto');
 const { spawn, spawnSync } = require('node:child_process');
 const { existsSync } = require('node:fs');
 const { publicSkills } = require('./public-skills.cjs');
+const { t } = require('../ui/i18n.js');
 
 const AGENTS = ['michael', 'zali', 'avi', 'miriam'];
 const DEFAULT_PORT = 18789;
@@ -32,7 +33,7 @@ async function copyTree(from, to, transform) {
  * Fill <managed> (the hidden OS folder) from the seed. Never overwrites a file the owner or their agents changed.
  * Returns { token } the first time the owner's sign-in is made, else { token: null }.
  */
-async function install({ managed, seed, owner, timezone, serverDir, port, platform = process.platform }) {
+async function install({ managed, seed, owner, language, timezone, serverDir, port, platform = process.platform }) {
   const name = String(owner || '').trim() || 'Owner';
   const tz = timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/New_York';
   // Template placeholders in the agent files. Anything the owner sets later, the agent asks for and records.
@@ -72,6 +73,16 @@ async function install({ managed, seed, owner, timezone, serverDir, port, platfo
   if (platform === 'linux' && (await exists(path.join(seed, 'foreman', 'bin', 'fm_setup.sh')))) {
     await copyTree(path.join(seed, 'foreman'), path.join(managed, 'foreman'));
     setupForeman({ managed, serverDir, port });
+  }
+
+  // The language chosen in setup is the owner's first Settings → Language (the server's ui-prefs.json, keyed by
+  // user id = the lowercased name). A choice already there (made in AHI's Settings) is never overwritten.
+  if (language) {
+    const prefsFile = path.join(managed, 'state', 'ui-prefs.json');
+    let prefs = {};
+    try { prefs = JSON.parse(await fs.readFile(prefsFile, 'utf8')) || {}; } catch {}
+    const id = name.toLowerCase();
+    if (!prefs[id]?.language) await fs.writeFile(prefsFile, JSON.stringify({ ...prefs, [id]: { ...prefs[id], language } }, null, 2) + '\n', { mode: 0o600 });
   }
 
   const usersFile = path.join(managed, 'state', 'users.json');
@@ -187,10 +198,10 @@ async function logLine(managed, line) {
 }
 
 /** Why a server that exited while starting gave up, in words the owner can act on (from its own log lines). */
-function exitReason(logged) {
-  if (/ANOTHER GATEWAY RUNNING/.test(logged)) return 'An older copy of AHI is still running in the background. Restart your computer (or end the old "node" process in Task Manager), then press Retry.';
-  if (/EADDRINUSE/.test(logged)) return 'Another program is using AHI\'s port. Close it, or restart your computer, then press Retry.';
-  return 'AHI stopped while starting. Its log is in AHI_OS/logs/ahi-server.log.';
+function exitReason(logged, lang = 'en') {
+  if (/ANOTHER GATEWAY RUNNING/.test(logged)) return t(lang, 'start.olderCopy');
+  if (/EADDRINUSE/.test(logged)) return t(lang, 'start.portInUse');
+  return t(lang, 'start.stoppedStarting');
 }
 
 /**
@@ -198,16 +209,16 @@ function exitReason(logged) {
  * token = the owner's key (proof only, never sent). onSpawn(child) runs the moment a server is spawned, so whoever
  * quits can stop it even mid-start. An aborted signal stops the spawned server and rejects. Returns { url, child|null }.
  */
-async function start({ node, serverDir, managed, root, port = DEFAULT_PORT, claude, extra, log, token, signal, onSpawn }) {
-  if (!token) throw Error('This AHI home has no owner key. Open setup and finish it again.');
+async function start({ node, serverDir, managed, root, port = DEFAULT_PORT, claude, extra, log, token, signal, onSpawn, lang = 'en' }) {
+  if (!token) throw Error(t(lang, 'signin.noKey'));
   const url = `http://localhost:${port}/`;
   const ours = { port, home: homeId(managed), token };
-  const cancelled = () => Error('Starting AHI was cancelled.');
+  const cancelled = () => Error(t(lang, 'start.cancelled'));
   const running = await serves(ours);
   if (running) return { url, child: null };
-  if (running === false) throw Error(`Another program is already using port ${port}, which AHI needs. Close it or restart your computer, then press Retry.`);
+  if (running === false) throw Error(t(lang, 'start.portBusy', { port }));
   if (signal?.aborted) throw cancelled();
-  const cannotStart = (e) => Error(`AHI could not start (${e.code || e.name}). Reinstall AHI and try again.`);
+  const cannotStart = (e) => Error(t(lang, 'start.cannotStart', { code: e.code || e.name }));
   const logFile = serverLog(managed);
   const before = await fs.stat(logFile).then((s) => s.size, () => 0);
   const out = await fs.open(logFile, 'a');
@@ -227,14 +238,14 @@ async function start({ node, serverDir, managed, root, port = DEFAULT_PORT, clau
     if (failure) throw cannotStart(failure);
     if (child.exitCode !== null) {
       const logged = await fs.readFile(logFile, 'utf8').then((t) => t.slice(before), () => '');
-      throw Error(exitReason(logged));
+      throw Error(exitReason(logged, lang));
     }
     if (signal?.aborted) { await stop(child); throw cancelled(); }
     if (await serves(ours)) { log?.(`AHI is running on ${url}`); return { url, child }; }
     await new Promise((r) => setTimeout(r, 500));
   }
   await stop(child);
-  throw Error('AHI did not answer within a minute. Its log is in AHI_OS/logs/ahi-server.log.');
+  throw Error(t(lang, 'start.noAnswer'));
 }
 
 /** Stop a server this app started: ask it to exit cleanly (it removes its lock), and kill it if it has not within

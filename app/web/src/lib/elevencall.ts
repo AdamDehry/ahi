@@ -6,6 +6,7 @@ import { createKaraokeState, sanitizeForTranscript, setServerTextFollowsVoice, s
 import { ElevenTimeline, pacedWords, type ElevenAlignment } from "./elevenkaraoke";
 import { startElevenEar, type ElevenEar } from "./elevenear";
 import { WordPacer } from "./wordpacer";
+import { t as translate } from "../i18n";
 import { onVoiceEvent, sendVoiceControl, setExternalVoiceClock, setVoiceUplinkMuted } from "./voicebus";
 import { canShareScreen, startScreenShare, stopScreenShare } from "./screenshare";
 import type { AgentVoiceTurn, UserVoiceTurn, VoiceLayerApi, VoicePhase, VoiceTurn } from "./voicelayer";
@@ -89,7 +90,6 @@ export function reportElevenEvent(voiceStreamId: string | null, event: string, r
 let seq = 0;
 const nextId = (): string => `et-${++seq}`;
 const BARGE_FLIP_MS = 150;
-const UNSUPPORTED = "Not on this kind of call yet.";
 /** Output level that counts as the voice playing, and as silence (getOutputVolume, 0–1). */
 const LOUD = 0.02;
 const QUIET = 0.005;
@@ -649,7 +649,7 @@ export function useElevenLayer(bot: string, active: boolean, onFallback: (reason
       },
       onError: (message) => {
         console.warn("[eleven] call error:", message);
-        if (!cancelled && !sess.connected) setErrorText("The call could not connect.");
+        if (!cancelled && !sess.connected) setErrorText(translate("voice.err.couldNotConnect"));
       },
       onModeChange: ({ mode }) => {
         if (cancelled) return;
@@ -1033,7 +1033,7 @@ export function useElevenLayer(bot: string, active: boolean, onFallback: (reason
     recording: null,
     canRecord: false,
     toggleRecord: () => {},
-    sendDrop: () => setDropError(UNSUPPORTED),
+    sendDrop: () => setDropError(translate("voice.err.unsupported")),
     dropBusy: false,
     dropError,
     interrupted,

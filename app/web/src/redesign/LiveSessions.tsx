@@ -10,6 +10,7 @@ import { BUILDS_URL, type BuildsView, type Card, type CardRun } from "../lib/bui
 import { BOT_LABELS } from "../lib/types";
 import { CodexLivePanel } from "../views/CodexLive";
 import { AgentAvatar } from "./AgentRail";
+import { useT } from "../i18n";
 
 const LIVE_STATES = new Set(["running", "active", "live", "started", "waiting"]);
 
@@ -33,6 +34,7 @@ export function liveRuns(view: BuildsView | null): Array<{ card: Card; run: Card
 }
 
 export default function LiveSessions() {
+  const t = useT();
   const { buildsRev } = useAppState();
   const [view, setView] = useState<BuildsView | null>(null);
   const [failed, setFailed] = useState(false);
@@ -51,14 +53,14 @@ export default function LiveSessions() {
   const chosen = rows.find((r) => r.card.id === open) ?? null;
   return (
     <div className="rd-live tool-page">
-      {failed && !view && <div className="rd-inline-error">Couldn’t load the live sessions.</div>}
+      {failed && !view && <div className="rd-inline-error">{t("ops.live.couldNotLoad")}</div>}
       {view && !rows.length && (
         <div className="rd-builds-head rd-live-empty">
-          <div className="rd-eyebrow">LIVE SESSION · READ ONLY</div>
+          <div className="rd-eyebrow">{t("ops.live.eyebrow")}</div>
           <h2>
-            Nothing live right now<span className="rd-title-dot">.</span>
+            {t("ops.live.nothing")}<span className="rd-title-dot">.</span>
           </h2>
-          <p>When a build is running, its session shows here as it happens.</p>
+          <p>{t("ops.live.body")}</p>
         </div>
       )}
       {rows.length > 0 && (
@@ -67,18 +69,18 @@ export default function LiveSessions() {
             <li key={card.id} className={open === card.id ? "selected" : ""}>
               <AgentAvatar bot={BOT_LABELS[run.agent] ? run.agent : "michael"} size="sm" />
               <span>
-                {card.title}
+                <bdi>{card.title}</bdi>
                 <small>
                   {BOT_LABELS[run.agent] ?? run.agent} · {run.runtime === "codex" ? "Codex" : "Claude"} · {card.now?.text ?? run.state}
                 </small>
               </span>
               {run.runtime === "codex" ? (
                 <button type="button" className="rd-btn" onClick={() => setOpen(open === card.id ? null : card.id)}>
-                  {open === card.id ? "Hide" : "Watch"}
+                  {open === card.id ? t("common.hide") : t("ops.live.watch")}
                 </button>
               ) : (
                 <button type="button" className="rd-btn" onClick={() => actions.openBuilds(card.id)}>
-                  Open
+                  {t("common.open")}
                 </button>
               )}
             </li>

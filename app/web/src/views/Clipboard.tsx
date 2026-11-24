@@ -3,8 +3,10 @@ import { actions, useAppState } from "../store";
 import { fetchClips, saveClip, deleteClip } from "../lib/api";
 import type { Clip } from "../lib/types";
 import { IconCopy, IconTrash } from "../components/icons";
+import { locale, useT, type Key } from "../i18n";
 
 type ClipKind = "links" | "code" | "text";
+const KIND_LABEL: Record<ClipKind, Key> = { links: "files.clipKind.link", code: "files.clipKind.code", text: "files.clipKind.text" };
 
 function detectKind(text: string): ClipKind {
   if (/^https?:\/\/\S+$/i.test(text.trim())) return "links";
@@ -15,12 +17,13 @@ function detectKind(text: string): ClipKind {
 function formatDate(ts: number | string): string {
   const date = new Date(ts);
   if (Number.isNaN(date.getTime())) return "";
-  return date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  return date.toLocaleTimeString(locale(), { hour: "numeric", minute: "2-digit" });
 }
 
 /** Clipboard (design 1·5): one save bar with auto-detected type, clip
  *  cards with a mono type chip; click card = copy. Real /ui/clips CRUD. */
 export default function Clipboard() {
+  const t = useT();
   const { toolFilter, clips } = useAppState();
   const [draft, setDraft] = useState("");
   const [copied, setCopied] = useState<string | null>(null);
@@ -54,14 +57,15 @@ export default function Clipboard() {
       <div className="save-bar">
         <input
           type="text"
-          placeholder="Paste or type to save…"
+          dir="auto"
+          placeholder={t("files.clipPlaceholder")}
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && save()}
         />
-        {draft.trim() && <span className="mono-label save-kind">AUTO-DETECT: {detectKind(draft).replace(/s$/, "").toUpperCase()}</span>}
+        {draft.trim() && <span className="mono-label save-kind">{t("files.autoDetect", { kind: t(KIND_LABEL[detectKind(draft)]) })}</span>}
         <button className="btn-accent" onClick={save} disabled={!draft.trim()}>
-          Save
+          {t("common.save")}
         </button>
       </div>
 
@@ -72,18 +76,18 @@ export default function Clipboard() {
           ))}
         </div>
       ) : visible.length === 0 ? (
-        <div className="tool-empty mono-label">NO CLIPS SAVED YET</div>
+        <div className="tool-empty mono-label">{t("files.noClips")}</div>
       ) : (
         <div className="card-grid clips">
           {visible.map((clip) => {
             const kind = detectKind(clip.text);
             return (
-              <article key={clip.id} className="clip-card" onClick={() => copy(clip)} title="Click to copy">
+              <article key={clip.id} className="clip-card" onClick={() => copy(clip)} title={t("files.clickToCopy")}>
                 <div className="clip-head">
-                  <span className="tool-chip">{copied === clip.id ? "COPIED" : kind.replace(/s$/, "").toUpperCase()}</span>
+                  <span className="tool-chip">{copied === clip.id ? t("files.copiedCaps") : t(KIND_LABEL[kind])}</span>
                   <button
                     className="card-action"
-                    aria-label="Delete clip"
+                    aria-label={t("files.deleteClip")}
                     onClick={(e) => {
                       e.stopPropagation();
                       deleteClip(clip.id).then(load);
@@ -92,7 +96,9 @@ export default function Clipboard() {
                     <IconTrash />
                   </button>
                 </div>
-                <div className={`clip-text${kind === "code" ? " mono" : ""}`}>{clip.text}</div>
+                <div className={`clip-text${kind === "code" ? " mono" : ""}`} dir={kind === "text" ? "auto" : "ltr"}>
+                  {clip.text}
+                </div>
                 <div className="clip-foot">
                   <span className="mono-label">{formatDate(clip.created)}</span>
                   <IconCopy />

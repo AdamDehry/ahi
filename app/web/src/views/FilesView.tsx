@@ -6,6 +6,7 @@ import { displayFileName, fileCategory, FILE_DRAG_TYPE } from "../components/Sid
 import FileThumb, { fileExt, isImage, isPdf } from "../components/FileThumb";
 import type { FileEntry } from "../lib/types";
 import { IconDownload, IconTrash, IconFiles, IconGrid, IconHamburger } from "../components/icons";
+import { locale, t as tr, useT, type Key } from "../i18n";
 
 type ViewMode = "list" | "grid";
 type TileSize = "sm" | "md" | "lg";
@@ -32,7 +33,7 @@ function formatSize(bytes: number): string {
 function formatDate(ts: number | string): string {
   const date = new Date(ts);
   if (Number.isNaN(date.getTime())) return "";
-  return date.toLocaleDateString([], { month: "short", day: "numeric" }).toUpperCase();
+  return date.toLocaleDateString(locale(), { month: "short", day: "numeric" }).toUpperCase();
 }
 
 function fileUrl(name: string): string {
@@ -42,6 +43,7 @@ function fileUrl(name: string): string {
 /** Click-to-open preview (DocumentsTab pattern): full-size image / PDF
  *  centered in a modal; Esc or click-outside returns to the grid. */
 function PreviewModal({ file, onClose }: { file: FileEntry; onClose: () => void }) {
+  const t = useT();
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -56,9 +58,9 @@ function PreviewModal({ file, onClose }: { file: FileEntry; onClose: () => void 
       <div className="modal-scrim" onPointerDown={onClose} />
       <div className="preview-modal" role="dialog" aria-label={name}>
         <header className="preview-head">
-          <span className="preview-name">{name}</span>
-          <span className="mono-label">{formatSize(file.size)}</span>
-          <a className="card-action" href={fileUrl(file.name)} download aria-label="Download">
+          <span className="preview-name" dir="auto">{name}</span>
+          <span className="mono-label" dir="ltr">{formatSize(file.size)}</span>
+          <a className="card-action" href={fileUrl(file.name)} download aria-label={t("common.download")}>
             <IconDownload />
           </a>
         </header>
@@ -71,7 +73,7 @@ function PreviewModal({ file, onClose }: { file: FileEntry; onClose: () => void 
             <div className="preview-fallback">
               <IconFiles />
               <span className="tool-chip">{fileExt(name)}</span>
-              <span className="mono-label">NO INLINE PREVIEW — DOWNLOAD TO OPEN</span>
+              <span className="mono-label">{t("files.noPreview")}</span>
             </div>
           )}
         </div>
@@ -88,7 +90,10 @@ function PreviewModal({ file, onClose }: { file: FileEntry; onClose: () => void 
  * never the raw image); click → modal; clean display names + type
  * badges (category never bleeds into the name).
  */
+const SIZE_TITLE: Record<TileSize, Key> = { sm: "files.size.small", md: "files.size.medium", lg: "files.size.large" };
+
 export default function FilesView() {
+  const t = useT();
   const { filesList, toolFilter } = useAppState();
   const [prefs, setPrefs] = useState(loadPrefs);
   const [dragOver, setDragOver] = useState(false);
@@ -117,7 +122,7 @@ export default function FilesView() {
     setUploading((u) => [...u, ...names]);
     for (const f of Array.from(list)) {
       const result = await uploadFile(f, targetCategory);
-      if (!result.ok && result.error) alert(`${f.name}: ${result.error}`);
+      if (!result.ok && result.error) alert(tr("files.uploadFailed", { name: f.name, error: result.error }));
       setUploading((u) => u.filter((n) => n !== f.name));
       reload();
     }
@@ -139,17 +144,17 @@ export default function FilesView() {
         className="card-action"
         href={fileUrl(f.name)}
         download
-        aria-label="Download"
+        aria-label={t("common.download")}
         onClick={(e) => e.stopPropagation()}
       >
         <IconDownload />
       </a>
       <button
         className="card-action"
-        aria-label="Delete"
+        aria-label={t("common.delete")}
         onClick={(e) => {
           e.stopPropagation();
-          if (confirm(`Delete "${displayFileName(f.name)}"?`)) deleteFile(f.name).then(reload);
+          if (confirm(t("files.confirmDelete", { name: displayFileName(f.name) }))) deleteFile(f.name).then(reload);
         }}
       >
         <IconTrash />
@@ -183,8 +188,8 @@ export default function FilesView() {
       >
         <span className="mono-label">
           {uploading.length
-            ? `UPLOADING ${uploading.length}…`
-            : `DROP FILES OR CLICK TO UPLOAD → ${targetCategory.toUpperCase()}`}
+            ? t("files.uploadingCount", { n: uploading.length })
+            : t("files.dropToUpload", { category: targetCategory.toUpperCase() })}
         </span>
         <input
           ref={inputRef}
@@ -201,12 +206,12 @@ export default function FilesView() {
       {/* Compact right-aligned view controls (3d2#1) — List↔Grid, then
           S/M/L when in grid mode. */}
       <div className="files-controls">
-        <div className="segmented view-toggle" role="radiogroup" aria-label="Layout">
+        <div className="segmented view-toggle" role="radiogroup" aria-label={t("files.layout")}>
           <button
             role="radio"
             aria-checked={prefs.mode === "list"}
             className={`segment icon${prefs.mode === "list" ? " active" : ""}`}
-            title="List"
+            title={t("files.list")}
             onClick={() => savePrefs({ mode: "list" })}
           >
             <IconHamburger />
@@ -215,21 +220,21 @@ export default function FilesView() {
             role="radio"
             aria-checked={prefs.mode === "grid"}
             className={`segment icon${prefs.mode === "grid" ? " active" : ""}`}
-            title="Grid"
+            title={t("files.grid")}
             onClick={() => savePrefs({ mode: "grid" })}
           >
             <IconGrid />
           </button>
         </div>
         {prefs.mode === "grid" && (
-          <div className="segmented view-toggle" role="radiogroup" aria-label="Tile size">
+          <div className="segmented view-toggle" role="radiogroup" aria-label={t("files.tileSize")}>
             {(["sm", "md", "lg"] as TileSize[]).map((v) => (
               <button
                 key={v}
                 role="radio"
                 aria-checked={prefs.size === v}
                 className={`segment${prefs.size === v ? " active" : ""}`}
-                title={{ sm: "Small", md: "Medium", lg: "Large" }[v]}
+                title={t(SIZE_TITLE[v])}
                 onClick={() => savePrefs({ size: v })}
               >
                 {v.toUpperCase()}
@@ -246,7 +251,7 @@ export default function FilesView() {
           ))}
         </div>
       ) : visible.length === 0 && !uploading.length ? (
-        <div className="tool-empty mono-label">NO FILES HERE YET</div>
+        <div className="tool-empty mono-label">{t("files.noFiles")}</div>
       ) : prefs.mode === "list" ? (
         <div className="doc-list">
           {visible.map((f) => (
@@ -254,7 +259,7 @@ export default function FilesView() {
               <span className="doc-row-glyph">
                 <IconFiles />
               </span>
-              <span className="doc-row-name">{displayFileName(f.name)}</span>
+              <span className="doc-row-name" dir="auto">{displayFileName(f.name)}</span>
               <span className="tool-chip">{fileExt(displayFileName(f.name))}</span>
               <span className="mono-label doc-row-meta">
                 {formatSize(f.size)} · {formatDate(f.modified)}
@@ -268,7 +273,7 @@ export default function FilesView() {
           {uploading.map((name) => (
             <div key={`up-${name}`} className="doc-tile uploading">
               <div className="doc-thumb skeleton-card" />
-              <p className="doc-tile-name">{name}</p>
+              <p className="doc-tile-name" dir="auto">{name}</p>
             </div>
           ))}
           {visible.map((f) => {
@@ -292,7 +297,7 @@ export default function FilesView() {
                   )}
                   {actionButtons(f)}
                 </div>
-                <p className="doc-tile-name">{name}</p>
+                <p className="doc-tile-name" dir="auto">{name}</p>
                 {prefs.size === "lg" && (
                   <p className="mono-label doc-tile-meta">
                     {formatSize(f.size)} · {formatDate(f.modified)}

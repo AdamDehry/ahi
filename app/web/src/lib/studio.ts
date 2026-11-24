@@ -16,6 +16,7 @@ import { actions, getState } from "../store";
 import { flushOutbox } from "./outbox";
 import type { StudioCardMeta, StudioOptionMeta } from "./types";
 import { callAnswerSink, registerCallAnswerSink, type CallAnswer } from "./studioBus";
+import { t } from "../i18n";
 
 export { registerCallAnswerSink, type CallAnswer };
 
@@ -30,8 +31,8 @@ export function callIsLive(bot: string): boolean {
  */
 export function optionAnswer(ask: string, opt: Pick<StudioOptionMeta, "key" | "label">): string {
   const q = ask.trim();
-  if (q) return `${q} → ${opt.key}${opt.label ? `: ${opt.label}` : ""}`;
-  return opt.label ? `Option ${opt.key} — ${opt.label}` : `Option ${opt.key}`;
+  if (q) return opt.label ? t("ops.studio.answerAskLabel", { ask: q, key: opt.key, label: opt.label }) : t("ops.studio.answerAsk", { ask: q, key: opt.key });
+  return opt.label ? t("ops.studio.optionLabel", { key: opt.key, label: opt.label }) : t("ops.studio.option", { key: opt.key });
 }
 
 export function thumbSrc(opt: StudioOptionMeta): string {
@@ -67,9 +68,9 @@ export async function stopJob(jobId: string): Promise<{ ok: boolean; error?: str
   try {
     const res = await fetch("/app/studio/stop", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ jobId }) });
     const body = (await res.json().catch(() => ({}))) as { error?: string };
-    return res.ok ? { ok: true } : { ok: false, error: body.error || `Couldn't stop it (${res.status})` };
+    return res.ok ? { ok: true } : { ok: false, error: body.error || t("ops.studio.couldNotStopStatus", { status: String(res.status) }) };
   } catch {
-    return { ok: false, error: "No connection" };
+    return { ok: false, error: t("ops.studio.noConnection") };
   }
 }
 
@@ -110,5 +111,5 @@ export function elapsed(startedAt: string | undefined, now: number): string {
 }
 
 export function stateLabel(card: StudioCardMeta): string {
-  return card.state === "working" ? "Making" : card.state === "failed" ? "Didn't land" : "Your call";
+  return card.state === "working" ? t("ops.studio.making") : card.state === "failed" ? t("ops.studio.didntLand") : t("ops.studio.yourCall");
 }

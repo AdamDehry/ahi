@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { scheduleUi, useScheduleUi, badgeText } from "../../lib/schedule";
+import { useT } from "../../i18n";
 
 /** Calendar glyph, drawn on the same 16-unit grid and stroke as the header's other icons. */
 export const IconCalendar = () => (
@@ -35,6 +36,7 @@ function stopPoll() {
 
 /** The header's calendar icon (next to the gallery icon, always visible), with the unread badge. */
 export default function ScheduleButton() {
+  const t = useT();
   const { open, unread } = useScheduleUi();
   useEffect(() => {
     startPoll();
@@ -44,8 +46,8 @@ export default function ScheduleButton() {
   return (
     <button
       className={`topbar-btn sc-btn${open ? " active" : ""}`}
-      aria-label={badge ? `Schedule, ${unread} new` : "Schedule"}
-      title="Schedule"
+      aria-label={badge ? t("calendar.scheduleNew", { n: unread }) : t("calendar.schedule")}
+      title={t("calendar.schedule")}
       aria-haspopup="dialog"
       aria-expanded={open}
       onClick={() => (open ? scheduleUi.close() : scheduleUi.open())}

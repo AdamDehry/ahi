@@ -1,7 +1,7 @@
 // Minimal geometric icon set — 16px stroke icons, currentColor.
 // Deliberately quiet: the design's chrome glyphs are line drawings.
 
-/** `flip`: the glyph points along the reading direction, so right-to-left mirrors it (shell.css `flip-rtl`). */
+/** `flip`: the glyph points along the reading direction, so right-to-left mirrors it (styles/rtl.css `flip-rtl`). */
 function Svg({ children, size = 16, flip }: { children: React.ReactNode; size?: number; flip?: boolean }) {
   return (
     <svg

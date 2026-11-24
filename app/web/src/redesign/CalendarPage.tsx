@@ -8,17 +8,19 @@
  * A block opens its briefing in place. Everything comes from /app/schedule; nothing is sample data.
  */
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { clock, dayLabel, scheduleUi, useScheduleUi, WEEKDAY, WEEKDAY_LONG, type AttentionRow, type BlockOut, type ScheduleView } from "../lib/schedule";
+import { clock, dayLabel, hourLabel, scheduleUi, useScheduleUi, WEEKDAY, WEEKDAY_LONG, type AttentionRow, type BlockOut, type ScheduleView } from "../lib/schedule";
 import { AttentionList, BriefingView, Decisions, WorkList, useNow, useView } from "../components/schedule/ScheduleModal";
 import { Icon } from "./icons";
 import "./calendar-final.css";
+import { locale, useT } from "../i18n";
 
 const HOUR = 66;
 const range = (b: BlockOut, zone: string) => `${b.approx ? "~" : ""}${clock(b.start, zone)} – ${clock(b.end, zone)}`;
 const kindColor = (v: ScheduleView, kind: string) => v.kinds[kind]?.color ?? "#7a776f";
-const longDate = (date: string) => new Date(`${date}T12:00:00Z`).toLocaleDateString("en-US", { timeZone: "UTC", weekday: "long", month: "long", day: "numeric" });
+const longDate = (date: string) => new Date(`${date}T12:00:00Z`).toLocaleDateString(locale(), { timeZone: "UTC", weekday: "long", month: "long", day: "numeric" });
 
 export default function CalendarPage({ phone = false }: { phone?: boolean }) {
+  const t = useT();
   const { block, rev, unread } = useScheduleUi();
   const tick = useNow();
   const [mode, setMode] = useState<"day" | "week">(phone ? "day" : "day");
@@ -63,7 +65,7 @@ export default function CalendarPage({ phone = false }: { phone?: boolean }) {
     const r = await scheduleUi.clearAll();
     if (!r.ok) {
       setSeen(before);
-      setClearErr(`Didn’t clear: ${r.error}`);
+      setClearErr(t("calendar.didntClear", { error: r.error ?? "" }));
     }
   };
 
@@ -73,30 +75,30 @@ export default function CalendarPage({ phone = false }: { phone?: boolean }) {
   const head = (
     <header className="rd-page-head rd-cal-head">
       <div>
-        <div className="rd-eyebrow">YOUR TIME, WITH ROOM TO BREATHE</div>
-        <h1 className="rd-title">{shown ? longDate(shown.date) : "Your calendar"}</h1>
-        <p className="rd-sub">A considered rhythm for work, life, and the space between.</p>
+        <div className="rd-eyebrow">{t("calendar.eyebrow")}</div>
+        <h1 className="rd-title">{shown ? longDate(shown.date) : t("calendar.yourCalendar")}</h1>
+        <p className="rd-sub">{t("calendar.sub")}</p>
       </div>
       <div className="rd-cal-actions">
         <div className="calendar-step">
-          <button type="button" className="world-button" aria-label="Previous week" onClick={() => (setWeek((w) => w - 1), setDay(null))}>
-            ‹
+          <button type="button" className="world-button" aria-label={t("calendar.prevWeek")} onClick={() => (setWeek((w) => w - 1), setDay(null))}>
+            {t("calendar.prevGlyph")}
           </button>
           <button type="button" className="world-button" onClick={() => (setWeek(0), setDay(null))} disabled={week === 0}>
-            This week
+            {t("calendar.thisWeek")}
           </button>
-          <button type="button" className="world-button" aria-label="Next week" onClick={() => (setWeek((w) => w + 1), setDay(null))}>
-            ›
+          <button type="button" className="world-button" aria-label={t("calendar.nextWeek")} onClick={() => (setWeek((w) => w + 1), setDay(null))}>
+            {t("calendar.nextGlyph")}
           </button>
         </div>
-        <div className="segmented sc-seg" role="tablist" aria-label="Calendar view">
+        <div className="segmented sc-seg" role="tablist" aria-label={t("calendar.viewAria")}>
           {(["day", "week"] as const).map((m) => (
             <button key={m} type="button" role="tab" aria-selected={mode === m} onClick={() => setMode(m)}>
-              {m === "day" ? "Day" : "Week"}
+              {m === "day" ? t("calendar.day") : t("calendar.week")}
             </button>
           ))}
         </div>
-        <button type="button" className="rd-chat-control" aria-label="Close the schedule" onClick={() => scheduleUi.close()}>
+        <button type="button" className="rd-chat-control" aria-label={t("calendar.closeSchedule")} onClick={() => scheduleUi.close()}>
           <Icon name="x" />
         </button>
       </div>
@@ -108,10 +110,10 @@ export default function CalendarPage({ phone = false }: { phone?: boolean }) {
       <div className="rd-page rd-cal" data-page="calendar">
         {head}
         <p className="rd-quiet">
-          {error ? `The calendar didn’t load (${error}).` : "Opening your week…"}{" "}
+          {error ? t("calendar.didntLoad", { error }) : t("calendar.openingWeek")}{" "}
           {error && (
             <button type="button" className="world-button" onClick={reload}>
-              Try again
+              {t("common.tryAgain")}
             </button>
           )}
         </p>
@@ -121,22 +123,22 @@ export default function CalendarPage({ phone = false }: { phone?: boolean }) {
   return (
     <div className="rd-page rd-cal" data-page="calendar">
       {head}
-      {view.error && <p className="rd-quiet rd-cal-note">{view.error}</p>}
-      <div className="week-strip" role="tablist" aria-label="Day">
+      {view.error && <p className="rd-quiet rd-cal-note" dir="auto">{view.error}</p>}
+      <div className="week-strip" role="tablist" aria-label={t("calendar.day")}>
         {view.days.map((d) => (
           <button key={d.date} type="button" role="tab" aria-selected={shown?.date === d.date} className={shown?.date === d.date ? "selected" : ""} onClick={() => (setDay(d.date), setMode("day"), back())}>
-            <span>{WEEKDAY[d.weekday]}</span>
+            <span>{t(WEEKDAY[d.weekday])}</span>
             <strong>{Number(d.date.slice(8))}</strong>
             {d.isToday && <i />}
           </button>
         ))}
       </div>
       <div className="calendar-layout">
-        <section className={`calendar-canvas${mode === "week" && !block ? " week-mode" : ""}`} aria-label={block ? "Briefing" : mode === "week" ? "Week schedule" : "Day schedule"}>
+        <section className={`calendar-canvas${mode === "week" && !block ? " week-mode" : ""}`} aria-label={block ? t("calendar.briefing") : mode === "week" ? t("calendar.weekSchedule") : t("calendar.daySchedule")}>
           {block ? (
             <>
-              <button type="button" className="world-button rd-cal-back" onClick={back} aria-label="Back to the calendar">
-                <Icon name="arrow-left" /> Back to the calendar
+              <button type="button" className="world-button rd-cal-back" onClick={back} aria-label={t("calendar.backToCalendar")}>
+                <Icon name="arrow-left" /> {t("calendar.backToCalendar")}
               </button>
               <BriefingView id={block} zone={view.zone} kinds={view.kinds} now={now} rev={rev} />
             </>
@@ -151,7 +153,7 @@ export default function CalendarPage({ phone = false }: { phone?: boolean }) {
                   <div className="time-grid" style={{ height: hours.length * HOUR }}>
                     {hours.map((h) => (
                       <div key={h} className="hour-row">
-                        <time>{`${h % 12 || 12} ${h < 12 || h === 24 ? "AM" : "PM"}`}</time>
+                        <time>{hourLabel(h)}</time>
                         <span />
                       </div>
                     ))}
@@ -168,14 +170,14 @@ export default function CalendarPage({ phone = false }: { phone?: boolean }) {
                             className={`calendar-event${b.sacred ? " protected" : ""}${b.status === "now" ? " now" : ""}${height < 60 ? " short" : ""}${height < 28 ? " tiny" : ""}`}
                             style={{ top, height, ["--ev" as string]: kindColor(view, b.kind) }}
                             onClick={() => openBlock(b.id)}
-                            aria-label={`${b.title}, ${range(b, view.zone)}${b.status === "now" ? ", now" : ""}${b.unread ? `, ${b.unread} new` : ""}`}
+                            aria-label={`${b.title}, ${range(b, view.zone)}${b.status === "now" ? t("calendar.ariaNow") : ""}${b.unread ? t("calendar.ariaNew", { n: b.unread }) : ""}`}
                           >
-                            <strong>{b.title}</strong>
+                            <strong dir="auto">{b.title}</strong>
                             <span>
                               {range(b, view.zone)}
-                              {b.sacred ? " · Protected" : b.status === "now" ? " · Now" : ""}
+                              {b.sacred ? t("calendar.protectedSuffix") : b.status === "now" ? t("calendar.nowSuffix") : ""}
                             </span>
-                            {b.detail && height >= 110 && <small>{b.detail}</small>}
+                            {b.detail && height >= 110 && <small dir="auto">{b.detail}</small>}
                             {b.unread > 0 && <em className="rd-cal-badge">{b.unread > 9 ? "9+" : b.unread}</em>}
                           </button>
                         );
@@ -187,8 +189,8 @@ export default function CalendarPage({ phone = false }: { phone?: boolean }) {
             ) : (
               <div className="shabbat-block">
                 <Icon name="calendar" />
-                <h2>An open day.</h2>
-                <p>Nothing on the calendar {dayLabel(shown.date).toLowerCase()}. Keep it that way.</p>
+                <h2>{t("calendar.openDay")}</h2>
+                <p>{t("calendar.nothingOn", { day: dayLabel(shown.date).toLowerCase() })}</p>
               </div>
             )
           ) : (
@@ -196,7 +198,7 @@ export default function CalendarPage({ phone = false }: { phone?: boolean }) {
               {view.days.map((d) => (
                 <div key={d.date} className={`week-column${d.isToday ? " today" : ""}`}>
                   <button type="button" className="week-column-label" onClick={() => (setDay(d.date), setMode("day"))}>
-                    {WEEKDAY[d.weekday]} {Number(d.date.slice(8))}
+                    {t(WEEKDAY[d.weekday])} {Number(d.date.slice(8))}
                   </button>
                   {d.segments.map((s) => {
                     const b = view.blocks[s.id];
@@ -208,14 +210,14 @@ export default function CalendarPage({ phone = false }: { phone?: boolean }) {
                         className={`week-event${b.sacred ? " protected" : ""}${b.status === "now" ? " now" : ""}`}
                         style={{ ["--ev" as string]: kindColor(view, b.kind) }}
                         onClick={() => openBlock(b.id)}
-                        aria-label={`${WEEKDAY_LONG[d.weekday]} ${b.title}, ${range(b, view.zone)}`}
+                        aria-label={`${t(WEEKDAY_LONG[d.weekday])} ${b.title}, ${range(b, view.zone)}`}
                       >
                         <span>{s.continued ? "…" : clock(b.start, view.zone)}</span>
-                        <strong>{b.short ?? b.title}</strong>
+                        <strong dir="auto">{b.short ?? b.title}</strong>
                       </button>
                     );
                   })}
-                  {!d.segments.length && <div className="open-time">An open day.</div>}
+                  {!d.segments.length && <div className="open-time">{t("calendar.openDay")}</div>}
                 </div>
               ))}
             </div>
@@ -223,34 +225,40 @@ export default function CalendarPage({ phone = false }: { phone?: boolean }) {
         </section>
         <aside className="calendar-side">
           <div className="world-card">
-            <span className="rd-eyebrow">{current ? "NOW" : "NEXT"}</span>
-            <h2>{current ? current.title : "Nothing scheduled right now."}</h2>
-            <p>{current ? `${range(current, view.zone)}. ${current.detail ?? "Your team handles the details."}` : next ? `Next: ${next.title} at ${clock(next.start, view.zone)}.` : "The rest of the week is open."}</p>
+            <span className="rd-eyebrow">{current ? t("calendar.nowCaps") : t("calendar.nextCaps")}</span>
+            <h2 dir={current ? "auto" : undefined}>{current ? current.title : t("calendar.nothingNow")}</h2>
+            <p>
+              {current
+                ? `${range(current, view.zone)}. ${current.detail ?? t("calendar.teamHandles")}`
+                : next
+                  ? t("calendar.nextAt", { title: next.title, time: clock(next.start, view.zone) })
+                  : t("calendar.restOpen")}
+            </p>
             {(current ?? next) && (
               <button type="button" className="world-button" onClick={() => openBlock((current ?? next)!.id)}>
-                Open briefing
+                {t("calendar.openBriefing")}
               </button>
             )}
           </div>
           <div className="calendar-side-needs">
           <div className="world-section-title">
-            <h2>Needs you</h2>
+            <h2>{t("calendar.needsYou")}</h2>
             <button type="button" className="world-button sc-clear" onClick={() => void clearAll()} disabled={unread === 0}>
-              {unread === 0 ? "All seen" : "Clear all"}
+              {unread === 0 ? t("calendar.allSeen") : t("calendar.clearAll")}
             </button>
           </div>
-          {attention.length ? <AttentionList rows={attention} now={now} onOpen={openItem} /> : <p className="muted-line">You’re caught up. Items remain in Your work.</p>}
+          {attention.length ? <AttentionList rows={attention} now={now} onOpen={openItem} /> : <p className="muted-line">{t("calendar.caughtUp")}</p>}
           {clearErr && <p className="muted-line">{clearErr}</p>}
           </div>
           <div className="calendar-side-behind">
           <div className="world-section-title">
-            <h2>Behind the scenes</h2>
+            <h2>{t("calendar.behindScenes")}</h2>
           </div>
-          {view.background.work.length ? <WorkList rows={view.background.work} now={now} /> : <p className="muted-line">No agent work running right now.</p>}
+          {view.background.work.length ? <WorkList rows={view.background.work} now={now} /> : <p className="muted-line">{t("calendar.noAgentWork")}</p>}
           {view.background.decisions.length > 0 && (
             <>
               <button type="button" className="world-button rd-cal-decisions" aria-expanded={showDecisions} onClick={() => setShowDecisions(!showDecisions)}>
-                Michael’s decisions {showDecisions ? "↑" : "↗"}
+                {t("calendar.michaelsDecisions")} {showDecisions ? "↑" : t("calendar.outArrow")}
               </button>
               {showDecisions && <Decisions rows={view.background.decisions} now={now} />}
             </>
@@ -259,7 +267,7 @@ export default function CalendarPage({ phone = false }: { phone?: boolean }) {
         </aside>
       </div>
       <p className="preview-footnote">
-        {view.title} · approved {view.approved} · All times {view.zone.replace("America/New_York", "Eastern").replace(/_/g, " ")}
+        {t("calendar.footnote", { title: view.title, approved: view.approved, zone: view.zone.replace("America/New_York", t("calendar.eastern")).replace(/_/g, " ") })}
         {view.note ? ` · ${view.note}` : ""}
       </p>
     </div>

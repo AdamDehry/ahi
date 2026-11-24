@@ -10,6 +10,7 @@
  * the client never claims "verified"; the gateway verifies the signature.
  */
 import { startAuthentication, startRegistration, browserSupportsWebAuthn } from "@simplewebauthn/browser";
+import { t } from "../i18n";
 
 export type Lane = "GREEN" | "YELLOW" | "RED";
 export type ItemStatus = "waiting" | "approved" | "denied" | "held" | "done";
@@ -98,7 +99,7 @@ async function post<T>(url: string, body: unknown): Promise<Result<T>> {
     if (!res.ok) return { ok: false, error: json.error ?? `HTTP ${res.status}`, code: json.code };
     return { ok: true, value: json as T };
   } catch {
-    return { ok: false, error: "No connection — nothing was sent.", code: "network" };
+    return { ok: false, error: t("builds.noConnSent"), code: "network" };
   }
 }
 
@@ -130,12 +131,12 @@ export function webauthnSupported(): boolean {
 }
 
 /** `what` names the action that didn't happen ("approved", "shipped", …). */
-export function fingerprintError(err: unknown, what = "approved"): string {
+export function fingerprintError(err: unknown, what: "approved" | "shipped" | "added" | "removed" = "approved"): string {
   const name = (err as { name?: string })?.name;
-  if (name === "NotAllowedError") return `Fingerprint cancelled or timed out — nothing was ${what}.`;
-  if (name === "SecurityError") return "Passkeys only work on the app's own address.";
-  if (name === "InvalidStateError") return "This phone already has a passkey here.";
-  return `The fingerprint didn't go through — nothing was ${what}.`;
+  if (name === "NotAllowedError") return t(`builds.fp.cancelled.${what}`);
+  if (name === "SecurityError") return t("builds.fp.security");
+  if (name === "InvalidStateError") return t("builds.fp.exists");
+  return t(`builds.fp.failed.${what}`);
 }
 
 /** RED approve: server challenge → phone fingerprint → server verifies. */

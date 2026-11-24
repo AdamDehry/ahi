@@ -11,6 +11,7 @@ export type Kicker = "your-step" | "question" | "in-review" | "ship" | "shipping
 import { attentionItems, type AttentionItem, type RestartChoice, type ShipState } from "./ship";
 import { startAuthentication } from "@simplewebauthn/browser";
 import { fingerprintError } from "./review";
+import { t } from "../i18n";
 
 export interface CardRun {
   build: string;
@@ -95,7 +96,7 @@ async function post<T>(url: string, body: unknown): Promise<Result<T>> {
     if (!res.ok) return { ok: false, error: json.error ?? `HTTP ${res.status}` };
     return { ok: true, value: json as T };
   } catch {
-    return { ok: false, error: "No connection — nothing was closed." };
+    return { ok: false, error: t("builds.noConnClosed") };
   }
 }
 

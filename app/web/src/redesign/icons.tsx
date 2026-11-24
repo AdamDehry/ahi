@@ -57,7 +57,7 @@ const P: Record<string, string> = {
 
 export type IconName = keyof typeof P | "gmail" | "whatsapp-business";
 
-/** Glyphs that point along the reading direction: mirrored in right-to-left (the `flip-rtl` rule in shell.css). */
+/** Glyphs that point along the reading direction: mirrored in right-to-left (the `flip-rtl` rule in styles/rtl.css). */
 const DIRECTIONAL = new Set<IconName>(["chevron-right", "arrow-left", "arrow-right", "exit"]);
 
 export function Icon({ name, className }: { name: IconName; className?: string }) {

@@ -1,13 +1,15 @@
-const $=s=>document.querySelector(s);
+const $=s=>document.querySelector(s),{t,apply}=window.AHI_I18N;
+let lang='en';
 async function start(){
-  $('#start-actions').hidden=true;$('#start-kicker').textContent='ONE MOMENT';$('#start-title').textContent='Starting AHI…';$('#start-reason').textContent='Your agents will be right with you.';
+  $('#start-actions').hidden=true;$('#start-kicker').textContent=t(lang,'start.kicker');$('#start-title').textContent=t(lang,'start.title');$('#start-reason').textContent=t(lang,'start.reason');
   try{await window.ahi.invoke('start');}// on success the app replaces this page with AHI itself
   catch(error){
-    $('#start-kicker').textContent='AHI DID NOT START';$('#start-title').textContent='AHI couldn’t start this time.';
-    $('#start-reason').textContent=error.message||'Something went wrong. Its log is in AHI_OS/logs/ahi-server.log.';
+    $('#start-kicker').textContent=t(lang,'start.failKicker');$('#start-title').textContent=t(lang,'start.failTitle');
+    $('#start-reason').textContent=error.message||t(lang,'start.failReason');
     $('#start-actions').hidden=false;$('#retry').focus();
   }
 }
 $('#retry').addEventListener('click',start);
 $('#setup').addEventListener('click',()=>window.ahi.invoke('setup'));
-start();
+// The owner's language (saved from AHI's Settings, or chosen in setup) before anything is shown.
+window.ahi.invoke('language').catch(()=>'en').then(l=>{lang=l;apply(lang,document);start();});

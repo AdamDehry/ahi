@@ -1,9 +1,10 @@
+import { locale, tn, useT } from "../../i18n";
 import { BOT_LABELS } from "../../lib/types";
 import { IconBack } from "../icons";
 import { fmtDuration, type VoiceSessionMeta } from "./SessionRecordCard";
 
 function formatTime(ts: number): string {
-  return new Date(ts).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  return new Date(ts).toLocaleTimeString(locale(), { hour: "numeric", minute: "2-digit" });
 }
 
 export default function VoiceSessionPage({
@@ -15,19 +16,20 @@ export default function VoiceSessionPage({
   record: VoiceSessionMeta;
   onClose: () => void;
 }) {
+  const t = useT();
   const title = BOT_LABELS[bot] ?? bot;
   const started = formatTime(record.startedAt);
 
   return (
-    <section className="voice-history-page" aria-label="Voice mode call history">
+    <section className="voice-history-page" aria-label={t("voice.history.label")}>
       <header className="voice-history-head">
-        <button type="button" className="voice-history-back" aria-label="Back to chat" onClick={onClose}>
+        <button type="button" className="voice-history-back" aria-label={t("voice.history.backToChat")} onClick={onClose}>
           <IconBack />
         </button>
         <div className="voice-history-title">
           <strong>{title}</strong>
           <span className="mono-label">
-            {started} · {fmtDuration(record.durationSec)} · {record.turns} {record.turns === 1 ? "TURN" : "TURNS"}
+            {started} · {fmtDuration(record.durationSec)} · {tn("voice.turns", record.turns)}
           </span>
         </div>
         {/* ONE way out, not two (R4-7). The header used to carry a back-arrow
@@ -44,7 +46,7 @@ export default function VoiceSessionPage({
           record.transcript.map((line, i) =>
             line.role === "user" ? (
               <div key={`${line.role}-${i}`} className="voice-history-row user">
-                <div className="voice-history-bubble user">{line.text}</div>
+                <div className="voice-history-bubble user" dir="auto">{line.text}</div>
               </div>
             ) : (
               <div key={`${line.role}-${i}`} className="voice-history-row agent">
@@ -52,12 +54,12 @@ export default function VoiceSessionPage({
                   <span className="agent-dot" data-bot={bot} />
                   <span className="agent-name" data-bot={bot}>{title}</span>
                 </div>
-                <div className="voice-history-bubble agent">{line.text}</div>
+                <div className="voice-history-bubble agent" dir="auto">{line.text}</div>
               </div>
             ),
           )
         ) : (
-          <div className="voice-history-empty mono-label">NO TRANSCRIPT</div>
+          <div className="voice-history-empty mono-label">{t("voice.history.noTranscript")}</div>
         )}
       </div>
     </section>

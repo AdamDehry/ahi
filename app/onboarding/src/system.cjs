@@ -3,6 +3,7 @@ const path = require('node:path');
 const os = require('node:os');
 const crypto = require('node:crypto');
 const {spawn} = require('node:child_process');
+const {t} = require('../ui/i18n.js');
 
 function cleanEnv(home, source=process.env) {
   // Positive allowlist: never inherit the gateway's provider keys or agent context.
@@ -17,9 +18,9 @@ async function atomic(file, value) {
   await fs.rename(temp,file);
 }
 async function exists(file) {try {await fs.lstat(file);return true;}catch(e){if(e.code==='ENOENT')return false;throw e;}}
-async function realDirectory(file) {
+async function realDirectory(file, lang='en') {
   const st=await fs.lstat(file);
-  if(!st.isDirectory()||st.isSymbolicLink())throw Error('Choose a regular folder, rather than a link or file.');
+  if(!st.isDirectory()||st.isSymbolicLink())throw Error(t(lang,'err.notRegularFolder'));
   return fs.realpath(file);
 }
 function run(command,args,{home,cwd=home,timeout=30000,env={},limit=131072}={}) {
@@ -36,7 +37,7 @@ function run(command,args,{home,cwd=home,timeout=30000,env={},limit=131072}={}) 
 }
 function quoteSh(s){return "'"+s.replaceAll("'","'\\''")+"'";}
 function quotePs(s){return "'"+s.replaceAll("'","''")+"'";}
-async function terminal(command,args,home,{platform=process.platform,launch=spawn,extraEnv={},scriptOnly=false}={}) {
+async function terminal(command,args,home,{platform=process.platform,launch=spawn,extraEnv={},scriptOnly=false,lang='en'}={}) {
   const env={...cleanEnv(home),...extraEnv};
   delete env.CI;
   const id=crypto.randomUUID();
@@ -46,17 +47,17 @@ async function terminal(command,args,home,{platform=process.platform,launch=spaw
     script=path.join(folder,`${id}.ps1`);
     const content=Object.entries(env).map(([k,v])=>`$env:${k} = ${quotePs(v)}`).join('\r\n')+`\r\nSet-Location -LiteralPath ${quotePs(home)}\r\n& ${quotePs(command)} ${args.map(quotePs).join(' ')}\r\nRead-Host 'Return to AHI and click Check connection'`;
     await atomic(script,content);
-    await new Promise((resolve,reject)=>{const p=launch('powershell.exe',['-NoExit','-NoProfile','-ExecutionPolicy','Bypass','-File',script],{shell:false,env,detached:true,stdio:'ignore',windowsHide:false});p.once('error',()=>reject(Error('PowerShell could not open. Please check your Windows installation.')));p.once('spawn',()=>{p.unref();resolve();});});
+    await new Promise((resolve,reject)=>{const p=launch('powershell.exe',['-NoExit','-NoProfile','-ExecutionPolicy','Bypass','-File',script],{shell:false,env,detached:true,stdio:'ignore',windowsHide:false});p.once('error',()=>reject(Error(t(lang,'err.powershell'))));p.once('spawn',()=>{p.unref();resolve();});});
   }else{
     script=path.join(folder,`${id}.command`);
     const assignments=Object.entries(env).map(([k,v])=>`${k}=${quoteSh(v)}`).join(' ');
     await atomic(script,`#!/bin/sh\ncd ${quoteSh(home)} || exit 1\nenv -i ${assignments} ${quoteSh(command)} ${args.map(quoteSh).join(' ')}\nprintf '\\nReturn to AHI and click Check connection.\\n'\nread answer\n`);
     await fs.chmod(script,0o700);
-    if(scriptOnly)return {message:`In your SSH terminal, run: sh ${quoteSh(script)}. Finish the provider’s sign-in there, then check the connection here.`};
+    if(scriptOnly)return {message:t(lang,'setup.msg.sshScript',{command:`sh ${quoteSh(script)}`})};
     const tool=platform==='darwin'?'open':'x-terminal-emulator';
     const argv=platform==='darwin'?['-a','Terminal',script]:['-e',script];
-    await new Promise((resolve,reject)=>{const p=launch(tool,argv,{env,detached:true,stdio:'ignore'});p.once('error',()=>reject(Error('A system terminal is required. Install a terminal and try again.')));p.once('spawn',()=>{p.unref();resolve();});});
+    await new Promise((resolve,reject)=>{const p=launch(tool,argv,{env,detached:true,stdio:'ignore'});p.once('error',()=>reject(Error(t(lang,'err.noTerminal'))));p.once('spawn',()=>{p.unref();resolve();});});
   }
-  return {message:'Your provider’s official CLI is open in a system terminal. Finish its browser sign-in, then check the connection here.'};
+  return {message:t(lang,'setup.msg.terminalOpen')};
 }
 module.exports={cleanEnv,atomic,exists,realDirectory,run,terminal,quoteSh,quotePs};

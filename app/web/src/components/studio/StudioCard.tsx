@@ -6,6 +6,7 @@ import { copyText } from "../../lib/messageActions";
 import { showToast } from "../../lib/toast";
 import ExpandedMedia from "../ExpandedMedia";
 import ContextMenu from "../ContextMenu";
+import { locale, useT } from "../../i18n";
 // Its stylesheet, ./studio-card.css, is imported once by the shell (main.tsx),
 // like search-card.css: Node-run UI tests import this file and cannot load CSS.
 
@@ -30,7 +31,7 @@ const MOVE_SLOP = 10;
 
 function formatTime(ts: string): string {
   const d = new Date(ts);
-  return Number.isNaN(d.getTime()) ? "" : d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  return Number.isNaN(d.getTime()) ? "" : d.toLocaleTimeString(locale(), { hour: "numeric", minute: "2-digit" });
 }
 
 const Glyph = () => (
@@ -48,6 +49,7 @@ export interface StudioCardProps {
 }
 
 export default function StudioCard({ card, messageId, bot, byLabel }: StudioCardProps) {
+  const t = useT();
   const [picked, setPicked] = useState<string | null>(() => pickedOption(messageId));
   const [open, setOpen] = useState<number | null>(null);
   const [menu, setMenu] = useState<{ x: number; y: number; index: number; touch: boolean } | null>(null);
@@ -57,24 +59,24 @@ export default function StudioCard({ card, messageId, bot, byLabel }: StudioCard
   // The working clock ticks only while the job runs.
   useEffect(() => {
     if (card.state !== "working") return;
-    const t = window.setInterval(() => setNow(Date.now()), 1000);
-    return () => window.clearInterval(t);
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
   }, [card.state]);
 
   function choose(opt: StudioOptionMeta) {
     const where = chooseOption(bot, card.ask, opt);
     if (!where) {
-      showToast("Not signed in", 2400);
+      showToast(t("ops.studio.notSignedIn"), 2400);
       return;
     }
     rememberPick(messageId, opt.key);
     setPicked(opt.key);
-    showToast(where === "call" ? `Option ${opt.key}: told ${byLabel} on the call` : `Option ${opt.key} sent`);
+    showToast(where === "call" ? t("ops.studio.toldOnCall", { key: opt.key, name: byLabel }) : t("ops.studio.sent", { key: opt.key }));
   }
 
   function attach(opt: StudioOptionMeta) {
     const taken = requestStage({ bot, mediaId: opt.media.id, name: opt.media.originalName, mime: opt.media.mime, size: opt.media.size, previewUrl: thumbSrc(opt) });
-    showToast(taken ? "Added to your message" : "It's in Files");
+    showToast(taken ? t("ops.studio.addedToMessage") : t("ops.studio.inFiles"));
   }
 
   async function stop() {
@@ -83,7 +85,7 @@ export default function StudioCard({ card, messageId, bot, byLabel }: StudioCard
     const r = await stopJob(card.jobId);
     if (!r.ok) {
       setStopping(false);
-      showToast(r.error ?? "Couldn't stop it", 2600);
+      showToast(r.error ?? t("ops.studio.couldNotStop"), 2600);
     }
   }
 
@@ -96,7 +98,7 @@ export default function StudioCard({ card, messageId, bot, byLabel }: StudioCard
       <div className="ast-head">
         <Glyph />
         <span className="ast-ask" dir="auto">
-          {card.ask || (card.state === "working" ? "Working on it" : "Your call")}
+          {card.ask || (card.state === "working" ? t("ops.studio.workingOnIt") : t("ops.studio.yourCall"))}
         </span>
         <span className="ast-state">{card.state === "working" ? `${stateLabel(card)} ${elapsed(card.startedAt ?? card.at, now)}` : stateLabel(card)}</span>
       </div>
@@ -129,15 +131,15 @@ export default function StudioCard({ card, messageId, bot, byLabel }: StudioCard
 
       {card.state === "failed" && (
         <div className="ast-failed">
-          <p dir="auto">{card.error || "It didn't come back."}</p>
-          <button type="button" className="ast-btn" onClick={() => sendStudioAnswer(bot, { text: `That ${card.engine ?? "studio"} job didn't land${card.ask ? ` (${card.ask})` : ""}. Try it again.` })}>
-            Try again
+          <p dir="auto">{card.error || t("ops.studio.didntComeBack")}</p>
+          <button type="button" className="ast-btn" onClick={() => sendStudioAnswer(bot, { text: t("ops.studio.retryMsg", { engine: card.engine ?? t("ops.studio.studio"), ask: card.ask ? ` (${card.ask})` : "" }) })}>
+            {t("common.tryAgain")}
           </button>
         </div>
       )}
 
       {card.state === "decision" && (
-        <p className="ast-hint">{picked ? `You picked ${picked}. Say or type what to change, or tap another.` : `Tap one, or just say which. ${card.more ? `+${card.more} more in the folder.` : ""}`}</p>
+        <p className="ast-hint">{picked ? t("ops.studio.picked", { key: picked }) : `${t("ops.studio.tapOne")}${card.more ? t("ops.studio.moreInFolder", { n: card.more }) : ""}`}</p>
       )}
       {card.note && card.state !== "working" && (
         <p className="ast-note" dir="auto">
@@ -152,30 +154,30 @@ export default function StudioCard({ card, messageId, bot, byLabel }: StudioCard
         </span>
         {card.state === "working" && card.jobId ? (
           <button type="button" className="ast-link" onClick={() => void stop()} disabled={stopping}>
-            {stopping ? "Stopping…" : "Stop"}
+            {stopping ? t("ops.studio.stopping") : t("ops.studio.stop")}
           </button>
         ) : card.folder ? (
-          <button type="button" className="ast-link" onClick={() => void copyText(card.folder ?? "").then((ok) => showToast(ok ? "Folder path copied" : "Couldn't copy"))}>
-            Folder
+          <button type="button" className="ast-link" onClick={() => void copyText(card.folder ?? "").then((ok) => showToast(ok ? t("ops.studio.folderCopied") : t("ops.studio.couldNotCopy")))}>
+            {t("ops.studio.folder")}
           </button>
         ) : null}
       </div>
 
       {open !== null && (
         <ExpandedMedia
-          items={options.map((o) => ({ ...o.media, originalName: o.label ? `${o.key} — ${o.label}` : `Option ${o.key}` }))}
+          items={options.map((o) => ({ ...o.media, originalName: o.label ? t("ops.studio.keyLabel", { key: o.key, label: o.label }) : t("ops.studio.option", { key: o.key }) }))}
           startIndex={open}
           onClose={() => setOpen(null)}
           actions={[
             {
-              label: "CHOOSE",
+              label: t("ops.studio.choose"),
               onSelect: (i) => {
                 const o = options[i];
                 if (o) choose(o);
                 setOpen(null);
               },
             },
-            { label: "ATTACH", onSelect: (i) => options[i] && attach(options[i]) },
+            { label: t("ops.studio.attach"), onSelect: (i) => options[i] && attach(options[i]) },
           ]}
         />
       )}
@@ -186,10 +188,10 @@ export default function StudioCard({ card, messageId, bot, byLabel }: StudioCard
           autoFocus={!menu.touch}
           onClose={() => setMenu(null)}
           items={[
-            { label: `Choose ${options[menu.index].key}`, onSelect: () => choose(options[menu.index]) },
-            { label: "View large", onSelect: () => setOpen(menu.index) },
-            { label: "Attach to message", onSelect: () => attach(options[menu.index]) },
-            ...(card.folder ? [{ label: "Copy folder path", onSelect: () => void copyText(card.folder ?? "").then((ok) => showToast(ok ? "Folder path copied" : "Couldn't copy")) }] : []),
+            { label: t("ops.studio.chooseKey", { key: options[menu.index].key }), onSelect: () => choose(options[menu.index]) },
+            { label: t("ops.studio.viewLarge"), onSelect: () => setOpen(menu.index) },
+            { label: t("ops.studio.attachToMessage"), onSelect: () => attach(options[menu.index]) },
+            ...(card.folder ? [{ label: t("ops.studio.copyFolderPath"), onSelect: () => void copyText(card.folder ?? "").then((ok) => showToast(ok ? t("ops.studio.folderCopied") : t("ops.studio.couldNotCopy"))) }] : []),
           ]}
         />
       )}
@@ -213,6 +215,7 @@ function OptionTile({
   onExpand: () => void;
   onMenu: (x: number, y: number, touch: boolean) => void;
 }) {
+  const t = useT();
   const [state, setState] = useState<"loading" | "loaded" | "broken">("loading");
   const press = useRef<{ x: number; y: number; timer: number } | null>(null);
   const fired = useRef(false);
@@ -233,7 +236,7 @@ function OptionTile({
       <button
         type="button"
         className={`ast-tile is-${state}`}
-        aria-label={`Choose option ${opt.key}${opt.label ? `: ${opt.label}` : ""}`}
+        aria-label={opt.label ? t("ops.studio.chooseOptionLabel", { key: opt.key, label: opt.label }) : t("ops.studio.chooseOption", { key: opt.key })}
         aria-pressed={picked}
         onClick={(e) => {
           if (fired.current) {
@@ -271,15 +274,15 @@ function OptionTile({
         onPointerCancel={cancel}
       >
         {hasPicture ? (
-          <img src={thumbSrc(opt)} alt={opt.label || `Option ${opt.key}`} loading="lazy" decoding="async" draggable={false} onLoad={() => setState("loaded")} onError={() => setState("broken")} />
+          <img src={thumbSrc(opt)} alt={opt.label || t("ops.studio.option", { key: opt.key })} loading="lazy" decoding="async" draggable={false} onLoad={() => setState("loaded")} onError={() => setState("broken")} />
         ) : (
-          <span className="ast-tile-fallback">clip</span>
+          <span className="ast-tile-fallback">{t("ops.studio.clip")}</span>
         )}
         {video && <span className="ast-play" aria-hidden="true" />}
         <span className="ast-key">{opt.key}</span>
         {picked && <span className="ast-check" aria-hidden="true" />}
       </button>
-      <button type="button" className="ast-expand" aria-label={`View option ${opt.key} large`} onClick={onExpand}>
+      <button type="button" className="ast-expand" aria-label={t("ops.studio.viewOptionLarge", { key: opt.key })} onClick={onExpand}>
         <svg viewBox="0 0 16 16" aria-hidden="true">
           <path d="M9.5 2.5h4v4M6.5 13.5h-4v-4M13.5 2.5 9 7M2.5 13.5 7 9" />
         </svg>

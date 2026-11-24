@@ -1,11 +1,13 @@
 import type { ReactNode } from "react";
 import { AGENT_LABEL, ageLabel, ageLevel, ageParts } from "./format";
+import { t, useT } from "../../i18n";
 
 /** The tone vocabulary (C8), the same in both panels. */
 export type Tone = "you" | "move" | "built" | "stuck" | "queued" | "closed" | "review";
 
 /** Mono `47M` / `4H` / `2D` — the figure itself ages (C7). */
 export function Age({ ms, label = ageLabel }: { ms: number; label?: (ms: number) => string }) {
+  useT();
   return <span className={`pf-age ${ageLevel(ms)}`}>{label(ms)}</span>;
 }
 
@@ -43,11 +45,11 @@ export function boardCells(open: number, needYou: number, oldestMs: number | nul
   const oldest = oldestMs === null ? null : ageParts(oldestMs);
   const level = oldestMs === null ? "" : ageLevel(oldestMs);
   return [
-    { value: open, label: "Open", tone: open ? "" : "zero" },
-    { value: needYou, label: "Need you", tone: needYou ? "you" : "zero" },
+    { value: open, label: t("ops.board.open"), tone: open ? "" : "zero" },
+    { value: needYou, label: t("ops.board.needYou"), tone: needYou ? "you" : "zero" },
     oldest
-      ? { value: oldest.value, unit: oldest.unit, label: "Oldest", tone: level === "old" ? "old" : "" }
-      : { value: "—", label: "Oldest", tone: "zero" },
+      ? { value: oldest.value, unit: oldest.unit, label: t("ops.board.oldest"), tone: level === "old" ? "old" : "" }
+      : { value: "—", label: t("ops.board.oldest"), tone: "zero" },
   ];
 }
 
@@ -117,14 +119,14 @@ export function ListRow({
         <Kicker word={kicker} from={from} />
         <Age ms={ageMs} label={ageFormat} />
       </span>
-      <span className="pf-row-title">{title}</span>
+      <span className="pf-row-title" dir="auto">{title}</span>
       {ask ? (
-        <span className="pf-ask">{ask}</span>
+        <span className="pf-ask" dir="auto">{ask}</span>
       ) : (
         lines?.map((l) => (
           <span className="pf-line" key={l.label}>
             <span className="mono-label">{l.label}</span>
-            <span className="clamp">{l.text}</span>
+            <span className="clamp" dir="auto">{l.text}</span>
           </span>
         ))
       )}
@@ -150,7 +152,7 @@ export function CompactItem({
   ageMs,
   ageFormat = ageLabel,
   onClose,
-  closeLabel = "Close",
+  closeLabel,
   onOpen,
   closed,
   wrap,
@@ -173,13 +175,14 @@ export function CompactItem({
   selected?: boolean;
   error?: string | null;
 }) {
+  const t = useT();
   const subLine = onClose && ageMs !== undefined ? `${ageFormat(ageMs)} · ${sub}` : sub;
   return (
     <div className={`pf-li${closed ? " closed" : ""}${wrap ? " wrap" : ""}${selected ? " sel" : ""}`}>
       {order !== undefined ? <span className="pf-li-ord">{order ?? "—"}</span> : <span className={`pf-li-dot ${dot ?? ""}`} />}
       <button type="button" className="pf-li-body" onClick={onOpen} disabled={!onOpen}>
-        <span className="pf-li-name">{name}</span>
-        <span className="pf-li-sub">{subLine}</span>
+        <span className="pf-li-name" dir="auto">{name}</span>
+        <span className="pf-li-sub" dir="auto">{subLine}</span>
         {error && (
           <span className="pf-li-error" role="alert">
             {error}
@@ -188,7 +191,7 @@ export function CompactItem({
       </button>
       {onClose ? (
         <button type="button" className="pf-li-close" onClick={onClose}>
-          {closeLabel}
+          {closeLabel ?? t("common.close")}
         </button>
       ) : (
         right ?? (ageMs !== undefined ? <Age ms={ageMs} label={ageFormat} /> : null)

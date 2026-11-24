@@ -3,16 +3,18 @@
  * records with a FINAL category tab, a plain kind label, a signed figure (assets +, owed −) and
  * where the figure came from. Pure view logic over the gateway's picture — nothing nets here.
  */
-import { OWNER_LABELS, type Owner, type VaultAccount, type VaultFlag, type VaultItem, type VaultPicture } from "../lib/vault";
+import { locale, t, type Key } from "../i18n";
+import { ownerLabel, type Owner, type VaultAccount, type VaultFlag, type VaultItem, type VaultPicture } from "../lib/vault";
 
 export type Category = "cash" | "credit" | "loans" | "investments" | "property";
-export const CATEGORY_TABS: Array<[Category | "all", string]> = [
-  ["all", "See all"],
-  ["cash", "Cash"],
-  ["credit", "Credit"],
-  ["loans", "Loans"],
-  ["investments", "Investments"],
-  ["property", "Property & assets"],
+/** [tab, catalog key] — translated at render. */
+export const CATEGORY_TABS: Array<[Category | "all", Key]> = [
+  ["all", "vault.tab.all"],
+  ["cash", "vault.tab.cash"],
+  ["credit", "vault.tab.credit"],
+  ["loans", "vault.tab.loans"],
+  ["investments", "vault.tab.investments"],
+  ["property", "vault.tab.property"],
 ];
 
 const CASH = new Set(["cash", "checking", "savings", "money_market", "cd", "prepaid", "cash_management", "hsa"]);
@@ -29,24 +31,26 @@ export function accountCategory(a: Pick<VaultAccount, "kind" | "subtype">): Cate
   return st === "receivable" || st === "real_estate" || st === "vehicle" ? "property" : "investments";
 }
 
-const KIND_LABELS: Record<string, string> = {
-  cash: "Cash", checking: "Checking", savings: "Savings", money_market: "Money market", cd: "Certificate of deposit",
-  credit_card: "Credit card", credit_report: "Credit report", collection: "Collection", mortgage: "Mortgage",
-  auto_loan: "Auto loan", student_loan: "Student loan", personal_loan: "Personal loan", home_equity_loan: "Home equity loan",
-  vehicle_lease: "Vehicle lease", crypto_loan: "Crypto loan", premium_finance: "Premium finance", intercompany: "Intercompany",
-  tax: "Tax owed", loan: "Loan", brokerage: "Investment", investment: "Investment", retirement: "Retirement", crypto: "Crypto",
-  unknown: "Not reported",
+const KIND_LABELS: Record<string, Key> = {
+  cash: "vault.kind.cash", checking: "vault.kind.checking", savings: "vault.kind.savings", money_market: "vault.kind.moneyMarket", cd: "vault.kind.cd",
+  credit_card: "vault.kind.creditCard", credit_report: "vault.kind.creditReport", collection: "vault.kind.collection", mortgage: "vault.kind.mortgage",
+  auto_loan: "vault.kind.autoLoan", student_loan: "vault.kind.studentLoan", personal_loan: "vault.kind.personalLoan", home_equity_loan: "vault.kind.homeEquityLoan",
+  vehicle_lease: "vault.kind.vehicleLease", crypto_loan: "vault.kind.cryptoLoan", premium_finance: "vault.kind.premiumFinance", intercompany: "vault.kind.intercompany",
+  tax: "vault.kind.tax", loan: "vault.kind.loan", brokerage: "vault.kind.investment", investment: "vault.kind.investment", retirement: "vault.kind.retirement", crypto: "vault.kind.crypto",
+  unknown: "vault.kind.unknown",
 };
+/** The kind label in the current language (call at render; recordsOf is memoized on the language). */
 export function accountKindLabel(a: Pick<VaultAccount, "kind" | "subtype" | "source">): string {
-  if (a.kind === "contingent") return "Guarantee";
-  if (a.kind === "tax_attribute") return "Tax attribute";
+  if (a.kind === "contingent") return t("vault.kind.guarantee");
+  if (a.kind === "tax_attribute") return t("vault.kind.taxAttribute");
   const st = norm(a.subtype || "");
-  if (a.source === "bureau" && accountCategory(a) === "credit" && st !== "collection") return "Credit report";
-  return KIND_LABELS[st] ?? (st ? st.charAt(0).toUpperCase() + st.slice(1).replace(/_/g, " ") : "Account");
+  if (a.source === "bureau" && accountCategory(a) === "credit" && st !== "collection") return t("vault.kind.creditReport");
+  const key = KIND_LABELS[st];
+  return key ? t(key) : st ? st.charAt(0).toUpperCase() + st.slice(1).replace(/_/g, " ") : t("vault.kind.account");
 }
-const ITEM_LABELS: Record<string, string> = {
-  real_estate: "Real estate", vehicle: "Vehicle", entity_share: "Entity share", crypto_holding: "Crypto",
-  contingent: "Guarantee", receivable: "Receivable", other: "Other asset or debt",
+const ITEM_LABELS: Record<string, Key> = {
+  real_estate: "vault.kind.realEstate", vehicle: "vault.kind.vehicle", entity_share: "vault.kind.entityShare", crypto_holding: "vault.kind.crypto",
+  contingent: "vault.kind.guarantee", receivable: "vault.kind.receivable", other: "vault.kind.otherItem",
 };
 
 export interface VRecord {
@@ -55,20 +59,20 @@ export interface VRecord {
   name: string;
   owner: Owner;
   category: Category;
-  kind: string;
+  kind: string; // translated label
   last4: string | null;
   value: number | null; // signed
   apr: number | null;
   asOf: string | null;
   ageDays: number | null;
   stale: boolean;
-  source: string; // "Linked" | "Manual" | "Statement" | "Credit report" | "Snapshot"
+  source: string; // translated: "Linked" | "Manual" | "Statement" | "Credit report" | "Snapshot"
   archived: boolean;
   account?: VaultAccount;
   item?: VaultItem;
 }
 
-const SOURCE: Record<string, string> = { feed: "Linked", manual: "Manual", statement: "Statement", bureau: "Credit report", seed: "Snapshot" };
+const SOURCE: Record<string, Key> = { feed: "vault.source.linked", manual: "vault.source.manual", statement: "vault.source.statement", bureau: "vault.kind.creditReport", seed: "vault.source.snapshot" };
 const STALE_DAYS = 45;
 
 export function recordsOf(pic: VaultPicture): VRecord[] {
@@ -80,15 +84,15 @@ export function recordsOf(pic: VaultPicture): VRecord[] {
         name: a.institution, category: accountCategory(a), kind: accountKindLabel(a), last4: a.last4,
         value: a.amount === null ? null : a.kind === "asset" ? a.amount : -Math.abs(a.amount),
         apr: a.apr_pct, asOf: a.as_of, ageDays: a.age_days, stale: a.stale,
-        source: a.connected ? "Linked" : (SOURCE[a.source] ?? "Manual"), archived: !a.active,
+        source: t(a.connected ? "vault.source.linked" : (SOURCE[a.source] ?? "vault.source.manual")), archived: !a.active,
       });
     for (const i of g.items)
       out.push({
         id: i.id, ref: "item", item: i, owner: i.owner,
-        name: i.name, category: i.kind === "crypto_holding" ? "investments" : "property", kind: ITEM_LABELS[i.kind] ?? "Other asset or debt", last4: null,
+        name: i.name, category: i.kind === "crypto_holding" ? "investments" : "property", kind: t(ITEM_LABELS[i.kind] ?? "vault.kind.otherItem"), last4: null,
         value: i.amount === null ? null : i.side === "asset" ? i.amount : -Math.abs(i.amount),
         apr: null, asOf: i.as_of, ageDays: i.age_days, stale: (i.age_days ?? 0) > STALE_DAYS,
-        source: SOURCE[i.source] ?? "Manual", archived: false,
+        source: t(SOURCE[i.source] ?? "vault.source.manual"), archived: false,
       });
   }
   return out;
@@ -106,18 +110,18 @@ export function attentionOf(pic: VaultPicture, records: VRecord[]): Attention[] 
     const r = f.account_id ? byId.get(f.account_id) : undefined;
     if (f.account_id) flagged.add(f.account_id);
     const tone: Tone = f.kind === "moved" ? "urgent" : f.kind === "stopped_reporting" ? "watch" : "quiet";
-    out.push({ key: `f:${f.id}`, tone, score: tone === "urgent" ? 1000 : tone === "watch" ? 800 : 400, recordId: r?.id ?? null, label: `${r?.name ?? "Vault"} · ${OWNER_LABELS[f.owner]}`, title: f.title, body: f.detail, flag: f });
+    out.push({ key: `f:${f.id}`, tone, score: tone === "urgent" ? 1000 : tone === "watch" ? 800 : 400, recordId: r?.id ?? null, label: `${r?.name ?? t("vault.vault")} · ${ownerLabel(f.owner)}`, title: f.title, body: f.detail, flag: f });
   }
   for (const r of records) {
     if (r.archived || flagged.has(r.id)) continue;
-    if (r.owner === "unknown") out.push({ key: `o:${r.id}`, tone: "watch", score: 500, recordId: r.id, label: `${r.name} · ${OWNER_LABELS[r.owner]}`, title: "Assign an owner", body: "This record is left out of your net worth until it has an owner." });
-    else if (r.stale && r.ageDays !== null) out.push({ key: `s:${r.id}`, tone: "quiet", score: 300 + r.ageDays, recordId: r.id, label: `${r.name} · ${OWNER_LABELS[r.owner]}`, title: `Figure is ${r.ageDays} days old`, body: "Review a statement or enter a current value." });
+    if (r.owner === "unknown") out.push({ key: `o:${r.id}`, tone: "watch", score: 500, recordId: r.id, label: `${r.name} · ${ownerLabel(r.owner)}`, title: t("vault.assignOwner"), body: t("vault.assignOwnerBody") });
+    else if (r.stale && r.ageDays !== null) out.push({ key: `s:${r.id}`, tone: "quiet", score: 300 + r.ageDays, recordId: r.id, label: `${r.name} · ${ownerLabel(r.owner)}`, title: t("vault.figureDaysOld", { n: String(r.ageDays) }), body: t("vault.staleBody") });
   }
   return out.sort((a, b) => b.score - a.score);
 }
 
 export function shortDate(iso: string | null): string {
-  if (!iso) return "No date";
+  if (!iso) return t("vault.noDate");
   const d = new Date(iso.length === 10 ? `${iso}T12:00:00` : iso);
-  return Number.isNaN(d.getTime()) ? iso : d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  return Number.isNaN(d.getTime()) ? iso : d.toLocaleDateString(locale(), { month: "short", day: "numeric" });
 }

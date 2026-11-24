@@ -11,6 +11,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type FormEvent } from "react";
 import { Icon } from "./icons";
 import { getFresh } from "../lib/api";
+import { useT } from "../i18n";
 
 interface Entry { path: string; name: string; hasChildren: boolean }
 interface Status { enabled: boolean; root: string | null; host: string | null; pin: string | null }
@@ -21,6 +22,7 @@ const where = (p: string | null) => (p ? `AHI/${p}` : "AHI");
 
 
 export default function FolderControl({ bot, agentLabel, busy = false, hasDraft = false }: { bot: string; agentLabel: string; busy?: boolean; hasDraft?: boolean }) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const [status, setStatus] = useState<Status | null>(null);
   const [tree, setTree] = useState<Record<string, Entry[]>>({});
@@ -84,8 +86,8 @@ export default function FolderControl({ bot, agentLabel, busy = false, hasDraft 
   useEffect(() => {
     if (!open) return;
     const onDown = (e: MouseEvent) => {
-      const t = e.target as Node;
-      if (pop.current?.contains(t) || btn.current?.contains(t)) return;
+      const target = e.target as Node;
+      if (pop.current?.contains(target) || btn.current?.contains(target)) return;
       setOpen(false);
     };
     const onKey = (e: KeyboardEvent) => {
@@ -104,8 +106,8 @@ export default function FolderControl({ bot, agentLabel, busy = false, hasDraft 
 
   useEffect(() => {
     if (!toast) return;
-    const t = setTimeout(() => setToast(""), 2600);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => setToast(""), 2600);
+    return () => clearTimeout(timer);
   }, [toast]);
 
   const apply = async (path: string | null) => {
@@ -113,12 +115,12 @@ export default function FolderControl({ bot, agentLabel, busy = false, hasDraft 
     setError("");
     try {
       const r = await fetch("/app/folders/pin", { method: "POST", headers: J, body: JSON.stringify({ bot, path }) });
-      if (!r.ok) throw new Error(((await r.json().catch(() => null)) as { error?: string } | null)?.error || "That folder is not available.");
+      if (!r.ok) throw new Error(((await r.json().catch(() => null)) as { error?: string } | null)?.error || t("files.wf.notAvailable"));
       const v = (await r.json()) as { pin: string | null };
       setStatus((s) => (s ? { ...s, pin: v.pin } : s));
       setPending(undefined);
       setOpen(false);
-      setToast(v.pin === null ? "Automatic placement restored." : `${agentLabel} will work in ${where(v.pin)}`);
+      setToast(v.pin === null ? t("files.wf.autoRestored") : t("files.wf.willWorkIn", { agent: agentLabel, path: where(v.pin) }));
       btn.current?.focus();
     } catch (e) {
       setError((e as Error).message);
@@ -137,7 +139,7 @@ export default function FolderControl({ bot, agentLabel, busy = false, hasDraft 
     try {
       const r = await fetch("/app/folders", { method: "POST", headers: J, body: JSON.stringify({ parent, name }) });
       const v = (await r.json().catch(() => null)) as { path?: string; error?: string } | null;
-      if (!r.ok || !v?.path) throw new Error(v?.error || "That folder could not be made.");
+      if (!r.ok || !v?.path) throw new Error(v?.error || t("files.wf.couldNotMake"));
       setName("");
       await loadLevel(parent);
       if (parent) setClosed((c) => new Set([...c].filter((x) => x !== parent)));
@@ -166,7 +168,7 @@ export default function FolderControl({ bot, agentLabel, busy = false, hasDraft 
                 <button
                   type="button"
                   className="rd-wf-toggle"
-                  aria-label={`${isClosed ? "Expand" : "Collapse"} ${f.name}`}
+                  aria-label={isClosed ? t("files.wf.expand", { name: f.name }) : t("files.wf.collapse", { name: f.name })}
                   aria-expanded={!isClosed}
                   onClick={() => {
                     if (!tree[f.path]) void loadLevel(f.path);
@@ -185,7 +187,7 @@ export default function FolderControl({ bot, agentLabel, busy = false, hasDraft 
               )}
               <button type="button" className="rd-wf-pick" aria-pressed={chosen} disabled={busy} onClick={() => request(f.path)}>
                 <Icon name="folder" />
-                <span>{f.name}</span>
+                <span dir="auto">{f.name}</span>
                 {chosen && <Icon name="check" />}
               </button>
             </div>
@@ -196,16 +198,16 @@ export default function FolderControl({ bot, agentLabel, busy = false, hasDraft 
     </>
   );
 
-  const label = pin === null ? "Automatic · AHI" : where(pin);
+  const label = pin === null ? t("files.wf.automaticAhi") : where(pin);
   return (
     <div className="rd-folder-ctl">
       <button
         ref={btn}
         type="button"
         className={`composer-icon folder rd-wf-button${pin !== null ? " chosen" : ""}`}
-        aria-label={`Working folder: ${label}. Choose location`}
+        aria-label={t("files.wf.buttonAria", { label })}
         aria-expanded={open}
-        title={`Working folder: ${label}`}
+        title={t("files.wf.buttonTitle", { label })}
         onClick={() => {
           if (!open) void loadStatus();
           setPending(undefined);
@@ -214,7 +216,7 @@ export default function FolderControl({ bot, agentLabel, busy = false, hasDraft 
         }}
       >
         <Icon name="folder" />
-        {pin !== null && <span>{leaf(pin)}</span>}
+        {pin !== null && <span dir="auto">{leaf(pin)}</span>}
       </button>
       {open && (
         <section
@@ -222,23 +224,23 @@ export default function FolderControl({ bot, agentLabel, busy = false, hasDraft 
           className="rd-wf-picker"
           role="dialog"
           aria-modal="false"
-          aria-label="Working location"
+          aria-label={t("files.wf.title")}
           style={pos ? { left: pos.left, bottom: pos.bottom, maxHeight: pos.maxHeight } : { visibility: "hidden" }}
         >
           <header>
             <div>
-              <strong>Working location</strong>
-              <p>{status?.enabled ? `${status.host ?? "This server"} · AHI` : agentLabel}</p>
+              <strong>{t("files.wf.title")}</strong>
+              <p>{status?.enabled ? `${status.host ?? t("files.wf.thisServer")} · AHI` : agentLabel}</p>
             </div>
-            <button type="button" className="rd-chat-control" aria-label="Close working location" onClick={() => (setOpen(false), btn.current?.focus())}>
+            <button type="button" className="rd-chat-control" aria-label={t("files.wf.close")} onClick={() => (setOpen(false), btn.current?.focus())}>
               <Icon name="x" />
             </button>
           </header>
           <button type="button" className="rd-wf-auto" aria-pressed={pin === null} disabled={busy} onClick={() => request(null)}>
             <Icon name="spark" />
             <span>
-              <strong>Automatic</strong>
-              <small>Let your agent choose the best location</small>
+              <strong>{t("files.wf.automatic")}</strong>
+              <small>{t("files.wf.automaticSub")}</small>
             </span>
             {pin === null && <Icon name="check" />}
           </button>
@@ -250,33 +252,29 @@ export default function FolderControl({ bot, agentLabel, busy = false, hasDraft 
                   <strong>AHI</strong>
                   {pin === "" && <Icon name="check" />}
                 </button>
-                <code>{status.root}</code>
+                <code dir="ltr">{status.root}</code>
               </div>
-              <ul className="rd-wf-tree" aria-label="AHI folder tree">
-                {tree[""] ? rows("") : <li className="rd-wf-loading">Reading folders…</li>}
+              <ul className="rd-wf-tree" aria-label={t("files.wf.treeAria")}>
+                {tree[""] ? rows("") : <li className="rd-wf-loading">{t("files.wf.reading")}</li>}
               </ul>
-              <p className="rd-wf-hint">
-                {busy
-                  ? "The current reply or voice session keeps its working context. Finish it before changing location."
-                  : "Automatic is the default. A chosen folder pins new work here; existing messages and files stay where they are."}
-              </p>
+              <p className="rd-wf-hint">{busy ? t("files.wf.busyHint") : t("files.wf.hint")}</p>
               {pending !== undefined && (
-                <div className="rd-wf-confirm" role="group" aria-label="Confirm location">
-                  <p>{pending === null ? "Let the agent place this draft and its attachments automatically?" : `Use ${where(pending)} for this draft and its attachments?`}</p>
+                <div className="rd-wf-confirm" role="group" aria-label={t("files.wf.confirmAria")}>
+                  <p>{pending === null ? t("files.wf.confirmAuto") : t("files.wf.confirmUse", { path: where(pending) })}</p>
                   <button type="button" className="rd-wf-btn" onClick={() => setPending(undefined)}>
-                    Keep current location
+                    {t("files.wf.keepCurrent")}
                   </button>
                   <button type="button" className="rd-wf-btn primary" onClick={() => void apply(pending)}>
-                    Use selected location
+                    {t("files.wf.useSelected")}
                   </button>
                 </div>
               )}
               <details>
-                <summary>Add a subfolder</summary>
+                <summary>{t("files.wf.addSubfolder")}</summary>
                 <form onSubmit={(e) => void create(e)}>
                   <label>
-                    Inside
-                    <select aria-label="Parent folder" value={parent} onChange={(e) => setParent(e.target.value)}>
+                    {t("files.wf.inside")}
+                    <select aria-label={t("files.wf.parentAria")} value={parent} onChange={(e) => setParent(e.target.value)}>
                       <option value="">AHI</option>
                       {allKnown().map((p) => (
                         <option key={p} value={p}>
@@ -286,11 +284,11 @@ export default function FolderControl({ bot, agentLabel, busy = false, hasDraft 
                     </select>
                   </label>
                   <label>
-                    Folder name
-                    <input name="name" maxLength={60} required placeholder="For example, Client portal" value={name} onChange={(e) => setName(e.target.value)} />
+                    {t("files.wf.folderName")}
+                    <input name="name" dir="auto" maxLength={60} required placeholder={t("files.wf.folderPlaceholder")} value={name} onChange={(e) => setName(e.target.value)} />
                   </label>
                   <button type="submit" className="rd-wf-btn" disabled={busy}>
-                    Create &amp; use folder
+                    {t("files.wf.createUse")}
                   </button>
                 </form>
               </details>
@@ -299,10 +297,10 @@ export default function FolderControl({ bot, agentLabel, busy = false, hasDraft 
                   {error}
                 </p>
               )}
-              <footer>Your real AHI folders on this server. AHI_OS stays outside normal browsing.</footer>
+              <footer>{t("files.wf.footer")}</footer>
             </>
           ) : (
-            <p className="rd-wf-hint">{agentLabel} places new work where it belongs, the way it does today. Choosing a folder is for the owner of this workspace.</p>
+            <p className="rd-wf-hint">{t("files.wf.memberHint", { agent: agentLabel })}</p>
           )}
         </section>
       )}

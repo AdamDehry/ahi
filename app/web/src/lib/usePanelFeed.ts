@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { t } from "../i18n";
 
 /**
  * usePanelFeed — one panel's read, Builds (#3) and WhatsApp (#5) alike.
@@ -32,7 +33,7 @@ export function usePanelFeed<T>(url: string | null, rev = 0): PanelFeed<T> {
     setLoading(true);
     fetch(url, { cache: "no-store" })
       .then(async (res) => {
-        if (!res.ok) throw new Error(res.status === 401 ? "Signed out." : `HTTP ${res.status}`);
+        if (!res.ok) throw new Error(res.status === 401 ? t("builds.signedOut") : `HTTP ${res.status}`);
         return (await res.json()) as T;
       })
       .then((json) => {
@@ -43,7 +44,7 @@ export function usePanelFeed<T>(url: string | null, rev = 0): PanelFeed<T> {
       })
       .catch((err: unknown) => {
         if (mine !== seq.current) return;
-        setError(err instanceof Error && err.message ? err.message : "Can't reach the gateway.");
+        setError(err instanceof Error && err.message ? err.message : t("ops.cantReachGateway"));
       })
       .finally(() => {
         if (mine === seq.current) setLoading(false);

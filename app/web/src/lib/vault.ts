@@ -10,15 +10,18 @@
  * response, which the view shows once and drops.
  */
 import { startAuthentication, browserSupportsWebAuthn } from "@simplewebauthn/browser";
+import { locale, t, type Key } from "../i18n";
 
 export type Owner = "owner" | "business" | "shared" | "unknown";
 export const OWNERS: Owner[] = ["owner", "business", "shared", "unknown"];
-export const OWNER_LABELS: Record<Owner, string> = {
-  owner: "You",
-  business: "Your business",
-  shared: "Shared",
-  unknown: "Unknown owner",
+/** Catalog keys; `ownerLabel` translates one at the moment it is shown. */
+export const OWNER_LABELS: Record<Owner, Key> = {
+  owner: "vault.owner.owner",
+  business: "vault.owner.business",
+  shared: "vault.owner.shared",
+  unknown: "vault.owner.unknown",
 };
+export const ownerLabel = (o: Owner): string => (OWNER_LABELS[o] ? t(OWNER_LABELS[o]) : o);
 
 export type SourceKind = "feed" | "statement" | "manual" | "bureau" | "seed";
 
@@ -121,7 +124,7 @@ async function req<T>(url: string, method: string, body?: unknown, multipart?: F
     if (!res.ok) return { ok: false, error: json.error ?? `HTTP ${res.status}`, code: json.code, status: res.status };
     return { ok: true, value: json as T };
   } catch {
-    return { ok: false, error: "No connection — nothing was sent.", code: "network" };
+    return { ok: false, error: t("vault.noConnectionNothingSent"), code: "network" };
   }
 }
 
@@ -132,7 +135,7 @@ export async function fetchVault(): Promise<Result<VaultPicture>> {
     if (!res.ok) return { ok: false, error: json.error ?? `HTTP ${res.status}`, code: json.code, status: res.status };
     return { ok: true, value: json as VaultPicture };
   } catch {
-    return { ok: false, error: "No connection.", code: "network" };
+    return { ok: false, error: t("vault.noConnection"), code: "network" };
   }
 }
 
@@ -171,9 +174,9 @@ export function webauthnSupported(): boolean {
 
 function fingerprintError(err: unknown): string {
   const name = (err as { name?: string })?.name;
-  if (name === "NotAllowedError") return "Fingerprint cancelled or timed out — nothing happened.";
-  if (name === "SecurityError") return "Passkeys only work on the app's own address.";
-  return "The fingerprint didn't go through — nothing happened.";
+  if (name === "NotAllowedError") return t("vault.fpCancelled");
+  if (name === "SecurityError") return t("vault.fpWrongAddress");
+  return t("vault.fpFailed");
 }
 
 /** Server challenge → fingerprint → the raw assertion, for connect / secret / reveal. */
@@ -249,7 +252,7 @@ export function openPlaidLink(linkToken: string): Promise<string | null> {
 export function money(n: number | null | undefined, digits = 0): string {
   if (n === null || n === undefined) return "—";
   try {
-    return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: digits }).format(n);
+    return new Intl.NumberFormat(locale(), { style: "currency", currency: "USD", maximumFractionDigits: digits }).format(n);
   } catch {
     return `$${n.toFixed(digits)}`;
   }

@@ -17,14 +17,14 @@ h1,h2,h3,p{margin:0}
 /* Frame */
 .setup-frame{min-height:100dvh;display:flex;flex-direction:column;padding:25px 34px 18px;background:radial-gradient(ellipse at 14% 0%,#25423b66,transparent 53%)}
 .setup-masthead{display:flex;justify-content:space-between;align-items:center;gap:20px;max-width:1230px;width:100%;margin:0 auto}
-.wordmark{font-size:29px;font-weight:650;letter-spacing:-1.5px;color:var(--ink);text-decoration:none;line-height:1.2}
+.wordmark{direction:ltr;unicode-bidi:isolate;font-size:29px;font-weight:650;letter-spacing:-1.5px;color:var(--ink);text-decoration:none;line-height:1.2}
 .wordmark span{color:var(--accent)}
 .top-note{color:var(--muted);font-size:12px}
-.saved-dot{display:inline-block;width:5px;height:5px;border-radius:50%;background:#b7d4c3;margin-right:4px;vertical-align:middle}
+.saved-dot{display:inline-block;width:5px;height:5px;border-radius:50%;background:#b7d4c3;margin-inline-end:4px;vertical-align:middle}
 .setup-main{width:min(1080px,100%);margin:42px auto;flex:1;display:grid;grid-template-columns:220px minmax(0,1fr);gap:54px}
 .setup-steps{padding-top:4px}
 nav{display:grid;gap:9px}
-.step{width:100%;display:flex;align-items:center;gap:13px;text-align:left;padding:10px 0;border:0;background:none;color:var(--muted);font-size:12px}
+.step{width:100%;display:flex;align-items:center;gap:13px;text-align:start;padding:10px 0;border:0;background:none;color:var(--muted);font-size:12px}
 .step-num{border:1px solid var(--line);border-radius:50%;width:27px;height:27px;display:grid;place-items:center;font-size:10px;flex:none}
 .step[aria-current=step]{color:var(--ink)}
 .step[aria-current=step] .step-num{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
@@ -71,7 +71,7 @@ input::placeholder{color:#7f8c86}
 .actions>div,.button-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 button.primary,button.secondary,button.text{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:42px;padding:10px 17px;border:1px solid var(--line);border-radius:10px;background:var(--raised);color:var(--ink);font-size:12px;line-height:1.5}
 button.primary{background:linear-gradient(145deg,#e2c994,var(--accent));border-color:var(--accent);color:var(--on-accent)}
-button.text{padding-left:0;padding-right:0;border-color:transparent;background:none;color:var(--muted)}
+button.text{padding-inline-start:0;padding-inline-end:0;border-color:transparent;background:none;color:var(--muted)}
 button.small{min-height:34px;padding:7px 11px;font-size:11px}
 
 /* Providers, folders, connections */
@@ -91,7 +91,7 @@ button.small{min-height:34px;padding:7px 11px;font-size:11px}
 .numbered li:before{content:counter(guide);display:grid;place-items:center;flex:none;border:1px solid var(--line);width:24px;height:24px;border-radius:50%;font-size:10px;color:var(--accent);margin-top:2px}
 .numbered strong{color:var(--ink);font-weight:500}
 .folder-tree{border:1px solid var(--line);padding:18px;border-radius:12px;display:grid;gap:4px;margin-top:17px;font-size:12px}
-.folder-tree>div{display:flex;gap:12px;align-items:center;padding:6px 0 6px 8px}
+.folder-tree>div{display:flex;gap:12px;align-items:center;padding-block:6px 6px; padding-inline:8px 0}
 .folder-icon{color:var(--accent);font-size:16px}
 .folder-tree strong{display:block;font-size:12px;font-weight:500}
 .folder-tree small{display:block;font-size:10px}
@@ -107,7 +107,7 @@ button.small{min-height:34px;padding:7px 11px;font-size:11px}
 .review{display:grid}
 .review-row{display:flex;justify-content:space-between;gap:15px;padding:13px 0;border-bottom:1px solid var(--line);font-size:12px}
 .review-row span:first-child{color:var(--muted)}
-.review-row span:last-child{text-align:right;overflow-wrap:anywhere;max-width:70%}
+.review-row span:last-child{text-align:end;overflow-wrap:anywhere;max-width:70%}
 
 /* Pairing = this server's sign-in (the concept's sign-in screen) */
 body.pairing .setup-main{display:grid;place-items:center;grid-template-columns:minmax(0,1fr);margin:0 auto}
@@ -117,7 +117,7 @@ body.pairing .setup-content{max-width:none;width:min(385px,100%);text-align:cent
 .signin .brand-description{font-size:9px;letter-spacing:2.1px;color:var(--accent);margin:4px 0 38px}
 .signin h1{font-size:29px;letter-spacing:-.9px}
 .signin .intro{font-size:12px;margin-bottom:28px}
-.pair-form{display:grid;gap:19px;text-align:left}
+.pair-form{display:grid;gap:19px;text-align:start}
 .pair-form button{width:100%}
 body.pairing #feedback{color:#edb6aa}
 
@@ -130,11 +130,11 @@ body.pairing #feedback{color:#edb6aa}
  .card{padding:19px 17px;border-radius:15px}
  .grid,.connection-list,.remote-form{grid-template-columns:1fr}
  .provider{gap:11px;padding:13px;flex-wrap:wrap}
- .provider .button-row{margin-left:46px}
+ .provider .button-row{margin-inline-start:46px}
  .actions{gap:10px;align-items:flex-start}
  .actions>div{justify-content:flex-end;gap:8px}
  button.primary,button.secondary,button.text{min-height:44px;padding:10px 13px}
- button.text{padding-left:0;padding-right:0}
+ button.text{padding-inline-start:0;padding-inline-end:0}
  footer{flex-direction:column;gap:3px}
  .signin .wordmark{font-size:59px}
  .signin h1{font-size:27px}
@@ -146,3 +146,12 @@ body.pairing #feedback{color:#edb6aa}
 
 /* The start screen (start.html): one centred column. */
 .start-main{display:grid;place-items:center;grid-template-columns:minmax(0,560px);margin:0 auto}
+
+/* Language choice (first screen) */
+.lang-switch{display:inline-flex;gap:4px;padding:3px;border:1px solid var(--line);border-radius:999px;margin-bottom:10px}
+.lang-switch button{border:0;background:none;color:var(--muted);padding:6px 16px;border-radius:999px;font-size:13px}
+.lang-switch button[aria-checked=true]{background:var(--accent);color:var(--on-accent)}
+.lang-hint{font-size:11px;color:var(--muted);margin-bottom:26px}
+/* Hebrew: no tracked capitals (they read as broken words); paths and keys stay left to right. */
+html:lang(he) *{letter-spacing:normal}
+html[dir=rtl] .path,html[dir=rtl] #ahi-token,html[dir=rtl] input[type=password]{direction:ltr;text-align:start}
