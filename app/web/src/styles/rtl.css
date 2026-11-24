@@ -40,4 +40,10 @@ span.flip-rtl { display: inline-block; }
 .msg-text :is(p, li, h1, h2, h3, h4, blockquote, td, th) { unicode-bidi: plaintext; }
 
 /* The "ahi." wordmark is a logo, not a sentence: its dot stays after the letters in every language. */
-:is(.setup-wordmark, .rd-dialog-wordmark) { direction: ltr; unicode-bidi: isolate; }
+:is(.setup-wordmark, .rd-dialog-wordmark, .rd-brand) { direction: ltr; unicode-bidi: isolate; }
+/* …and the top bar's keeps its gap on the side the bar starts from (its own direction is now ltr). */
+:root[dir="rtl"] .rd-app:not(.phone) .rd-brand { padding-inline: 0 20px; }
+
+/* An empty `dir="auto"` field has no text to take a direction from and falls back to ltr, which sets a Hebrew
+   placeholder backwards. Until the owner types, it reads the page's way; then their text decides. */
+:root[dir="rtl"] :is(input, textarea)[dir="auto"]:placeholder-shown { direction: rtl; }
