@@ -60,7 +60,7 @@
 .rs-page .rs-switch { width:38px;height:23px;border:1px solid var(--line);border-radius:20px;flex-shrink:0;background:var(--raised);padding:3px;display:flex;align-items:center }
 .rs-page .rs-switch i { width:15px;height:15px;border-radius:50%;background:var(--text-mute);transition:transform .15s }
 .rs-page .rs-switch[aria-checked=true] { background:var(--accent);border-color:var(--accent) }
-.rs-page .rs-switch[aria-checked=true] i { background:var(--bg);transform:translateX(15px) }
+.rs-page .rs-switch[aria-checked=true] i { background:var(--bg);transform:translateX(calc(15px * var(--dir))) }
 .rs-page .rs-switch:disabled { opacity:.35 }
 .rs-page button:focus-visible,.rs-page select:focus-visible,.rs-page input:focus-visible { outline:2px solid var(--accent);outline-offset:3px }
 .rs-page .rs-section-title { margin:32px 0 15px }

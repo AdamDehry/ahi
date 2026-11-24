@@ -102,10 +102,14 @@ function startAhi(){
     finally{starting=null;}
   })();
 }
-/** Follow the language the owner saved in AHI's Settings: the tray menu, dialogs and start screen speak it. */
-async function followLanguage(url){
-  const lang=await sessionLanguage((u,o)=>ahiSession(new URL(url).origin).fetch(u,o),url);
-  if(lang&&service&&await service.setLanguage(lang).catch(()=>false))buildTray();
+/** Follow the language the owner saved in AHI's Settings: the tray menu, dialogs and start screen speak it.
+ * One check at a time (closing the window fires blur and hide together). */
+let following=null;
+function followLanguage(url){
+  return following??=(async()=>{
+    const lang=await sessionLanguage((u,o)=>ahiSession(new URL(url).origin).fetch(u,o),url);
+    if(lang&&service&&await service.setLanguage(lang).catch(()=>false))buildTray();
+  })().finally(()=>{following=null;});
 }
 /** Started at login: AHI comes up with its window hidden; a failure shows the start screen (which retries once and
  * then gives the reason and Retry). */

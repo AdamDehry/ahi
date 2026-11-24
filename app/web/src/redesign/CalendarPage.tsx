@@ -82,13 +82,13 @@ export default function CalendarPage({ phone = false }: { phone?: boolean }) {
       <div className="rd-cal-actions">
         <div className="calendar-step">
           <button type="button" className="world-button" aria-label={t("calendar.prevWeek")} onClick={() => (setWeek((w) => w - 1), setDay(null))}>
-            {t("calendar.prevGlyph")}
+            <span className="flip-rtl">‹</span>
           </button>
           <button type="button" className="world-button" onClick={() => (setWeek(0), setDay(null))} disabled={week === 0}>
             {t("calendar.thisWeek")}
           </button>
           <button type="button" className="world-button" aria-label={t("calendar.nextWeek")} onClick={() => (setWeek((w) => w + 1), setDay(null))}>
-            {t("calendar.nextGlyph")}
+            <span className="flip-rtl">›</span>
           </button>
         </div>
         <div className="segmented sc-seg" role="tablist" aria-label={t("calendar.viewAria")}>

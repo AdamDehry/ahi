@@ -2735,7 +2735,10 @@ export function createDashboard(instances: BotInstance[], gatewayConfig: Gateway
  * Cartesia's English-only live model for a Hebrew owner, voice/stt-select.ts) or Google, and voice notes
  * are transcribed by OpenAI; it SPEAKS Hebrew with OpenAI, Google and Cartesia voices.
  */
-export function hebrewVoiceFor(cfg: Pick<BotConfig, "name" | "ttsProvider">, env: NodeJS.ProcessEnv = process.env): "full" | "hears" | "speaks" | "none" {
+/** What this install's voice does with Hebrew (the web app's Settings → Language shows it; same union there). */
+export type HebrewVoice = "full" | "hears" | "speaks" | "none";
+
+export function hebrewVoiceFor(cfg: Pick<BotConfig, "name" | "ttsProvider">, env: NodeJS.ProcessEnv = process.env): HebrewVoice {
   const hears = !!env.OPENAI_API_KEY || voiceSttProviderFor(cfg.name) === "google";
   const speaks = ["openai", "google", "chirp", "cartesia"].includes(cfg.ttsProvider);
   return hears && speaks ? "full" : hears ? "hears" : speaks ? "speaks" : "none";

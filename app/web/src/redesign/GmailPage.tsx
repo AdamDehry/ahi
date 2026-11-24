@@ -94,7 +94,7 @@ export function ConnectGmailDialog({ configured, onClose }: { configured: boolea
       <section className="connection-dialog" role="dialog" aria-modal="true" aria-labelledby="gmail-connect-title">
         <div className="connection-dialog-brand">
           <span className="rd-dialog-wordmark">
-            ahi<span>.</span>
+            <bdi dir="ltr">ahi<span>.</span></bdi>
           </span>
           <span className="connection-transfer-dots" aria-hidden="true">
             •••

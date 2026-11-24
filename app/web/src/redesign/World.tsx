@@ -25,7 +25,7 @@ import { PageHeader, PageTabs } from "./pages";
 import { AhiFolderView, AhiTreeNav, DocPreviewModal, useAhiTree, type DocEntry } from "./AhiTree";
 import { perMonth } from "../views/Bills";
 import { money } from "../lib/vault";
-import { locale, tn, useLang, useT, type Key } from "../i18n";
+import { dateLocale, tn, useLang, useT, type Key } from "../i18n";
 
 const FOLDERS: Array<{ view: View; label: Key; admin?: boolean }> = [
   { view: "documents", label: "shell.tab.allDocuments" },
@@ -93,8 +93,7 @@ function AllDocuments() {
 function DocReader({ name, label, content, mtime }: { name: string; label: string; content: string; mtime?: number }) {
   const t = useT();
   const lang = useLang();
-  // English keeps the browser's own format, as before; other languages format in their locale.
-  const loc = lang === "en" ? [] : locale();
+  const loc = dateLocale(lang);
   const when = mtime ? new Date(mtime) : null;
   const updated = when && !Number.isNaN(when.getTime()) ? t("home.docs.updated", { when: when.toDateString() === new Date().toDateString() ? when.toLocaleTimeString(loc, { hour: "numeric", minute: "2-digit" }) : when.toLocaleDateString(loc, { month: "short", day: "numeric" }) }) : "";
   return (

@@ -10,7 +10,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { renderMarkdown } from "../lib/markdown";
 import { Icon } from "./icons";
-import { getLang, locale, t as tr, useT } from "../i18n";
+import { dateLocale, t as tr, useT } from "../i18n";
 
 export interface DocEntry {
   path: string;
@@ -103,7 +103,7 @@ export function AhiTreeNav({
 }
 
 const bytes = (n?: number) => (n === undefined ? "" : n < 1024 ? `${n} B` : n < 1024 * 1024 ? `${Math.round(n / 1024)} KB` : `${(n / 1024 / 1024).toFixed(1)} MB`);
-const when = (iso?: string) => (iso ? new Date(iso).toLocaleDateString(getLang() === "en" ? [] : locale(), { month: "short", day: "numeric", year: "numeric" }) : "");
+const when = (iso?: string) => (iso ? new Date(iso).toLocaleDateString(dateLocale(), { month: "short", day: "numeric", year: "numeric" }) : "");
 
 /** The open folder in the right pane: where it is, Add folder, then its folders and files. */
 export function AhiFolderView({

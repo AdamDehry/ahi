@@ -19,7 +19,7 @@ import { railOrder } from "./agents";
 import { MODEL_LABELS } from "../views/Settings";
 import { goPage } from "./Shell";
 import LanguageSettings from "./LanguageSettings";
-import { getLang, locale, t, tn, useT, type Key } from "../i18n";
+import { dateLocale, t, tn, useT, type Key } from "../i18n";
 import "./settings-final.css";
 
 export type SettingsSection = "appearance" | "language" | "agents" | "notifications" | "passkeys" | "updates" | "account";
@@ -44,7 +44,6 @@ const HEADS: Record<SettingsSection, [Key, Key]> = {
 };
 
 /** English keeps the browser's own date format, as before; other languages format in their locale. */
-const dateLoc = (): string | string[] => (getLang() === "en" ? [] : locale());
 
 let current: SettingsSection = "appearance";
 const subs = new Set<() => void>();
@@ -477,7 +476,7 @@ function Passkeys() {
       setEnrollUntil(r.enroll_open_until);
     });
   useEffect(load, []);
-  const day = (iso: string) => new Date(iso).toLocaleDateString(dateLoc(), { month: "short", day: "numeric" });
+  const day = (iso: string) => new Date(iso).toLocaleDateString(dateLocale(), { month: "short", day: "numeric" });
   const add = async () => {
     if (busy || !list) return;
     setBusy(true);
@@ -544,7 +543,7 @@ function Passkeys() {
             {!supported
               ? t("settings.passkey.unsupported")
               : enrollUntil
-                ? t("settings.passkey.windowOpen", { time: new Date(enrollUntil).toLocaleTimeString(dateLoc(), { hour: "numeric", minute: "2-digit" }) })
+                ? t("settings.passkey.windowOpen", { time: new Date(enrollUntil).toLocaleTimeString(dateLocale(), { hour: "numeric", minute: "2-digit" }) })
                 : list && list.length
                   ? t("settings.passkey.confirmExisting")
                   : t("settings.passkey.michaelOpens")}
@@ -602,7 +601,7 @@ function Updates() {
   return (
     <>
       <div className="rs-card">
-        <Row title={<bdi dir="ltr">{`AHI ${current.version}`}</bdi>} sub={info.configured ? (latest ? t("settings.updates.latest", { name: latest.name, date: new Date(latest.publishedAt).toLocaleDateString(dateLoc()) }) : info.error ?? "") : t("settings.updates.noChannel")}>
+        <Row title={<bdi dir="ltr">{`AHI ${current.version}`}</bdi>} sub={info.configured ? (latest ? t("settings.updates.latest", { name: latest.name, date: new Date(latest.publishedAt).toLocaleDateString(dateLocale()) }) : info.error ?? "") : t("settings.updates.noChannel")}>
           {info.appUpdate && latest ? (
             <Btn primary onClick={() => window.open(latest.url, "_blank", "noopener")}>
               {t("settings.updates.get", { version: latest.version })} <Icon name="download" />

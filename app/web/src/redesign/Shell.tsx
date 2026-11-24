@@ -378,7 +378,7 @@ export function DesktopShell({ children }: { children: ReactNode }) {
           </button>
         </div>
         <button type="button" className="rd-brand" aria-label={t("shell.ahiHome")} onClick={() => goPage("home")}>
-          ahi<span className="rd-brand-dot">.</span>
+          <bdi dir="ltr">ahi<span className="rd-brand-dot">.</span></bdi>
         </button>
         <ChromeActions />
       </header>
@@ -403,7 +403,7 @@ export function PhoneShell({ children, menuOpen, setMenuOpen }: { children: Reac
     <div className={`rd-app phone${menuOpen ? " menu-open" : ""}${chat ? " chat-open" : ""}`} data-page={page}>
       <header className="rd-top">
         <button type="button" className="rd-brand" aria-label={t("shell.ahiHome")} onClick={() => (setMenuOpen(false), goPage("home"))}>
-          ahi<span className="rd-brand-dot">.</span>
+          <bdi dir="ltr">ahi<span className="rd-brand-dot">.</span></bdi>
         </button>
         <ChromeActions phone />
       </header>

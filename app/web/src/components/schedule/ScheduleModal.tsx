@@ -611,13 +611,13 @@ export function ScheduleWindow() {
                   <section className="sc-section">
                     <div className="sc-weeknav">
                       <button className="sc-btn-ghost" onClick={() => setWeek((w) => w - 1)} aria-label={t("calendar.prevWeek")}>
-                        {t("calendar.prevGlyph")}
+                        <span className="flip-rtl">‹</span>
                       </button>
                       <button className="sc-btn-ghost" onClick={() => setWeek(0)} disabled={week === 0}>
                         {t("calendar.thisWeek")}
                       </button>
                       <button className="sc-btn-ghost" onClick={() => setWeek((w) => w + 1)} aria-label={t("calendar.nextWeek")}>
-                        {t("calendar.nextGlyph")}
+                        <span className="flip-rtl">›</span>
                       </button>
                     </div>
                     <WeekGrid view={view} now={now} onOpen={openBlock} onDay={(d) => (setDay(d), setMode("day"))} />

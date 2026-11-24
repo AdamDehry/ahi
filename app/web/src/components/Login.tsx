@@ -53,7 +53,7 @@ export default function Login() {
         <header className="setup-masthead">
           {view === "recovery" ? (
             <button type="button" className="setup-wordmark" onClick={go("signin")} aria-label={t("login.backToSignIn")}>
-              ahi<i>.</i>
+              <bdi dir="ltr">ahi<i>.</i></bdi>
             </button>
           ) : (
             <span />
@@ -77,7 +77,7 @@ export default function Login() {
             </section>
           ) : (
             <div className="setup-signin-inner">
-              <p className="setup-wordmark">ahi<i>.</i></p>
+              <p className="setup-wordmark"><bdi dir="ltr">ahi<i>.</i></bdi></p>
               <p className="setup-brand-description">{t("login.brandDescription")}</p>
               <h1>{t("login.welcome")}</h1>
               <p className="setup-intro">{t("login.tagline")}</p>

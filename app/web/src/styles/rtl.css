@@ -23,12 +23,11 @@ span.flip-rtl { display: inline-block; }
 /* Code, paths, numbers-only cells and URLs keep left-to-right inside a Hebrew page. */
 :root[dir="rtl"] :is(code, pre, kbd, samp) { direction: ltr; unicode-bidi: isolate; text-align: start; }
 
-/* Motion that runs along the reading direction runs the other way. */
-:root[dir="rtl"] .rs-page .rs-switch[aria-checked=true] i { transform: translateX(-15px); }
+/* Motion along the reading direction (switch knobs, screens sliding in, the parallax underlay) multiplies
+   its distance by --dir: 1 left to right, -1 right to left. */
+:root { --dir: 1; }
+:root[dir="rtl"] { --dir: -1; }
 :root[dir="rtl"] .dropdown-panel { transform-origin: top right; }
-:root[dir="rtl"] .mobile-screen.root.under { transform: translateX(var(--parallax)); }
-:root[dir="rtl"] :is(.mobile-screen.pushed, .mobile-menu) { animation-name: push-in-rtl; }
-@keyframes push-in-rtl { from { transform: translateX(-100%); } to { transform: translateX(0); } }
 /* The side-panel glyph draws its panel on the left; in Hebrew the panel opens on the right. */
 :root[dir="rtl"] .rd-tool svg:has(.rd-panel-divider) { scale: -1 1; }
 
@@ -38,11 +37,6 @@ span.flip-rtl { display: inline-block; }
 /* A message decides its direction per paragraph, so Hebrew and English paragraphs in one message each
    read their own way (the bubble itself keeps its side). */
 .msg-text :is(p, li, h1, h2, h3, h4, blockquote, td, th) { unicode-bidi: plaintext; }
-
-/* The "ahi." wordmark is a logo, not a sentence: its dot stays after the letters in every language. */
-:is(.setup-wordmark, .rd-dialog-wordmark, .rd-brand) { direction: ltr; unicode-bidi: isolate; }
-/* …and the top bar's keeps its gap on the side the bar starts from (its own direction is now ltr). */
-:root[dir="rtl"] .rd-app:not(.phone) .rd-brand { padding-inline: 0 20px; }
 
 /* An empty `dir="auto"` field has no text to take a direction from and falls back to ltr, which sets a Hebrew
    placeholder backwards. Until the owner types, it reads the page's way; then their text decides. */

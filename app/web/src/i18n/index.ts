@@ -21,12 +21,12 @@ const RTL = new Set<Lang>(["he"]);
 const LOCALES: Record<Lang, string> = { en: "en-US", he: "he-IL" };
 const STORE_KEY = "ahi-lang";
 
-export function isLang(v: unknown): v is Lang {
+function isLang(v: unknown): v is Lang {
   return typeof v === "string" && (LANGS as readonly string[]).includes(v);
 }
 
 /** The browser's own language when it is one we have, else English. */
-export function browserLang(): Lang {
+function browserLang(): Lang {
   const langs = typeof navigator === "undefined" ? [] : navigator.languages?.length ? navigator.languages : [navigator.language];
   for (const l of langs) {
     const base = (l || "").toLowerCase().split("-")[0];
@@ -54,6 +54,8 @@ export function getLang(): Lang {
 export const isRtl = (lang: Lang = current): boolean => RTL.has(lang);
 /** BCP-47 locale for Intl formatting (dates, numbers) in the current language. */
 export const locale = (lang: Lang = current): string => LOCALES[lang];
+/** Locale for dates shown to the owner: English keeps the browser's own date format (as before languages); others format in theirs. */
+export const dateLocale = (lang: Lang = current): string | string[] => (lang === "en" ? [] : LOCALES[lang]);
 
 /** Root attributes: `lang` for fonts, screen readers and hyphenation; `dir` flips the layout. */
 function applyRoot(): void {
@@ -83,22 +85,22 @@ export function initLang(): void {
   applyRoot();
 }
 
-export function onLangChange(fn: () => void): () => void {
-  listeners.add(fn);
-  return () => listeners.delete(fn);
-}
 
 export type Params = Record<string, string | number>;
 
 /** First-strong isolate … pop: keeps a Latin name, number or path inside a Hebrew sentence in its own direction. */
 const isolate = (v: string): string => `⁨${v}⁩`;
 
+const numberFormats: Partial<Record<Lang, Intl.NumberFormat>> = {};
+/** One formatter per language (building one per placeholder per render is the costly part of Intl). */
+const numberFormat = (lang: Lang): Intl.NumberFormat => (numberFormats[lang] ??= new Intl.NumberFormat(LOCALES[lang]));
+
 function format(template: string, params: Params | undefined, lang: Lang): string {
   if (!params) return template;
   return template.replace(/\{(\w+)\}/g, (whole, name: string) => {
     if (!(name in params)) return whole;
     const raw = params[name];
-    const v = typeof raw === "number" ? raw.toLocaleString(LOCALES[lang]) : raw;
+    const v = typeof raw === "number" ? numberFormat(lang).format(raw) : raw;
     return RTL.has(lang) && v ? isolate(v) : v;
   });
 }
@@ -116,7 +118,10 @@ export function tn(key: PluralKey, n: number, params?: Params): string {
   return t(`${key}_${n === 1 ? "one" : "other"}` as Key, { n, ...params });
 }
 
-const subscribe = (fn: () => void) => onLangChange(fn);
+const subscribe = (fn: () => void) => {
+  listeners.add(fn);
+  return () => listeners.delete(fn);
+};
 
 /** Re-render when the language changes. Returns the current language. */
 export function useLang(): Lang {

@@ -14,10 +14,9 @@ import {
   savePushSettings,
   type PushSettings,
 } from "../lib/push";
-import { getLang, locale, useT, type Key } from "../i18n";
+import { dateLocale, useT, type Key } from "../i18n";
 
 /** English keeps the browser's own date format, as before; other languages format in their locale. */
-const dateLoc = (): string | string[] => (getLang() === "en" ? [] : locale());
 const THEME_LABEL: Record<ThemeMode, Key> = { light: "settings.theme.light", dark: "settings.theme.dark", system: "settings.theme.system" };
 
 /** NOTIFICATIONS (Step 8): subscribe THIS device to Web Push and manage
@@ -188,7 +187,7 @@ function PasskeysSection() {
     } else setNote({ tone: "err", text: r.error });
   }
 
-  const day = (iso: string) => new Date(iso).toLocaleDateString(dateLoc(), { month: "short", day: "numeric" });
+  const day = (iso: string) => new Date(iso).toLocaleDateString(dateLocale(), { month: "short", day: "numeric" });
   const closedFirst = list !== null && list.length === 0 && !enrollUntil;
 
   return (
@@ -230,7 +229,7 @@ function PasskeysSection() {
             {busy ? t("settings.old.waitingFingerprint") : list && list.length ? t("settings.passkey.addThis") : t("settings.old.addPhone")}
           </button>
           {enrollUntil ? (
-            <div className="settings-row"><span className="settings-hint positive">{t("settings.old.enrollUntil", { time: new Date(enrollUntil).toLocaleTimeString(dateLoc(), { hour: "numeric", minute: "2-digit" }) })}</span></div>
+            <div className="settings-row"><span className="settings-hint positive">{t("settings.old.enrollUntil", { time: new Date(enrollUntil).toLocaleTimeString(dateLocale(), { hour: "numeric", minute: "2-digit" }) })}</span></div>
           ) : closedFirst ? (
             <div className="settings-row"><span className="settings-hint">{t("settings.old.askMichael")}</span></div>
           ) : null}

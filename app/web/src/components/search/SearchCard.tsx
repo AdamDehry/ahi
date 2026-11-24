@@ -5,7 +5,7 @@ import { copyText } from "../../lib/messageActions";
 import { showToast } from "../../lib/toast";
 import ExpandedMedia, { type ExpandedItem } from "../ExpandedMedia";
 import ContextMenu from "../ContextMenu";
-import { getLang, locale, t as tr, useT } from "../../i18n";
+import { dateLocale, t as tr, useT } from "../../i18n";
 // Its stylesheet, ./search-card.css, is imported once by the shell (main.tsx),
 // like every stylesheet here: Node-run UI tests import this file and cannot load CSS.
 
@@ -35,7 +35,7 @@ const WEB_FIRST = 5;
 
 function formatTime(ts: string): string {
   const d = new Date(ts);
-  return Number.isNaN(d.getTime()) ? "" : d.toLocaleTimeString(getLang() === "en" ? [] : locale(), { hour: "numeric", minute: "2-digit" });
+  return Number.isNaN(d.getTime()) ? "" : d.toLocaleTimeString(dateLocale(), { hour: "numeric", minute: "2-digit" });
 }
 
 const Glyph = () => (

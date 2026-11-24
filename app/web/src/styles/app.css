@@ -1289,9 +1289,9 @@ html.ios select { font-size: var(--fs-field-ios) !important; }
   background: var(--bg-wash);
   transition: transform var(--t-screen) var(--ease);
 }
-.mobile-screen.root.under { transform: translateX(calc(-1 * var(--parallax))); pointer-events: none; }
+.mobile-screen.root.under { transform: translateX(calc(-1 * var(--dir) * var(--parallax))); pointer-events: none; }
 .mobile-screen.pushed { animation: push-in var(--t-screen) var(--ease); box-shadow: var(--shadow-menu); }
-@keyframes push-in { from { transform: translateX(100%); } to { transform: translateX(0); } }
+@keyframes push-in { from { transform: translateX(calc(var(--dir) * 100%)); } to { transform: translateX(0); } }
 .mobile-menu { animation: push-in var(--t-screen) var(--ease); z-index: 30; }
 
 .mobile-topbar {

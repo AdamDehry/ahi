@@ -116,7 +116,7 @@ import { isRuntimeSpeculationEnabled, logTurn } from "./turn-logger.js";
 import { makeTurnGate, type TurnGate } from "./voice/turn-gate.js";
 import { setVoiceSttProvider } from "./voice/stt-select.js";
 import { desktopProof } from "./desktop-proof.js";
-import { userLanguage } from "./ui-prefs.js";
+import { nonEnglishLanguageName } from "./ui-prefs.js";
 
 // ── OS-level singleton ───────────────────────────────────────────────────────
 // BEFORE anything else: enforce that only one gateway process exists. The
@@ -707,9 +707,6 @@ function gateClockFor(userId: string | undefined): string {
 }
 
 /** The gate's language line for this user: their Settings language when it isn't English. */
-function gateLanguageFor(userId: string | undefined): string | undefined {
-  return userLanguage(userId) === "he" ? "Hebrew" : undefined;
-}
 
 /* ── Drafting while he talks (voice step 4) ───────────────────────────────
    At each pause the fast gate drafts its verdict (voice/gate-draft.ts). The
@@ -815,7 +812,7 @@ setVoiceSessionOpenHandler(({ botName, voiceStreamId, userName }) => {
               gate.persona,
               // A guess on his partial words takes one lane: the turn's real ask finds the other free (voice step 6).
               draftOneLane() && draftIsGuess(why) ? gate.askOne : gate.askEach,
-              { onClaim, clock: gateClockFor(callUserIds.get(voiceStreamId)), language: gateLanguageFor(callUserIds.get(voiceStreamId)), bridge: gate.bridge },
+              { onClaim, clock: gateClockFor(callUserIds.get(voiceStreamId)), language: nonEnglishLanguageName(callUserIds.get(voiceStreamId)), bridge: gate.bridge },
             ),
           Date.now,
           (l) => console.log(`${l.replace("]", `] ${voiceStreamId}`)}`),
@@ -1616,7 +1613,7 @@ function handleVoiceTurn(
         verdict = frontGateFor(g.ask, userKey, transcript, recentCall, controller.signal, Date.now, g.persona, g.askEach, {
           onClaim: claim,
           clock: gateClockFor(user.userId),
-          language: gateLanguageFor(user.userId),
+          language: nonEnglishLanguageName(user.userId),
           bridge: g.bridge,
         });
       }

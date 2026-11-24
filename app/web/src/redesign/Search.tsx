@@ -22,7 +22,7 @@ import { PURPOSE } from "./Team";
 import { goPage } from "./Shell";
 import { Icon, type IconName } from "./icons";
 import { useEscape } from "../components/FinalDialog";
-import { locale, tn, useLang, useT, type Key } from "../i18n";
+import { dateLocale, tn, useLang, useT, type Key } from "../i18n";
 
 type Src = "messages" | "work" | "documents" | "calendar" | "team";
 interface Hit { key: string; src: Src; title: string; sub: string; snippet: string; open: () => void }
@@ -57,8 +57,7 @@ function Mark({ text, q }: { text: string; q: string }) {
 export default function GlobalSearch({ onClose }: { onClose: () => void }) {
   const t = useT();
   const lang = useLang();
-  // English keeps the browser's own date format, exactly as before; other languages format in their locale.
-  const dateLoc = lang === "en" ? [] : locale();
+  const dateLoc = dateLocale(lang);
   const s = useAppState();
   const admin = !!s.user?.admin;
   const [q, setQ] = useState("");

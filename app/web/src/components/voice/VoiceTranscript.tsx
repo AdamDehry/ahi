@@ -3,6 +3,9 @@ import KaraokeLine from "./KaraokeLine";
 import type { VoiceTurn } from "../../lib/voicelayer";
 import { useT, type Key } from "../../i18n";
 
+/** Any Hebrew letter: such a line gets the Hebrew face and spacing. */
+const HEBREW = /[\u0590-\u05FF]/;
+
 /** Manual scroll past this many px from the bottom pauses auto-follow. */
 const FOLLOW_SLACK_PX = 24;
 
@@ -36,7 +39,7 @@ function WorkLines({ lines }: { lines: string[] }) {
     <div className="vwork" aria-label={t("voice.workNotesLabel")}>
       <span className="vwork-label mono">{t("voice.notSpoken")}</span>
       {shown.map((line, i) => (
-        <div key={i} dir="auto" className={`vwork-line${/[\u0590-\u05FF]/.test(line) ? " has-hebrew" : ""}`}>
+        <div key={i} dir="auto" className={`vwork-line${HEBREW.test(line) ? " has-hebrew" : ""}`}>
           {line}
         </div>
       ))}
@@ -74,7 +77,7 @@ export default function VoiceTranscript({
   // Hebrew must never be slanted — oblique Hebrew renders broken, so the
   // provisional line is conveyed by muted COLOUR and drops the italic
   // entirely when the line contains Hebrew (3J).
-  const hasHebrew = /[֐-׿]/.test(provisional);
+  const hasHebrew = HEBREW.test(provisional);
 
   return (
     <>

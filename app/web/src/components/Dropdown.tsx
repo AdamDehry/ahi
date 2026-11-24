@@ -42,7 +42,7 @@ export default function Dropdown({
   const anchorRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [pos, setPos] = useState<{ left?: number; right?: number; top: number; maxHeight: number } | null>(null);
+  const [pos, setPos] = useState<{ start: number; top: number; maxHeight: number } | null>(null);
 
   // Measure the trigger and pin the panel just under it. Re-measure on
   // resize; close on scroll of anything outside the panel (cheap + safe).
@@ -53,10 +53,10 @@ export default function Dropdown({
     }
     const measure = () => {
       const rect = anchorRef.current?.getBoundingClientRect();
-      // Right to left: the panel hangs from the trigger's right edge, as it hangs from the left one in English.
       if (!rect) return;
-      const side = isRtl() ? { right: document.documentElement.clientWidth - rect.right } : { left: rect.left };
-      setPos({ ...side, top: rect.bottom + 4, maxHeight: panelMaxHeight(rect.bottom + 4, window.innerHeight) });
+      // The panel hangs from the trigger's starting edge: its left in English, its right in Hebrew.
+      const start = isRtl() ? document.documentElement.clientWidth - rect.right : rect.left;
+      setPos({ start, top: rect.bottom + 4, maxHeight: panelMaxHeight(rect.bottom + 4, window.innerHeight) });
     };
     measure();
     window.addEventListener("resize", measure);
@@ -108,7 +108,7 @@ export default function Dropdown({
               className="dropdown-panel"
               role="menu"
               ref={panelRef}
-              style={{ left: pos.left, right: pos.right, top: pos.top, maxHeight: pos.maxHeight }}
+              style={{ insetInlineStart: pos.start, top: pos.top, maxHeight: pos.maxHeight }}
               onPointerEnter={hover ? cancelClose : undefined}
               onPointerLeave={hover ? scheduleClose : undefined}
             >

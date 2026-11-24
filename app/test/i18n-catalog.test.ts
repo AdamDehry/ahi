@@ -4,7 +4,7 @@
  */
 import { strict as assert } from "node:assert";
 import { createRequire } from "node:module";
-import { mkdtempSync, readFileSync, readdirSync, rmSync } from "node:fs";
+import { mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { after, describe, it } from "node:test";
@@ -126,6 +126,13 @@ describe("server: the language reaches the agents and the voice", () => {
     assert.equal(prefs.userLanguage("dana"), "he");
     assert.equal(prefs.userLanguage("sam"), "en");
     assert.equal(prefs.isLanguage("fr"), false);
+    // Another process (the per-turn hook, a second server) writing the file is seen on the next lookup.
+    writeFileSync(join(dir, "ui-prefs.json"), JSON.stringify({ dana: { language: "en" }, sam: { language: "he" } }));
+    assert.equal(prefs.userLanguage("dana"), "en");
+    assert.equal(prefs.nonEnglishLanguageName("sam"), "Hebrew");
+    assert.equal(prefs.nonEnglishLanguageName("dana"), undefined);
+    prefs.setUserLanguage("dana", "he");
+    prefs.setUserLanguage("sam", "en");
   });
 
   it("tells the agents to answer in Hebrew, and stays silent for English", async () => {
