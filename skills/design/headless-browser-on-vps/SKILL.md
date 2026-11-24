@@ -1,11 +1,11 @@
 ---
 name: headless-browser-on-vps
 description: Get a headless Chromium (Playwright) and poppler working on a Linux server where you have no sudo, then screenshot pages, render components, or read PDFs and slide decks as images. Use for UI screenshots, visual checks of a built page, or reading a PDF/design deck the agent can't parse as text. Not for driving a logged-in browser session (use browser-control).
-version: 1.4.0
+version: 1.5.0
 category: design
 private: false
-last_verified: 2026-11-06
-verified_by: zali (build mobile-fixes, round 2)
+last_verified: 2026-11-24
+verified_by: zali (build ahi-windows-local-start)
 ---
 
 # headless-browser-on-vps
@@ -84,6 +84,26 @@ Unpack the missing system libraries into your home, point `LD_LIBRARY_PATH` at t
    - Playwright: `/tmp/pwc/node_modules/playwright-core` (1.64) runs with the cached
      `chromium_headless_shell-1234/chrome-headless-shell-linux64/chrome-headless-shell`.
 
+10. A real Electron desktop app (main process, windows, IPC — not just its pages), driven by Playwright's `_electron`:
+   - The binary: a `node_modules` built from a hardlink cache usually has no `electron/dist`. Run
+     `node node_modules/electron/install.js` in that folder (~275 MB download into the worktree only; delete
+     `node_modules/electron/dist` when done), then `ldd node_modules/electron/dist/electron | grep "not found"` with the
+     libpath exported — the chrome-deps libraries cover it.
+   - Launch: `_electron.launch({executablePath: require('electron'), args: [appDir, '--no-sandbox',
+     '--ozone-platform=headless', '--disable-gpu'], env})`. Give the app its own HOME / data folder in `env`.
+   - Set `TMPDIR` in `env` to a SHORT folder (`mktemp -d /tmp/x-XXXX`). An app that calls `requestSingleInstanceLock()`
+     puts a Unix socket there; under a deep worktree path it aborts with "Socket path too long" before any window.
+   - There is no display: creating a `Tray` (and GTK menus with it) aborts the process ("Can't create a GtkStyleContext
+     without a display connection"). Skip the tray when `app.commandLine.getSwitchValue('ozone-platform') === 'headless'`
+     and say the tray itself was not exercised.
+   - Drive it with `electron.firstWindow()`, `electron.waitForEvent('window', {predicate})` for a window that replaces
+     another, and `electron.evaluate(({app, BrowserWindow}) => …)` to close/hide windows, emit `second-instance` or
+     `app.quit()`. Watch `electron.process()` for `exit` to prove a real quit.
+   - Output: when a run hangs, write the script's output to a file (`> out.txt 2>&1`) and add `DEBUG=pw:browser`; piping
+     a killed run through grep/head can show nothing at all.
+   - A stand-in server is a few lines of Node: it can reproduce the real login cookie's exact attributes (here a Secure,
+     HttpOnly, SameSite=None cookie on http://localhost, which Chromium keeps) so the sign-in path is tested for real.
+
 ## Gotchas
 
 - No emoji font on most servers: emoji render as tofu boxes. Don't call that a bug in the page.
@@ -92,6 +112,11 @@ Unpack the missing system libraries into your home, point `LD_LIBRARY_PATH` at t
 - Run heavy renders under oom-safe-test-runs on small boxes.
 - `playwright-core` from some other folder may expect a newer browser build than the one cached; pass
   `executablePath` to the cached `chromium_headless_shell-NNNN` instead of downloading.
+- With `reducedMotion: 'reduce'`, an element that appears under the resting pointer right after a click can fail to
+  paint at all when it has a delayed entrance animation plus a hover transform. `getComputedStyle` says opacity 1 and
+  `elementFromPoint` finds it, yet the screenshot shows a gap. Trust pixels, not computed style: look at the shot, or read
+  it back with pngjs. Move the mouse away to confirm. The page-side fix is `animation-delay: 0s !important` in the
+  reduced-motion rule, so nothing is staggered when motion is off.
 - Stopping a harness: if `systemctl` is denied, find the server's pid with `ss -ltnp | grep <port>` and kill that exact pid.
   Vite reloads itself when its config file changes, but NOT when symlinks or the entry change.
 

@@ -4,7 +4,7 @@ description: Miriam's document generators — a formatted PDF from markdown, a m
 version: 1.2.0
 category: design
 private: false
-last_verified: 2026-11-06
+last_verified: 2026-11-24
 verified_by: skills-audit
 ---
 

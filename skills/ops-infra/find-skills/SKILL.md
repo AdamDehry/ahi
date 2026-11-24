@@ -4,7 +4,7 @@ description: Helps users discover and install agent skills when they ask questio
 version: 1.0.0
 category: ops-infra
 private: false
-last_verified: 2026-11-06
+last_verified: 2026-11-24
 verified_by: skills-audit
 upstream: ~/.agents/skills/find-skills
 ---

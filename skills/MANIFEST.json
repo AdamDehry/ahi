@@ -1,65 +1,77 @@
 {
-  "release": "0.2.3",
+  "release": "0.2.4",
   "skills": [
     {
       "name": "avi-studio",
       "category": "video",
       "version": "1.1.0",
-      "last_verified": "2026-11-06"
+      "last_verified": "2026-11-24"
     },
     {
       "name": "avi-video-pipeline",
       "category": "video",
       "version": "3.0.0",
-      "last_verified": "2026-11-06"
+      "last_verified": "2026-11-24"
     },
     {
       "name": "higgsfield-content-factory",
       "category": "video",
       "version": "1.0.0",
-      "last_verified": "2026-11-06"
+      "last_verified": "2026-11-24"
     },
     {
       "name": "higgsfield-generate",
       "category": "video",
       "version": "0.3.0",
-      "last_verified": "2026-11-06"
+      "last_verified": "2026-11-24"
     },
     {
       "name": "documents",
       "category": "design",
       "version": "1.2.0",
-      "last_verified": "2026-11-06"
+      "last_verified": "2026-11-24"
     },
     {
       "name": "headless-browser-on-vps",
       "category": "design",
-      "version": "1.4.0",
-      "last_verified": "2026-11-06"
+      "version": "1.5.0",
+      "last_verified": "2026-11-24"
     },
     {
       "name": "higgsfield-marketplace-cards",
       "category": "design",
       "version": "0.3.0",
-      "last_verified": "2026-11-06"
+      "last_verified": "2026-11-24"
     },
     {
       "name": "higgsfield-product-photoshoot",
       "category": "design",
       "version": "0.3.0",
-      "last_verified": "2026-11-06"
+      "last_verified": "2026-11-24"
     },
     {
       "name": "vision",
       "category": "design",
       "version": "1.2.0",
-      "last_verified": "2026-11-06"
+      "last_verified": "2026-11-24"
+    },
+    {
+      "name": "wordmark-social-icon",
+      "category": "design",
+      "version": "1.0.0",
+      "last_verified": "2026-11-24"
+    },
+    {
+      "name": "zero-dep-pdf-sheet",
+      "category": "design",
+      "version": "1.1.0",
+      "last_verified": "2026-11-19"
     },
     {
       "name": "audit-codebase",
       "category": "code-quality",
       "version": "1.1.1",
-      "last_verified": "2026-11-06"
+      "last_verified": "2026-11-24"
     },
     {
       "name": "codex-consult",
@@ -71,37 +83,37 @@
       "name": "oom-safe-test-runs",
       "category": "code-quality",
       "version": "1.1.0",
-      "last_verified": "2026-11-06"
+      "last_verified": "2026-11-24"
     },
     {
       "name": "safe-shell-hygiene",
       "category": "code-quality",
-      "version": "1.0.0",
-      "last_verified": "2026-11-06"
+      "version": "1.0.1",
+      "last_verified": "2026-11-19"
     },
     {
       "name": "simplify-pass",
       "category": "code-quality",
       "version": "1.0.0",
-      "last_verified": "2026-11-06"
+      "last_verified": "2026-11-24"
     },
     {
       "name": "browser-control",
       "category": "ops-infra",
       "version": "1.0.1",
-      "last_verified": "2026-11-06"
+      "last_verified": "2026-11-24"
     },
     {
       "name": "cron-job-pattern",
       "category": "ops-infra",
       "version": "1.0.0",
-      "last_verified": "2026-11-06"
+      "last_verified": "2026-11-24"
     },
     {
       "name": "find-skills",
       "category": "ops-infra",
       "version": "1.0.0",
-      "last_verified": "2026-11-06"
+      "last_verified": "2026-11-24"
     },
     {
       "name": "organize-the-ahi-way",
@@ -113,31 +125,31 @@
       "name": "record-a-ruling",
       "category": "ops-infra",
       "version": "1.2.0",
-      "last_verified": "2026-11-06"
+      "last_verified": "2026-11-24"
     },
     {
       "name": "jev-classifier-calls",
       "category": "research",
       "version": "1.1.0",
-      "last_verified": "2026-11-06"
+      "last_verified": "2026-11-24"
     },
     {
       "name": "kohler-tax-strategy",
       "category": "research",
       "version": "1.1.0",
-      "last_verified": "2026-11-06"
+      "last_verified": "2026-11-24"
     },
     {
       "name": "vin-verify-vpic",
       "category": "research",
       "version": "1.1.0",
-      "last_verified": "2026-11-06"
+      "last_verified": "2026-11-24"
     },
     {
       "name": "youtube-lessons",
       "category": "research",
       "version": "1.1.0",
-      "last_verified": "2026-11-06"
+      "last_verified": "2026-11-24"
     },
     {
       "name": "memory-fetch",

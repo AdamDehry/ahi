@@ -1,5 +1,38 @@
 # Changelog
 
+## 0.2.4
+
+**One app called AHI.** After setup, opening the app *is* opening AHI: it starts quietly and shows AHI in its
+own window, already signed in, instead of the setup screens and a browser tab. Setup appears only the first
+time, or from the tray menu. The app, its window, the Start menu entry and the desktop shortcut are all named AHI.
+Your saved setup, folder and sign-ins carry over when you install this over 0.2.3.
+
+**AHI keeps running.** Closing the window leaves AHI running in the tray (the menu bar on a Mac), so the browser
+and your phone keep working. AHI starts by itself when you log in; turn that off in the tray menu. **Quit AHI**
+in the tray menu really stops it, cleanly. Opening AHI a second time brings up the window that is already open.
+
+**When AHI can't start, it says why.** The window shows the reason in plain words with **Retry**, and the reason
+is written to AHI's log. A lock left behind by an AHI that was shut down abruptly is cleared and the start tried
+once more by itself.
+
+**Windows fixes.**
+- AHI no longer tries to write its settings into the Program Files folder. On Windows that failed on every
+  start, which switched off memory search between conversations and the agents' permission to run their skills.
+  The settings now live in your AHI folder, and folder names with spaces (like "My AI") work.
+- The installer adds AHI to the Start menu on every install and update.
+
+**Safer sign-in.** Before the app hands AHI your key, the server on AHI's port has to prove it is your own AHI,
+using a check only your AHI can answer; the key itself is never sent to anything that hasn't passed it. A failed
+or slow sign-in shows on the start screen with Retry, never as a signed-out window.
+
+**After updating from 0.2.3.** Delete any Startup shortcut you made by hand (AHI starts at login by itself now).
+If you installed AHI from the browser as a web app, you can uninstall that copy: the AHI app opens signed in. It
+still works if you keep it, because AHI stays running.
+
+**Skills.** New: wordmark-social-icon (turn a site's text logo into a matching square social profile icon) and
+zero-dep-pdf-sheet (print-quality PDFs from Node with no dependencies). headless-browser-on-vps 1.5.0: drive a
+real Electron desktop app headless on a server. safe-shell-hygiene 1.0.1.
+
 ## 0.2.3
 
 **The builder is now Zali.** The builder agent is renamed from Tzali to Zali, because the old name is

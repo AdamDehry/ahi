@@ -4,7 +4,7 @@ description: Shared image tools any agent can call from a chat turn — OCR an i
 version: 1.2.0
 category: design
 private: false
-last_verified: 2026-11-06
+last_verified: 2026-11-24
 verified_by: skills-audit
 ---
 

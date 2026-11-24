@@ -1,6 +1,6 @@
 {
   "name": "ahi-setup",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "private": true,
   "description": "AHI: your own AI home, with the guided setup that makes it",
   "author": "AHI",
@@ -151,8 +151,7 @@
       "deleteAppDataOnUninstall": false,
       "shortcutName": "AHI",
       "createStartMenuShortcut": true,
-      "createDesktopShortcut": "always",
-      "include": "build/installer.nsh"
+      "createDesktopShortcut": "always"
     },
     "linux": {
       "syncDesktopName": true,

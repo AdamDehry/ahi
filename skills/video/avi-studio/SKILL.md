@@ -4,7 +4,7 @@ description: Avi's live studio — how Avi makes films, ad campaigns and marketi
 version: 1.1.0
 category: video
 private: false
-last_verified: 2026-11-06
+last_verified: 2026-11-24
 verified_by: skills-audit
 owner: avi
 ---

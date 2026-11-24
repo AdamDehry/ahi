@@ -4,7 +4,7 @@ description: What Michael does the moment the owner (or Michael) issues a new ru
 version: 1.2.0
 category: ops-infra
 private: false
-last_verified: 2026-11-06
+last_verified: 2026-11-24
 verified_by: skills-audit
 ---
 

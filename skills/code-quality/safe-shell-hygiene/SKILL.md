@@ -1,10 +1,10 @@
 ---
 name: safe-shell-hygiene
 description: Small shell disciplines that prevent the worst agent accidents on a shared box — stop processes by exact pid never by pattern, write wait loops that cannot match themselves, verify a scripted edit by reading the lines back, and search runtime-built paths correctly. Use whenever you stop or wait on a process, or edit files with sed/python/heredocs. Not a general bash tutorial.
-version: 1.0.0
+version: 1.0.1
 category: code-quality
 private: false
-last_verified: 2026-11-06
+last_verified: 2026-11-19
 verified_by: skills-audit
 ---
 
@@ -50,6 +50,9 @@ Kill exactly what you started; believe an edit only after you read it back.
 - `pgrep -a`/`-f` to stdout prints other processes' full command lines — which can include secrets. Count
   (`-c`) instead of printing.
 - A clean exit status from a search pipeline is not proof of absence.
+- Claude Code: a shell heredoc whose body holds JavaScript template literals or backticks can be refused by the
+  harness's command safety check ("can't be sure it read this command the way the shell will"), even though it
+  deletes nothing. Do not retry it. Write the script to a file with the file tool, then run the file.
 - A leftover redirect in an edited command can write somewhere you did not intend; reread commands you edit.
 
 ## Rulings this depends on

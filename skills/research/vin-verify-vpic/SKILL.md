@@ -4,7 +4,7 @@ description: Verify or repair a VIN for free — the check digit (49 CFR 565.15)
 version: 1.1.0
 category: research
 private: false
-last_verified: 2026-11-06
+last_verified: 2026-11-24
 verified_by: skills-audit
 ---
 

@@ -21,7 +21,7 @@
 
 ## What is AHI?
 
-AHI is four AI agents, each with its own character, working together for you. They live in a calm app that opens in your browser. You can type, talk by voice, and — if you like — open AHI on your phone.
+AHI is four AI agents, each with its own character, working together for you. They live in a calm app of their own on your computer. You can type, talk by voice, and — if you like — open AHI on your phone.
 
 - **Michael** — your right hand. Plans, coordinates, keeps track, and brings the important decisions back to you.
 - **Zali** — builds and fixes software and keeps your setup running.
@@ -82,7 +82,7 @@ Open AHI Setup and it walks you through everything in about 10–15 minutes. No 
     </td>
     <td width="50%" valign="top">
       <img src="docs/images/setup-6-home-ready.png" alt="Your home is ready: a summary of your setup"><br>
-      <b>6. Open AHI.</b> Click <b>Open AHI</b> and it opens in your browser. Keep AHI Setup open (minimized is fine) while you use AHI.
+      <b>6. Open AHI.</b> Click <b>Open AHI</b> and AHI opens right there, in its own window, already signed in.
     </td>
   </tr>
 </table>
@@ -112,7 +112,9 @@ The agents' souls and library live in the hidden system folder (`AHI_OS`). They'
 
 ## Good to know
 
-- AHI runs while AHI Setup is open. Close it and AHI stops; open it again and AHI starts.
+- After setup, the app *is* AHI: open it from the Start menu, the desktop or the dock and it starts quietly and opens signed in. Setup appears again only from the tray menu (**Setup…**).
+- Closing the window keeps AHI running in the tray (the menu bar on a Mac), so the browser and your phone keep working. AHI also starts when you log in; turn that off in the tray menu. **Quit AHI** in the tray menu really stops it.
+- If AHI can't start, the window says why in plain words, with **Retry**.
 - **Staying up to date:** open **Settings → Updates**. AHI tells you when a newer release is out. New and improved skills install with **Update skills** (anything they replace is kept in `AHI_OS/skills/_backup/`); a newer AHI itself comes as a new AHI Setup from the same release page. Your folder and memory stay.
 - The agents run on Claude for now. Other providers can be connected in setup, and will be able to run agents in a later version.
 

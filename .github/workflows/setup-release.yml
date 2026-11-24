@@ -1,5 +1,5 @@
 name: Build AHI Setup installers
-# Builds the AHI Setup app (download, open, set up, AHI opens in your browser) for Mac, Windows and Linux.
+# Builds the AHI app (download, open, set up; after that the app is AHI itself) for Mac, Windows and Linux.
 # Run by hand for review artifacts; pushing a version tag (v*) also publishes them as a GitHub Release,
 # which is what the app's "Download AHI Setup" button links to.
 on:
@@ -117,4 +117,4 @@ jobs:
       - name: Publish the release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release create "${GITHUB_REF_NAME}" installers/* ahi-skills.json --repo "${GITHUB_REPOSITORY}" --title "AHI ${GITHUB_REF_NAME}" --notes "Download AHI Setup for your computer, open it, and follow the setup. AHI opens in your browser when you finish. Already running AHI? Open Settings and choose Updates to see this release and install its newer skills."
+        run: gh release create "${GITHUB_REF_NAME}" installers/* ahi-skills.json --repo "${GITHUB_REPOSITORY}" --title "AHI ${GITHUB_REF_NAME}" --notes "Download AHI Setup for your computer, open it, and follow the setup. When you finish, AHI opens in its own window, signed in, and keeps running in the tray. Already running AHI? Install this over it; your folder, setup and sign-ins stay. Open Settings and choose Updates to see this release and install its newer skills."
